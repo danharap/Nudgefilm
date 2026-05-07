@@ -12,6 +12,8 @@ export type PublicProfile = {
   watchlist_public: boolean;
 };
 
+export type FollowStatus = "none" | "following";
+// Legacy friend-request status type kept for compatibility with old components.
 export type FriendshipStatus =
   | "none"
   | "pending_sent"
@@ -38,7 +40,7 @@ export type SocialActivityItem = {
 export async function searchUsers(
   query: string,
   currentUserId?: string,
-): Promise<(PublicProfile & { friendshipStatus: FriendshipStatus })[]> {
+): Promise<(PublicProfile & { followStatus: FollowStatus })[]> {
   const q = query.trim().toLowerCase();
   if (q.length < 2) return [];
 
@@ -61,35 +63,21 @@ export async function searchUsers(
 
     const profiles = (data ?? []) as PublicProfile[];
     if (!currentUserId || profiles.length === 0) {
-      return profiles.map((p) => ({ ...p, friendshipStatus: "none" as FriendshipStatus }));
+      return profiles.map((p) => ({ ...p, followStatus: "none" as FollowStatus }));
     }
 
-    // Batch-fetch friendship statuses
+    // Batch-fetch follow statuses
     const ids = profiles.map((p) => p.id);
-    const { data: friendships } = await supabase
-      .from("friendships")
-      .select("requester_id, addressee_id, status")
-      .or(
-        `and(requester_id.eq.${currentUserId},addressee_id.in.(${ids.join(",")})),` +
-          `and(addressee_id.eq.${currentUserId},requester_id.in.(${ids.join(",")}))`,
-      );
-
-    const fsMap = new Map<string, FriendshipStatus>();
-    for (const f of friendships ?? []) {
-      const otherId =
-        f.requester_id === currentUserId ? f.addressee_id : f.requester_id;
-      if (f.status === "accepted") {
-        fsMap.set(otherId, "accepted");
-      } else if (f.requester_id === currentUserId) {
-        fsMap.set(otherId, "pending_sent");
-      } else {
-        fsMap.set(otherId, "pending_received");
-      }
-    }
+    const { data: follows } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", currentUserId)
+      .in("following_id", ids);
+    const followingIds = new Set((follows ?? []).map((f) => f.following_id as string));
 
     return profiles.map((p) => ({
       ...p,
-      friendshipStatus: fsMap.get(p.id) ?? "none",
+      followStatus: followingIds.has(p.id) ? "following" : "none",
     }));
   } catch (e) {
     console.error("[users] searchUsers unexpected:", e);
@@ -116,114 +104,86 @@ export async function getProfileByUsername(
   }
 }
 
-/** Load friendship status between two users */
-export async function getFriendshipStatus(
+/** Is current user following target profile */
+export async function getFollowStatus(
   currentUserId: string,
   targetId: string,
-): Promise<FriendshipStatus> {
+): Promise<FollowStatus> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("friendships")
-      .select("requester_id, addressee_id, status")
-      .or(
-        `and(requester_id.eq.${currentUserId},addressee_id.eq.${targetId}),` +
-          `and(requester_id.eq.${targetId},addressee_id.eq.${currentUserId})`,
-      )
+      .from("follows")
+      .select("follower_id")
+      .eq("follower_id", currentUserId)
+      .eq("following_id", targetId)
       .maybeSingle();
-
-    if (!data) return "none";
-    if (data.status === "accepted") return "accepted";
-    if (data.requester_id === currentUserId) return "pending_sent";
-    return "pending_received";
+    return data ? "following" : "none";
   } catch {
     return "none";
   }
 }
 
-/** Load accepted friends for a user */
-export async function getFriends(userId: string): Promise<PublicProfile[]> {
+/** Profiles the user follows */
+export async function getFollowing(userId: string): Promise<PublicProfile[]> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("friendships")
-      .select("requester_id, addressee_id")
-      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-      .eq("status", "accepted");
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", userId);
 
     if (!data || data.length === 0) return [];
-
-    const friendIds = data.map((f) =>
-      f.requester_id === userId ? f.addressee_id : f.requester_id,
-    );
+    const followingIds = data.map((f) => f.following_id);
 
     const { data: profiles } = await supabase
       .from("profiles")
       .select(
         "id, username, display_name, bio, avatar_url, banner_url, profile_background_url, is_public, watchlist_public",
       )
-      .in("id", friendIds);
+      .in("id", followingIds);
 
     return (profiles ?? []) as PublicProfile[];
   } catch (e) {
-    console.error("[users] getFriends:", e);
+    console.error("[users] getFollowing:", e);
     return [];
   }
 }
 
-/** Pending incoming requests */
-export async function getPendingRequests(userId: string): Promise<
-  (PublicProfile & { requesterId: string })[]
-> {
+/** Users following this account (used as inbox/notifications feed) */
+export async function getFollowers(userId: string): Promise<PublicProfile[]> {
   try {
     const supabase = await createClient();
     const { data } = await supabase
-      .from("friendships")
+      .from("follows")
+      .select("follower_id")
+      .eq("following_id", userId);
+    if (!data || data.length === 0) return [];
+    const followerIds = data.map((f) => f.follower_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
       .select(
-        "requester_id, profiles!friendships_requester_id_fkey(id, username, display_name, bio, avatar_url, banner_url, profile_background_url, is_public, watchlist_public)",
+        "id, username, display_name, bio, avatar_url, banner_url, profile_background_url, is_public, watchlist_public",
       )
-      .eq("addressee_id", userId)
-      .eq("status", "pending");
-
-    return (data ?? []).map((row) => {
-      const p = (row as unknown as { profiles: PublicProfile }).profiles;
-      return { ...p, requesterId: row.requester_id };
-    });
+      .in("id", followerIds);
+    return (profiles ?? []) as PublicProfile[];
   } catch (e) {
-    console.error("[users] getPendingRequests:", e);
+    console.error("[users] getFollowers:", e);
     return [];
   }
 }
 
-/** Recent watched activity from accepted friends + followed users */
+/** Recent watched activity from people you follow */
 export async function getSocialActivity(
   userId: string,
   limit = 24,
 ): Promise<SocialActivityItem[]> {
   try {
     const supabase = await createClient();
-
-    const [{ data: friendships }, { data: follows }] = await Promise.all([
-      supabase
-        .from("friendships")
-        .select("requester_id, addressee_id")
-        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-        .eq("status", "accepted"),
-      supabase
-        .from("follows")
-        .select("following_id")
-        .eq("follower_id", userId),
-    ]);
-
-    const socialIds = new Set<string>();
-    for (const f of friendships ?? []) {
-      socialIds.add(f.requester_id === userId ? f.addressee_id : f.requester_id);
-    }
-    for (const f of follows ?? []) {
-      if (f.following_id !== userId) socialIds.add(f.following_id);
-    }
-
-    const ids = [...socialIds];
+    const { data: follows } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", userId);
+    const ids = (follows ?? []).map((f) => f.following_id as string);
     if (ids.length === 0) return [];
 
     const { data: rows, error } = await supabase

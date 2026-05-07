@@ -60,7 +60,7 @@ export function MobileMenu({
         { href: "/login", label: "Log in" },
         { href: "/signup", label: "Sign up" },
       ];
-  const mobileInboxLink = user ? { href: "/friends?tab=inbox", label: "Requests", count: pendingRequestCount } : null;
+  const mobileInboxLink = user ? { href: "/friends?tab=inbox", label: "Notifications", count: pendingRequestCount } : null;
 
   const drawer = (
     <>

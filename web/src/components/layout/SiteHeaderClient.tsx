@@ -62,7 +62,7 @@ export function SiteHeaderClient(props: Props) {
               <Link
                 href="/friends?tab=inbox"
                 className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] text-zinc-300 transition hover:border-white/20 hover:text-white"
-                aria-label={`Friend requests${pendingRequestCount > 0 ? ` (${pendingRequestCount})` : ""}`}
+                aria-label={`Notifications${pendingRequestCount > 0 ? ` (${pendingRequestCount})` : ""}`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M12 3a7 7 0 0 1 7 7v3.7l1.2 2.3c.3.7-.2 1.5-1 1.5H4.8c-.8 0-1.3-.8-1-1.5L5 13.7V10a7 7 0 0 1 7-7z" stroke="currentColor" strokeWidth="1.6" />

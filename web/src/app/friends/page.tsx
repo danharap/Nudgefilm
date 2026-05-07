@@ -1,7 +1,7 @@
 import { UserSearch } from "./UserSearch";
-import { FriendButton } from "@/components/social/FriendButton";
+import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { getFriends, getPendingRequests, getSocialActivity } from "@/features/users/service";
+import { getFollowers, getFollowing, getSocialActivity } from "@/features/users/service";
 import { posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
@@ -24,11 +24,12 @@ export default async function FriendsPage({
 
   if (!user) redirect("/login?redirect=/friends");
 
-  const [friends, pending, activity] = await Promise.all([
-    getFriends(user.id),
-    getPendingRequests(user.id),
+  const [following, followers, activity] = await Promise.all([
+    getFollowing(user.id),
+    getFollowers(user.id),
     getSocialActivity(user.id, 18),
   ]);
+  const followingIds = new Set(following.map((f) => f.id));
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
@@ -36,7 +37,7 @@ export default async function FriendsPage({
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">
           Social
         </p>
-        <h1 className="text-3xl font-semibold text-white">Friends</h1>
+        <h1 className="text-3xl font-semibold text-white">Following</h1>
       </header>
 
       <div className="mb-6 flex gap-2">
@@ -62,17 +63,23 @@ export default async function FriendsPage({
         </Link>
       </div>
 
-      {/* Pending requests */}
-      {pending.length > 0 ? (
-        <section id="inbox" className="mb-10 scroll-mt-24">
-          <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-            Friend Requests
-            <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-300">
-              {pending.length}
-            </span>
-          </h2>
+      <section id="inbox" className="mb-10 scroll-mt-24">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white">Notifications</h2>
+          <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-300">
+            {followers.length}
+          </span>
+        </div>
+        {followers.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-10 text-center">
+            <p className="text-sm text-zinc-400">No notifications yet.</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              New followers will appear here.
+            </p>
+          </div>
+        ) : (
           <ul className="space-y-2">
-            {pending.map((p) => {
+            {followers.map((p) => {
               const name = p.display_name?.trim() || p.username || "User";
               return (
                 <li
@@ -89,35 +96,32 @@ export default async function FriendsPage({
                     >
                       {name}
                     </Link>
-                    {p.username ? (
-                      <p className="text-xs text-zinc-500">@{p.username}</p>
-                    ) : null}
+                    <p className="text-xs text-zinc-500">
+                      {p.username ? `@${p.username} ` : ""}followed you
+                    </p>
                   </div>
-                  <FriendButton
-                    targetId={p.requesterId}
-                    initial="pending_received"
-                  />
+                  <FollowButton targetId={p.id} initialFollowing={followingIds.has(p.id)} />
                 </li>
               );
             })}
           </ul>
-        </section>
-      ) : null}
+        )}
+      </section>
 
       {/* Search */}
-      <section id="activity" className="mb-10 scroll-mt-24">
+      <section className="mb-10">
         <h2 className="mb-3 text-sm font-semibold text-white">
           Find People
         </h2>
         <UserSearch />
       </section>
 
-      {/* Friends / Following recent activity */}
-      <section className="mb-10">
+      {/* Following recent activity */}
+      <section id="activity" className="mb-10 scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Recent Activity</h2>
           <span className="text-xs text-zinc-500">
-            Friends + people you follow
+            People you follow
           </span>
         </div>
         {activity.length === 0 ? (
@@ -126,7 +130,7 @@ export default async function FriendsPage({
               No recent activity yet.
             </p>
             <p className="mt-1 text-xs text-zinc-500">
-              Once friends log movies, you&apos;ll see their latest watches here.
+              Once people you follow log movies, you&apos;ll see their latest watches here.
             </p>
           </div>
         ) : (
@@ -185,20 +189,20 @@ export default async function FriendsPage({
         )}
       </section>
 
-      {/* Friends list */}
+      {/* Following list */}
       <section>
         <h2 className="mb-3 text-sm font-semibold text-white">
-          Your Friends ({friends.length})
+          Following ({following.length})
         </h2>
-        {friends.length === 0 ? (
+        {following.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-12 text-center">
             <p className="text-sm text-zinc-400">
-              No friends yet — search for people above.
+              You&apos;re not following anyone yet — search for people above.
             </p>
           </div>
         ) : (
           <ul className="space-y-2">
-            {friends.map((f) => {
+            {following.map((f) => {
               const name = f.display_name?.trim() || f.username || "User";
               return (
                 <li
@@ -224,7 +228,7 @@ export default async function FriendsPage({
                       </p>
                     ) : null}
                   </div>
-                  <FriendButton targetId={f.id} initial="accepted" />
+                  <FollowButton targetId={f.id} initialFollowing />
                 </li>
               );
             })}

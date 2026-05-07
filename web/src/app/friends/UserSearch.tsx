@@ -1,8 +1,8 @@
 "use client";
 
-import { FriendButton } from "@/components/social/FriendButton";
+import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
-import type { FriendshipStatus } from "@/features/users/service";
+import type { FollowStatus } from "@/features/users/service";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -12,7 +12,7 @@ type Hit = {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
-  friendshipStatus: FriendshipStatus;
+  followStatus: FollowStatus;
 };
 
 export function UserSearch() {
@@ -91,7 +91,7 @@ export function UserSearch() {
                     <p className="line-clamp-1 text-xs text-zinc-500">{u.bio}</p>
                   ) : null}
                 </div>
-                <FriendButton targetId={u.id} initial={u.friendshipStatus} />
+                <FollowButton targetId={u.id} initialFollowing={u.followStatus === "following"} />
               </li>
             );
           })}

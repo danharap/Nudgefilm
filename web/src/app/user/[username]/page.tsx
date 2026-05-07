@@ -1,7 +1,6 @@
-import { FriendButton } from "@/components/social/FriendButton";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { getProfileByUsername, getFriendshipStatus } from "@/features/users/service";
+import { getFollowStatus, getProfileByUsername } from "@/features/users/service";
 import { posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
@@ -66,7 +65,7 @@ export default async function PublicProfilePage({
   }
 
   const [
-    friendshipStatus,
+    followStatus,
     isFollowingResult,
     { data: watchedRows },
     { data: favouriteRows },
@@ -76,7 +75,7 @@ export default async function PublicProfilePage({
     { count: followersCount },
   ] = await Promise.all([
     currentUser
-      ? getFriendshipStatus(currentUser.id, target.id)
+      ? getFollowStatus(currentUser.id, target.id)
       : Promise.resolve("none" as const),
     // Is the current user following this profile?
     currentUser
@@ -229,8 +228,7 @@ export default async function PublicProfilePage({
           {/* Social actions */}
           {currentUser && !isSelf ? (
             <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-              <FollowButton targetId={target.id} initialFollowing={isFollowing} />
-              <FriendButton targetId={target.id} initial={friendshipStatus} />
+              <FollowButton targetId={target.id} initialFollowing={followStatus === "following" || isFollowing} />
             </div>
           ) : !currentUser ? (
             <Link

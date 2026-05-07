@@ -9,7 +9,7 @@ const publicLinks = [
 
 const authedLinks = [
   { href: "/watchlist", label: "Watchlist" },
-  { href: "/friends", label: "Friends" },
+  { href: "/friends", label: "Following" },
   { href: "/import", label: "Import" },
 ];
 
@@ -22,7 +22,7 @@ export async function SiteHeader() {
   let avatarUrl: string | null = null;
   let displayName: string | null = null;
   let isAdmin = false;
-  let pendingRequestCount = 0;
+  let notificationCount = 0;
 
   if (user) {
     const { data: profile } = await supabase
@@ -39,11 +39,10 @@ export async function SiteHeader() {
     isAdmin = role === "admin" || role === "super_admin" || role === "moderator";
 
     const { count } = await supabase
-      .from("friendships")
-      .select("requester_id", { count: "exact", head: true })
-      .eq("addressee_id", user.id)
-      .eq("status", "pending");
-    pendingRequestCount = count ?? 0;
+      .from("follows")
+      .select("follower_id", { count: "exact", head: true })
+      .eq("following_id", user.id);
+    notificationCount = count ?? 0;
   }
 
   return (
@@ -54,7 +53,7 @@ export async function SiteHeader() {
       isAdmin={isAdmin}
       publicLinks={publicLinks}
       authedLinks={authedLinks}
-      pendingRequestCount={pendingRequestCount}
+      pendingRequestCount={notificationCount}
     />
   );
 }

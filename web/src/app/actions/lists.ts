@@ -200,6 +200,8 @@ export async function followUser(targetId: string) {
   }
 
   revalidatePath("/profile");
+  revalidatePath("/friends");
+  revalidatePath("/", "layout");
 }
 
 export async function unfollowUser(targetId: string) {
@@ -212,4 +214,6 @@ export async function unfollowUser(targetId: string) {
     .eq("following_id", targetId);
 
   revalidatePath("/profile");
+  revalidatePath("/friends");
+  revalidatePath("/", "layout");
 }
