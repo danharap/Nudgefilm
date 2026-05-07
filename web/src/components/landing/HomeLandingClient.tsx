@@ -183,7 +183,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {/* Product scroll reveal */}
-      <section ref={scrollSectionRef} className="relative py-20 sm:py-24">
+      <section ref={scrollSectionRef} className="relative py-14 sm:py-16">
         <div className="mx-auto max-w-7xl px-3 sm:px-5">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
@@ -199,7 +199,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           </div>
         </div>
 
-        <div className="relative mt-8 h-[110vh] sm:h-[125vh]">
+        <div className="relative mt-6 h-[66vh] sm:h-[74vh]">
           <motion.div
             style={
               reduceMotionBg
@@ -210,7 +210,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     opacity: cardOpacity,
                   }
             }
-            className="surface-card sticky top-16 mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:top-20 sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
+            className="surface-card sticky top-10 mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:top-14 sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
           >
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.3fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
               {/* Left: vibe + filters */}
@@ -219,7 +219,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   Tonight&apos;s setup
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Horror", "Late Night", "Intense", "Weird"].map((label) => (
+                  {["Horror", "Late Night", "Intense"].map((label) => (
                     <span
                       key={label}
                       className="accent-selected inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs"
@@ -267,7 +267,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
               </div>
 
               {/* Right: shortlist + explanation */}
-              <div className="grid gap-4 sm:grid-rows-[minmax(0,1.2fr)_minmax(0,1fr)]">
+              <div className="grid gap-4">
                 <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
                   <div className="mb-3 flex items-center justify-between gap-2">
                     <div>
@@ -335,7 +335,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)]">
+                <div className="grid gap-3 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
                   <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
                       Why this fits
