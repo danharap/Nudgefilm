@@ -193,6 +193,10 @@ export async function getNowAiringTV(page = "1") {
   return tmdbFetch<TVListResponse>("/tv/on_the_air", { page });
 }
 
+export async function discoverTV(searchParams: URLSearchParams) {
+  return tmdbFetch<TVListResponse>("/discover/tv", Object.fromEntries(searchParams));
+}
+
 export async function getTVDetails(tmdbId: number) {
   return tmdbFetch<TVDetailsResponse>(`/tv/${tmdbId}`);
 }

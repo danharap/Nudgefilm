@@ -31,6 +31,16 @@ type Props = {
   user: { id: string } | null;
   reviews: Review[];
   heroMovies: HeroMovie[];
+  suggestionsByVibe: Record<
+    LandingVibe,
+    Array<{
+      id: number;
+      title: string;
+      poster_path: string | null;
+      genre_ids: number[];
+      mediaType: "movie" | "tv";
+    }>
+  >;
 };
 
 const heroHeadlines = [
@@ -39,7 +49,8 @@ const heroHeadlines = [
   "Tell us the vibe. We do the rest.",
 ];
 
-const vibeOptions = ["Cozy", "Weird", "Emotional", "Hidden Gem", "Late Night", "Funny"] as const;
+const vibeOptions = ["Cozy", "Funny", "Emotional", "Intense", "Weird", "Hidden Gem", "Late Night"] as const;
+type LandingVibe = (typeof vibeOptions)[number];
 
 const container = {
   hidden: { opacity: 0 },
@@ -65,40 +76,12 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-function vibeMatch(title: string) {
-  const k = title.toLowerCase();
-  if (k.includes("night") || k.includes("dark")) return "Late Night";
-  if (k.includes("love") || k.includes("heart")) return "Emotional";
-  if (k.includes("fun") || k.includes("comedy")) return "Funny";
-  return "Hidden Gem";
-}
-
-function scoreForVibe(movie: HeroMovie, vibe: (typeof vibeOptions)[number]) {
-  const genres = new Set(movie.genre_ids ?? []);
-  switch (vibe) {
-    case "Cozy":
-      return Number(genres.has(10749) || genres.has(35) || genres.has(16));
-    case "Weird":
-      return Number(genres.has(14) || genres.has(878) || genres.has(9648));
-    case "Emotional":
-      return Number(genres.has(18) || genres.has(10749));
-    case "Hidden Gem":
-      return Number(genres.has(99) || genres.has(80) || genres.has(36));
-    case "Late Night":
-      return Number(genres.has(53) || genres.has(27) || genres.has(80));
-    case "Funny":
-      return Number(genres.has(35));
-    default:
-      return 0;
-  }
-}
-
-export function HomeLandingClient({ user, reviews, heroMovies }: Props) {
+export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
   const preview = reviews.slice(0, 3);
   const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
-  const [activeVibe, setActiveVibe] = useState<(typeof vibeOptions)[number]>("Cozy");
+  const [activeVibe, setActiveVibe] = useState<LandingVibe>("Cozy");
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
   const heroImages = useMemo(
@@ -114,17 +97,10 @@ export function HomeLandingClient({ user, reviews, heroMovies }: Props) {
     return () => window.clearInterval(id);
   }, [heroImages.length, reduceMotion]);
 
-  const showcased = useMemo(() => {
-    const withPosters = heroMovies.filter((m) => m.poster_path).slice(0, 12);
-    const sortedByVibe = [...withPosters].sort((a, b) => {
-      const byGenre = scoreForVibe(b, activeVibe) - scoreForVibe(a, activeVibe);
-      if (byGenre !== 0) return byGenre;
-      const byTitleHint = Number(vibeMatch(b.title) === activeVibe) - Number(vibeMatch(a.title) === activeVibe);
-      if (byTitleHint !== 0) return byTitleHint;
-      return a.id - b.id;
-    });
-    return sortedByVibe.slice(0, 6);
-  }, [heroMovies, activeVibe]);
+  const showcased = useMemo(
+    () => suggestionsByVibe[activeVibe] ?? [],
+    [activeVibe, suggestionsByVibe],
+  );
 
   return (
     <div className="relative overflow-x-hidden">
@@ -139,7 +115,7 @@ export function HomeLandingClient({ user, reviews, heroMovies }: Props) {
                 initial={{ opacity: 0, scale: 1.03 }}
                 animate={reduceMotion ? { opacity: 1, scale: 1.03 } : { opacity: 1, scale: 1.08 }}
                 exit={{ opacity: 0 }}
-                transition={{ opacity: { duration: 1.1 }, scale: { duration: 9.4, ease: "linear" } }}
+                transition={{ opacity: { duration: 1.45 }, scale: { duration: 9.4, ease: "linear" } }}
               >
                 <Image
                   src={posterUrl(heroImages[activeHeroIdx].backdrop_path, "original") ?? ""}
@@ -216,6 +192,7 @@ export function HomeLandingClient({ user, reviews, heroMovies }: Props) {
           <motion.div layout className="mt-6 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
             {showcased.map((movie) => {
               const image = posterUrl(movie.poster_path, "w342");
+              const href = movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
               return (
                 <motion.div
                   key={`${activeVibe}-${movie.id}`}
@@ -225,7 +202,7 @@ export function HomeLandingClient({ user, reviews, heroMovies }: Props) {
                   transition={{ duration: 0.35 }}
                   className="group overflow-hidden rounded-2xl border border-white/10 bg-black/35"
                 >
-                  <Link href={`/movie/${movie.id}`} className="block">
+                  <Link href={href} className="block">
                     <div className="relative aspect-[2/3] overflow-hidden">
                       {image ? (
                         <Image src={image} alt={movie.title} fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(max-width:640px) 46vw, 20vw" />
