@@ -163,7 +163,7 @@ export function RecommendClient() {
               onClick={() => toggleVibe(value)}
               className={`rounded-full border px-3 py-1.5 text-sm transition ${
                 vibes.includes(value)
-                  ? "border-indigo-500/35 bg-indigo-500/12 text-indigo-600"
+                  ? "accent-selected"
                   : "border-[var(--surface-border)] text-secondary hover:text-primary"
               }`}
             >
@@ -200,7 +200,7 @@ export function RecommendClient() {
             {genrePanelOpen ? "Close genres" : "Browse genres"}
           </button>
           {genres.length > 0 ? (
-            <p className="text-xs text-indigo-600">{genres.length} selected</p>
+            <p className="text-xs [color:var(--accent-text)]">{genres.length} selected</p>
           ) : null}
         </div>
         {genres.length > 0 && (
@@ -210,7 +210,7 @@ export function RecommendClient() {
                 key={g.id}
                 type="button"
                 onClick={() => toggleGenre(g.id)}
-                className="shrink-0 rounded-full border border-indigo-500/35 bg-indigo-500/12 px-3 py-1.5 text-xs text-indigo-600 transition"
+                className="accent-selected shrink-0 rounded-full border px-3 py-1.5 text-xs transition"
               >
                 {g.name} ×
               </button>
@@ -233,7 +233,7 @@ export function RecommendClient() {
                   onClick={() => toggleGenre(g.id)}
                   className={`rounded-xl border px-3 py-2 text-left text-xs transition ${
                     genres.includes(g.id)
-                      ? "border-indigo-500/35 bg-indigo-500/12 text-indigo-600"
+                      ? "accent-selected"
                       : "border-[var(--surface-border)] text-secondary hover:text-primary"
                   }`}
                 >

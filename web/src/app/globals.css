@@ -5,9 +5,12 @@
   --foreground: #f1f1f3;
   --muted: #a1a1aa;
   --card: rgba(14, 18, 34, 0.76);
-  --accent: #7480ff;
+  --accent: #8290ff;
   --accent-dim: rgba(116, 128, 255, 0.16);
   --ring: rgba(116, 128, 255, 0.44);
+  --accent-text: #aab6ff;
+  --accent-border: rgba(130, 144, 255, 0.46);
+  --accent-surface: rgba(130, 144, 255, 0.16);
   --surface-1: rgba(15, 20, 38, 0.72);
   --surface-2: rgba(11, 15, 30, 0.58);
   --surface-3: rgba(255, 255, 255, 0.04);
@@ -24,9 +27,12 @@ html[data-theme="light"] {
   --foreground: #162033;
   --muted: #53627a;
   --card: rgba(255, 255, 255, 0.78);
-  --accent: #4f46e5;
+  --accent: #6366f1;
   --accent-dim: rgba(79, 70, 229, 0.12);
   --ring: rgba(79, 70, 229, 0.35);
+  --accent-text: #5b5fe9;
+  --accent-border: rgba(99, 102, 241, 0.34);
+  --accent-surface: rgba(99, 102, 241, 0.12);
   --surface-1: rgba(255, 255, 255, 0.78);
   --surface-2: rgba(250, 252, 255, 0.66);
   --surface-3: rgba(79, 70, 229, 0.08);
@@ -230,16 +236,22 @@ html[data-theme="light"] body {
 }
 
 .btn-brand {
-  background: linear-gradient(180deg, #5b55f2, #4f46e5);
+  background: linear-gradient(180deg, #7d88ff, #6366f1);
   color: #ffffff;
-  box-shadow: 0 14px 28px rgba(79, 70, 229, 0.35);
+  box-shadow: 0 14px 28px rgba(99, 102, 241, 0.34);
   transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
 }
 
 .btn-brand:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 34px rgba(79, 70, 229, 0.42);
+  box-shadow: 0 18px 34px rgba(99, 102, 241, 0.42);
   filter: brightness(1.03);
+}
+
+.accent-selected {
+  border-color: var(--accent-border);
+  background: var(--accent-surface);
+  color: var(--accent-text);
 }
 
 html[data-theme="light"] .premium-card:hover {
