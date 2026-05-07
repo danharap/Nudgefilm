@@ -32,21 +32,12 @@ export const metadata: Metadata = {
     title: `${APP_NAME} — quick picks & your watch log`,
     description:
       `${APP_NAME}: strict genre-aware suggestions from TMDb, plus watchlist and watched history in Supabase.`,
-    images: [
-      {
-        url: "/screenshots/home-wide.png",
-        width: 1280,
-        height: 720,
-        alt: `${APP_NAME} home`,
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: `${APP_NAME} — quick picks & your watch log`,
     description:
       `${APP_NAME}: strict genre-aware suggestions from TMDb, plus watchlist and watched history in Supabase.`,
-    images: ["/screenshots/home-wide.png"],
   },
   appleWebApp: {
     capable: true,
