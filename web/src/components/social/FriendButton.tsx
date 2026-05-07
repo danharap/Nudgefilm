@@ -3,6 +3,7 @@
 import {
   acceptFriendRequest,
   cancelFriendRequest,
+  declineFriendRequest,
   removeFriend,
   sendFriendRequest,
 } from "@/app/actions/social";
@@ -66,7 +67,7 @@ export function FriendButton({ targetId, initial }: Props) {
           <button
             type="button"
             disabled={isPending}
-            onClick={() => act(() => cancelFriendRequest(targetId), "none")}
+            onClick={() => act(() => declineFriendRequest(targetId), "none")}
             className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 disabled:opacity-50"
           >
             Decline

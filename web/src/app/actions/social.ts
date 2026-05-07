@@ -12,6 +12,11 @@ async function getAuthedUser() {
   return { supabase, user };
 }
 
+function revalidateSocialUi() {
+  revalidatePath("/friends");
+  revalidatePath("/", "layout");
+}
+
 // ---------------------------------------------------------------------------
 // Profile editing
 // ---------------------------------------------------------------------------
@@ -85,7 +90,7 @@ export async function sendFriendRequest(addresseeId: string) {
     console.error("[social] sendFriendRequest:", error.code, error.message);
     throw new Error("Could not send friend request.");
   }
-  revalidatePath("/friends");
+  revalidateSocialUi();
 }
 
 export async function acceptFriendRequest(requesterId: string) {
@@ -102,7 +107,7 @@ export async function acceptFriendRequest(requesterId: string) {
     console.error("[social] acceptFriendRequest:", error.code, error.message);
     throw new Error("Could not accept request.");
   }
-  revalidatePath("/friends");
+  revalidateSocialUi();
 }
 
 export async function declineFriendRequest(requesterId: string) {
@@ -114,7 +119,7 @@ export async function declineFriendRequest(requesterId: string) {
     .eq("requester_id", requesterId)
     .eq("addressee_id", user.id);
 
-  revalidatePath("/friends");
+  revalidateSocialUi();
 }
 
 export async function removeFriend(friendId: string) {
@@ -127,7 +132,7 @@ export async function removeFriend(friendId: string) {
       `and(requester_id.eq.${user.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${user.id})`,
     );
 
-  revalidatePath("/friends");
+  revalidateSocialUi();
 }
 
 export async function cancelFriendRequest(addresseeId: string) {
@@ -139,5 +144,5 @@ export async function cancelFriendRequest(addresseeId: string) {
     .eq("requester_id", user.id)
     .eq("addressee_id", addresseeId);
 
-  revalidatePath("/friends");
+  revalidateSocialUi();
 }

@@ -10,7 +10,13 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export default async function FriendsPage() {
+export default async function FriendsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const params = await searchParams;
+  const activeTab = params.tab === "activity" ? "activity" : "inbox";
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,9 +39,32 @@ export default async function FriendsPage() {
         <h1 className="text-3xl font-semibold text-white">Friends</h1>
       </header>
 
+      <div className="mb-6 flex gap-2">
+        <Link
+          href="/friends?tab=inbox"
+          className={`rounded-full px-4 py-1.5 text-sm transition ${
+            activeTab === "inbox"
+              ? "bg-indigo-500/20 text-indigo-100"
+              : "border border-white/10 text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          Inbox
+        </Link>
+        <Link
+          href="/friends?tab=activity"
+          className={`rounded-full px-4 py-1.5 text-sm transition ${
+            activeTab === "activity"
+              ? "bg-indigo-500/20 text-indigo-100"
+              : "border border-white/10 text-zinc-400 hover:text-zinc-200"
+          }`}
+        >
+          Activity
+        </Link>
+      </div>
+
       {/* Pending requests */}
       {pending.length > 0 ? (
-        <section className="mb-10">
+        <section id="inbox" className="mb-10 scroll-mt-24">
           <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
             Friend Requests
             <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-300">
@@ -76,7 +105,7 @@ export default async function FriendsPage() {
       ) : null}
 
       {/* Search */}
-      <section className="mb-10">
+      <section id="activity" className="mb-10 scroll-mt-24">
         <h2 className="mb-3 text-sm font-semibold text-white">
           Find People
         </h2>

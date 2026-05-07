@@ -23,6 +23,7 @@ export async function SiteHeader() {
   let avatarUrl: string | null = null;
   let displayName: string | null = null;
   let isAdmin = false;
+  let pendingRequestCount = 0;
 
   if (user) {
     const { data: profile } = await supabase
@@ -37,6 +38,13 @@ export async function SiteHeader() {
       "Account";
     const role = (profile?.role as string | null) ?? "user";
     isAdmin = role === "admin" || role === "super_admin" || role === "moderator";
+
+    const { count } = await supabase
+      .from("friendships")
+      .select("requester_id", { count: "exact", head: true })
+      .eq("addressee_id", user.id)
+      .eq("status", "pending");
+    pendingRequestCount = count ?? 0;
   }
 
   return (
@@ -47,6 +55,7 @@ export async function SiteHeader() {
       isAdmin={isAdmin}
       publicLinks={publicLinks}
       authedLinks={authedLinks}
+      pendingRequestCount={pendingRequestCount}
     />
   );
 }

@@ -16,6 +16,7 @@ type Props = {
   isAdmin: boolean;
   publicLinks: NavLink[];
   authedLinks: NavLink[];
+  pendingRequestCount: number;
 };
 
 export function MobileMenu({
@@ -25,6 +26,7 @@ export function MobileMenu({
   isAdmin,
   publicLinks,
   authedLinks,
+  pendingRequestCount,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -58,6 +60,7 @@ export function MobileMenu({
         { href: "/login", label: "Log in" },
         { href: "/signup", label: "Sign up" },
       ];
+  const mobileInboxLink = user ? { href: "/friends?tab=inbox", label: "Requests", count: pendingRequestCount } : null;
 
   const drawer = (
     <>
@@ -106,6 +109,20 @@ export function MobileMenu({
         {/* Nav links — fills remaining height */}
         <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-2">
           <div className="space-y-0.5">
+            {mobileInboxLink ? (
+              <Link
+                href={mobileInboxLink.href}
+                onClick={() => setOpen(false)}
+                className="mb-1 flex items-center justify-between rounded-xl bg-indigo-500/10 px-4 py-3 text-[15px] font-medium text-indigo-200 transition hover:bg-indigo-500/20"
+              >
+                <span>{mobileInboxLink.label}</span>
+                {mobileInboxLink.count > 0 ? (
+                  <span className="rounded-full bg-indigo-500 px-2 py-0.5 text-xs font-semibold text-white">
+                    {mobileInboxLink.count > 9 ? "9+" : mobileInboxLink.count}
+                  </span>
+                ) : null}
+              </Link>
+            ) : null}
             {allLinks.map((l) => (
               <Link
                 key={l.href}
