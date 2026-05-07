@@ -22,8 +22,10 @@ function buildPrompt(
   candidates: CandidateSummary[],
   input: RecommendationInput,
 ): string {
-  const vibesStr = input.vibes.join(", ");
-  const genreStr = (input.genres ?? []).join(", ") || "none";
+  const vibesStr = input.vibes.length ? input.vibes.join(", ") : "none";
+  const genreStr = (input.genres ?? []).length
+    ? (input.genres ?? []).join(", ")
+    : "none";
   const candidateJson = JSON.stringify(
     candidates.map((c) => ({
       id: c.id,

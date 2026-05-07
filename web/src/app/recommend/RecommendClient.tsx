@@ -36,9 +36,7 @@ export function RecommendClient() {
   }, [searchParams]);
   const prefilledVibes = useMemo(() => inferVibesFromGenres(prefilledGenres), [prefilledGenres]);
 
-  const [vibes, setVibes] = useState<string[]>(
-    prefilledVibes.length > 0 ? prefilledVibes : ["comforting"],
-  );
+  const [vibes, setVibes] = useState<string[]>(prefilledVibes);
   const [genres, setGenres] = useState<number[]>(prefilledGenres);
   const [runtimeMin, setRuntimeMin] = useState("");
   const [runtimeMax, setRuntimeMax] = useState("");
@@ -52,13 +50,12 @@ export function RecommendClient() {
   const [watchRegion, setWatchRegion] = useState("US");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [genrePanelOpen, setGenrePanelOpen] = useState(false);
+  const [genrePanelOpen, setGenrePanelOpen] = useState(prefilledGenres.length === 0);
   const [genreSearch, setGenreSearch] = useState("");
 
   function toggleVibe(value: string) {
     setVibes((prev) => {
       if (prev.includes(value)) {
-        if (prev.length <= 1) return prev;
         return prev.filter((x) => x !== value);
       }
       if (prev.length >= 8) return prev;
@@ -78,6 +75,10 @@ export function RecommendClient() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (genres.length === 0 && vibes.length === 0) {
+      setError("Pick at least one genre or one vibe.");
+      return;
+    }
     setLoading(true);
     setError(null);
     const body: RecommendationInput = {
@@ -151,34 +152,12 @@ export function RecommendClient() {
       </header>
 
       <section className="reveal space-y-3" style={{ animationDelay: "0.05s" }}>
-            <p className="text-sm font-medium text-primary">Vibe</p>
-        <p className="text-xs leading-relaxed text-tertiary">
-          Pick a mood. We&apos;ll find films that match it. Keep at least one selected.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {VIBE_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => toggleVibe(value)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                vibes.includes(value)
-                  ? "accent-selected"
-                  : "border-[var(--surface-border)] text-secondary hover:text-primary"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="reveal space-y-3" style={{ animationDelay: "0.12s" }}>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-primary">Genres (optional)</p>
+            <p className="text-sm font-medium text-primary">Genres</p>
             <p className="text-xs leading-relaxed text-tertiary">
-              Optional — overrides vibe if selected. Leave blank to let vibes decide.
+              Start here — pick the kinds of films you want. Add a vibe below to narrow the
+              feel, or leave vibe blank.
             </p>
           </div>
           {genres.length > 0 && (
@@ -243,6 +222,29 @@ export function RecommendClient() {
             </div>
           </div>
         ) : null}
+      </section>
+
+      <section className="reveal space-y-3" style={{ animationDelay: "0.12s" }}>
+        <p className="text-sm font-medium text-primary">Vibe (optional)</p>
+        <p className="text-xs leading-relaxed text-tertiary">
+          Optional mood on top of your genres. If you only picked genres, you can skip this.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {VIBE_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => toggleVibe(value)}
+              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                vibes.includes(value)
+                  ? "accent-selected"
+                  : "border-[var(--surface-border)] text-secondary hover:text-primary"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section
@@ -397,7 +399,6 @@ function inferVibesFromGenres(genreIds: number[]) {
   if (set.has(14) || set.has(878) || set.has(9648)) vibes.add("weird");
   if (set.has(12) || set.has(28)) vibes.add("adventurous");
   if (set.has(10751)) vibes.add("comforting");
-  if (vibes.size === 0) vibes.add("comforting");
   return [...vibes].slice(0, 3);
 }
 
