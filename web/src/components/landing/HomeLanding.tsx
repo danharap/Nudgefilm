@@ -3,7 +3,7 @@ import { listFeedback } from "@/features/feedback/service";
 import { createClient } from "@/lib/supabase/server";
 import { discoverMovies, discoverTV, getTrendingMovies } from "@/lib/tmdb/client";
 
-const landingVibes = ["Cozy", "Funny", "Emotional", "Intense", "Weird", "Hidden Gem", "Late Night"] as const;
+const landingVibes = ["Cozy", "Funny", "Emotional", "Intense", "Adventurous", "Romantic", "Late Night"] as const;
 type LandingVibe = (typeof landingVibes)[number];
 type LandingSuggestion = {
   id: number;
@@ -51,23 +51,21 @@ function paramsForVibe(vibe: LandingVibe) {
       movie.set("with_genres", "18,10749");
       tv.set("with_genres", "18,10749");
       break;
-    case "Weird":
-      movie.set("with_genres", "14,878,9648");
-      tv.set("with_genres", "10765,9648,16");
+    case "Adventurous":
+      movie.set("with_genres", "12,28,14");
+      tv.set("with_genres", "10759,10765,16");
+      movie.set("vote_average.gte", "6.8");
+      tv.set("vote_average.gte", "6.9");
       break;
     case "Late Night":
       movie.set("with_genres", "53,27");
       tv.set("with_genres", "9648,80,53");
       break;
-    case "Hidden Gem":
-      movie.set("sort_by", "vote_average.desc");
-      movie.set("vote_count.gte", "300");
-      movie.set("vote_count.lte", "7000");
-      movie.set("with_genres", "18,80,36,9648");
-      tv.set("sort_by", "vote_average.desc");
-      tv.set("vote_count.gte", "200");
-      tv.set("vote_count.lte", "4500");
-      tv.set("with_genres", "18,80,9648");
+    case "Romantic":
+      movie.set("with_genres", "10749,35,18");
+      tv.set("with_genres", "10749,35,18");
+      movie.set("vote_average.gte", "7.0");
+      tv.set("vote_average.gte", "7.0");
       break;
   }
   return { movie, tv };

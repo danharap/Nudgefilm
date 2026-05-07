@@ -49,7 +49,7 @@ const heroHeadlines = [
   "Tell us the vibe. We do the rest.",
 ];
 
-const vibeOptions = ["Cozy", "Funny", "Emotional", "Intense", "Weird", "Hidden Gem", "Late Night"] as const;
+const vibeOptions = ["Cozy", "Funny", "Emotional", "Intense", "Adventurous", "Romantic", "Late Night"] as const;
 type LandingVibe = (typeof vibeOptions)[number];
 
 const container = {
