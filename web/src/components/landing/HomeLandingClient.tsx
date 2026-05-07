@@ -199,7 +199,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           </div>
         </div>
 
-        <div className="relative mt-6 h-[66vh] sm:h-[74vh]">
+        <div className="relative mt-6">
           <motion.div
             style={
               reduceMotionBg
@@ -210,7 +210,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     opacity: cardOpacity,
                   }
             }
-            className="surface-card sticky top-10 mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:top-14 sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
+            className="surface-card mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
           >
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.3fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
               {/* Left: vibe + filters */}
