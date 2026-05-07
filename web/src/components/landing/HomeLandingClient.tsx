@@ -106,6 +106,18 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     () => suggestionsByVibe["Late Night"] ?? [],
     [suggestionsByVibe],
   );
+  const demoShortlist = useMemo(
+    () => (horrorShowcase.length ? horrorShowcase.slice(0, 4) : showcased.slice(0, 4)),
+    [horrorShowcase, showcased],
+  );
+  const [selectedDemoMovieId, setSelectedDemoMovieId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setSelectedDemoMovieId(demoShortlist[0]?.id ?? null);
+  }, [demoShortlist]);
+
+  const selectedDemoMovie =
+    demoShortlist.find((movie) => movie.id === selectedDemoMovieId) ?? demoShortlist[0] ?? null;
 
   const scrollSectionRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll({
@@ -212,57 +224,88 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
             }
             className="surface-card mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
           >
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.3fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.58fr)]">
               {/* Left: vibe + filters */}
-              <div className="space-y-4 border-b border-[var(--surface-border)] pb-4 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-indigo-500/80">
+              <div className="space-y-3 border-b border-[var(--surface-border)] pb-4 lg:border-b-0 lg:border-r lg:pb-0 lg:pr-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-indigo-500/85">
                   Tonight&apos;s setup
                 </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {["Horror", "Late Night", "Intense"].map((label) => (
-                    <span
-                      key={label}
-                      className="accent-selected inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
-                      {label}
-                    </span>
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-secondary">Genres</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {["Horror", "Thriller", "Mystery"].map((label) => (
-                      <span key={label} className="chip rounded-full px-3 py-1 text-xs">
+                <motion.div
+                  initial={reduceMotionBg ? false : { opacity: 0, y: 8 }}
+                  whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.35 }}
+                  transition={{ duration: 0.3, delay: 0.02 }}
+                  className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5"
+                >
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
+                    Mood
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {["Horror", "Late Night", "Intense", "Weird"].map((label, idx) => (
+                      <motion.span
+                        key={label}
+                        initial={reduceMotionBg ? false : { opacity: 0, y: 6 }}
+                        whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.24, delay: 0.08 + idx * 0.05 }}
+                        className="accent-selected inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]"
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
                         {label}
-                      </span>
+                      </motion.span>
                     ))}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-secondary">Filters</p>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-tertiary">
-                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
-                      Min rating: <span className="font-semibold text-secondary">7.0+</span>
-                    </div>
-                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
-                      Runtime: <span className="font-semibold text-secondary">95-130m</span>
-                    </div>
-                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
-                      Era: <span className="font-semibold text-secondary">1998-2024</span>
-                    </div>
-                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
-                      Language: <span className="font-semibold text-secondary">EN</span>
+                  <p className="mt-2 text-[11px] leading-relaxed text-tertiary">
+                    Dread-heavy picks with sharp tension, minimal comedy breaks, and a focused
+                    late-night tone.
+                  </p>
+                </motion.div>
+
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                  <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
+                      Recommendation mode
+                    </p>
+                    <p className="mt-1 text-xs text-secondary">Strict TMDb match · low-noise curation</p>
+                    <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] text-tertiary">
+                      <div className="rounded-md border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-1.5">
+                        Streaming: <span className="font-medium text-secondary">Netflix/Hulu</span>
+                      </div>
+                      <div className="rounded-md border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-1.5">
+                        Runtime: <span className="font-medium text-secondary">95-130m</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
+                      Selection guardrails
+                    </p>
+                    <ul className="mt-2 space-y-1 text-[11px] text-tertiary">
+                      <li>• Avoid already watched: <span className="font-medium text-secondary">Enabled</span></li>
+                      <li>• Friend taste included: <span className="font-medium text-secondary">3 friends</span></li>
+                      <li>• Min rating floor: <span className="font-medium text-secondary">7.0+</span></li>
+                    </ul>
+                  </div>
                 </div>
-                <div className="space-y-2 pt-2">
-                  <p className="text-xs font-medium text-secondary">Guardrails</p>
-                  <ul className="space-y-1 text-[11px] text-tertiary">
-                    <li>• No algorithmic noise or infinite carousels</li>
-                    <li>• Filters for runtime, era, streaming availability</li>
-                    <li>• Strict genre + vibe matching from TMDb</li>
-                  </ul>
+
+                <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
+                    Flow
+                  </p>
+                  <div className="mt-2 grid gap-1 text-[11px] text-tertiary">
+                    {["1. Pick vibe", "2. Add filters", "3. Get shortlist", "4. Save or rate"].map((step, idx) => (
+                      <div
+                        key={step}
+                        className={`rounded-md border px-2 py-1.5 ${
+                          idx < 3
+                            ? "border-indigo-500/30 bg-indigo-500/10 text-indigo-100"
+                            : "border-[var(--surface-border)] bg-[var(--surface-1)]"
+                        }`}
+                      >
+                        {step}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -284,29 +327,35 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       6 matches
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                    {(horrorShowcase.length ? horrorShowcase.slice(0, 3) : showcased.slice(0, 3)).map((movie, i) => {
+                  <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+                    {demoShortlist.map((movie, i) => {
                       const image = posterUrl(movie.poster_path, "w342");
                       const href =
                         movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
+                      const isSelected = selectedDemoMovie?.id === movie.id;
                       return (
                         <motion.div
                           key={`${movie.id}-${i}`}
                           initial={reduceMotionBg ? false : { opacity: 0, y: 16 }}
                           whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
                           viewport={{ once: true, amount: 0.4 }}
-                          transition={{ duration: 0.4, delay: i * 0.05 }}
-                          className="group overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
+                          transition={{ duration: 0.38, delay: 0.16 + i * 0.08 }}
+                          className={`group overflow-hidden rounded-xl border bg-[var(--surface-1)] transition ${
+                            isSelected
+                              ? "border-indigo-400/65 shadow-[0_0_26px_rgba(99,102,241,0.42)]"
+                              : "border-[var(--surface-border)] hover:border-indigo-400/35"
+                          }`}
+                          onHoverStart={() => setSelectedDemoMovieId(movie.id)}
                         >
-                          <Link href={href} className="block">
+                          <Link href={href} className="block" onFocus={() => setSelectedDemoMovieId(movie.id)}>
                             <div className="relative aspect-[2/3] overflow-hidden">
                               {image ? (
                                 <Image
                                   src={image}
                                   alt={movie.title}
                                   fill
-                                  className="object-cover transition duration-500 group-hover:scale-[1.04]"
-                                  sizes="(max-width:640px) 30vw, 160px"
+                                  className="object-cover transition duration-500 group-hover:scale-[1.05]"
+                                  sizes="(max-width:640px) 42vw, (max-width:1024px) 25vw, 220px"
                                 />
                               ) : (
                                 <div className="skeleton h-full w-full" />
@@ -317,7 +366,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                                   {movie.title}
                                 </p>
                                 <p className="mt-0.5 text-[10px] text-zinc-300/90">
-                                  ★ {movie.vote_average?.toFixed(1) ?? "—"} · Min 7.0 matched · Friends 4.3
+                                  ★ {movie.vote_average?.toFixed(1) ?? "—"} · Runtime fit · Friends 4.3
                                 </p>
                               </div>
                             </div>
@@ -325,8 +374,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                         </motion.div>
                       );
                     })}
-                    {showcased.length === 0 &&
-                      [1, 2, 3].map((i) => (
+                    {demoShortlist.length === 0 &&
+                      [1, 2, 3, 4].map((i) => (
                         <div
                           key={i}
                           className="skeleton overflow-hidden rounded-xl border border-[var(--surface-border)]"
@@ -336,7 +385,13 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-                  <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
+                  <motion.div
+                    initial={reduceMotionBg ? false : { opacity: 0, y: 10 }}
+                    whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.4 }}
+                    transition={{ duration: 0.34, delay: 0.5 }}
+                    className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4"
+                  >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
                       Why this fits
                     </p>
@@ -350,12 +405,15 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                         vote counts and low-noise picks.
                       </li>
                       <li>
-                        • Logged by <span className="font-medium text-secondary">3 friends</span> in
-                        the last month.
+                        • Logged by <span className="font-medium text-secondary">3 friends</span>,
+                        and weighted to your shared taste.
                       </li>
-                      <li>• Runtime kept near 2 hours for a focused horror night.</li>
+                      <li>
+                        • <span className="font-medium text-secondary">{selectedDemoMovie?.title ?? "Top pick"}</span>{" "}
+                        is highlighted for strongest vibe fit and watch momentum.
+                      </li>
                     </ul>
-                  </div>
+                  </motion.div>
                   <div className="relative space-y-3">
                     <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -387,8 +445,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       initial={reduceMotionBg ? false : { opacity: 0, y: 12 }}
                       whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.4 }}
-                      transition={{ duration: 0.45, delay: 0.15 }}
-                      className="pointer-events-none absolute -bottom-2 right-1 w-[min(240px,70vw)] rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
+                      transition={{ duration: 0.45, delay: 0.72 }}
+                      className="pointer-events-none relative ml-auto w-[min(260px,88vw)] rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
                     >
                       <div className="flex items-start gap-2">
                         <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/90 text-[10px] font-bold text-black">
