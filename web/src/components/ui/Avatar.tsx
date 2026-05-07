@@ -21,7 +21,15 @@ export function Avatar({ url, name, size = 40, className = "" }: Props) {
         className={`relative shrink-0 overflow-hidden rounded-full bg-zinc-800 ${className}`}
         style={{ width: size, height: size }}
       >
-        <Image src={url} alt={name} fill className="object-cover" sizes={`${size}px`} />
+        <Image
+          src={url}
+          alt={name}
+          fill
+          className="object-cover"
+          sizes={`${size}px`}
+          // Third-party avatar hosts (Google, etc.) can reject optimizer fetches.
+          unoptimized
+        />
       </div>
     );
   }

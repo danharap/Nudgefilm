@@ -145,6 +145,12 @@ export default async function PublicProfilePage({
       })
     : [];
 
+  const rated = watched.filter((w) => w.user_rating != null);
+  const avgRating =
+    rated.length > 0
+      ? rated.reduce((sum, w) => sum + (w.user_rating ?? 0), 0) / rated.length
+      : null;
+
   const profileLists = (listsRows as ListRaw[] ?? []).map((l) => ({
     id: l.id,
     name: l.name,
@@ -176,6 +182,14 @@ export default async function PublicProfilePage({
       ) : null}
 
       <div className="relative z-10 mx-auto w-full max-w-4xl">
+      <div className="px-4 pt-4 sm:px-6 sm:pt-8">
+        <Link
+          href="/friends"
+          className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:border-white/25 hover:text-white"
+        >
+          ← Back to Social
+        </Link>
+      </div>
       {bannerUrl ? (
         <div className="relative mb-5 aspect-[8/3] w-full overflow-hidden bg-zinc-900 sm:mx-6 sm:mb-8 sm:mt-12 sm:rounded-2xl sm:border sm:border-white/[0.08] sm:shadow-lg sm:shadow-black/40">
           <Image
@@ -243,10 +257,11 @@ export default async function PublicProfilePage({
 
       {/* ── Stats ── */}
       {(watched.length > 0 || profileLists.length > 0) && (
-        <div className="mb-10 grid grid-cols-2 gap-3">
+        <div className="mb-10 grid grid-cols-3 gap-3">
           {[
             { label: "Films", value: watched.length },
             { label: "Lists", value: profileLists.length },
+            { label: "Avg Rating", value: avgRating != null ? avgRating.toFixed(1) : "—" },
           ].map(({ label, value }) => (
             <div key={label} className="rounded-2xl border border-white/10 bg-zinc-900/40 px-4 py-5 text-center">
               <p className="text-2xl font-bold text-white">{value}</p>
