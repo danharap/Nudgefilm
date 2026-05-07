@@ -10,6 +10,16 @@
   --ring: rgba(116, 128, 255, 0.44);
 }
 
+html[data-theme="light"] {
+  --background: #f5f7ff;
+  --foreground: #111827;
+  --muted: #4b5563;
+  --card: rgba(255, 255, 255, 0.88);
+  --accent: #4f46e5;
+  --accent-dim: rgba(79, 70, 229, 0.12);
+  --ring: rgba(79, 70, 229, 0.35);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -49,6 +59,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   min-height: 100vh;
+}
+
+html[data-theme="light"] body {
+  background: radial-gradient(
+      ellipse 120% 85% at 50% -25%,
+      rgba(99, 102, 241, 0.18),
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 100% 0%,
+      rgba(56, 189, 248, 0.18),
+      transparent 55%
+    ),
+    var(--background);
 }
 
 ::selection {
