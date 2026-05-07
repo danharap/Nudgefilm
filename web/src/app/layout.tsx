@@ -84,12 +84,12 @@ export default function RootLayout({
         <main className="flex-1 pb-20 md:pb-0">{children}</main>
         <Toaster
           position="top-right"
-          theme="dark"
+          richColors
           toastOptions={{
             style: {
-              background: "rgba(10, 14, 26, 0.88)",
-              border: "1px solid rgba(148,163,255,0.2)",
-              color: "#f1f1f3",
+              background: "var(--surface-1)",
+              border: "1px solid var(--surface-border)",
+              color: "var(--text-primary)",
               backdropFilter: "blur(20px)",
               borderRadius: "14px",
               fontSize: "13px",
@@ -98,11 +98,11 @@ export default function RootLayout({
             className: "shadow-2xl shadow-indigo-950/50",
           }}
         />
-        <footer className="border-t border-white/[0.06] py-8 text-center text-xs text-zinc-600">
+        <footer className="border-t border-[var(--surface-border)] py-8 text-center text-xs text-tertiary">
           Data provided by{" "}
           <a
             href="https://www.themoviedb.org/"
-            className="text-zinc-400 underline-offset-2 hover:text-zinc-300 hover:underline"
+            className="text-secondary underline-offset-2 hover:text-primary hover:underline"
           >
             TMDb
           </a>

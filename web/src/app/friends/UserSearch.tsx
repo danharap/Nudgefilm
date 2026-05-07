@@ -61,10 +61,10 @@ export function UserSearch() {
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search by username…"
         autoComplete="off"
-        className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-400/25"
+        className="input-premium w-full rounded-2xl px-4 py-3 text-sm"
       />
       {error ? <p className="text-xs text-red-300/80">{error}</p> : null}
-      {loading ? <p className="text-xs text-zinc-500">Searching…</p> : null}
+      {loading ? <p className="text-xs text-tertiary">Searching…</p> : null}
       {results.length > 0 ? (
         <ul className="space-y-2">
           {results.map((u) => {
@@ -72,7 +72,7 @@ export function UserSearch() {
             return (
               <li
                 key={u.id}
-                className="flex items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/40 p-3"
+                className="surface-card-subtle flex items-center gap-3 rounded-xl p-3"
               >
                 <Link href={`/user/${u.username ?? u.id}`}>
                   <Avatar url={u.avatar_url} name={name} size={40} />
@@ -80,15 +80,15 @@ export function UserSearch() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={`/user/${u.username ?? u.id}`}
-                    className="block truncate text-sm font-medium text-white hover:text-indigo-200"
+                    className="block truncate text-sm font-medium text-primary hover:text-indigo-500"
                   >
                     {name}
                   </Link>
                   {u.username ? (
-                    <p className="text-xs text-zinc-500">@{u.username}</p>
+                    <p className="text-xs text-tertiary">@{u.username}</p>
                   ) : null}
                   {u.bio ? (
-                    <p className="line-clamp-1 text-xs text-zinc-500">{u.bio}</p>
+                    <p className="line-clamp-1 text-xs text-tertiary">{u.bio}</p>
                   ) : null}
                 </div>
                 <FollowButton targetId={u.id} initialFollowing={u.followStatus === "following"} />
@@ -97,7 +97,7 @@ export function UserSearch() {
           })}
         </ul>
       ) : debounced.length >= 2 && !loading ? (
-        <p className="text-xs text-zinc-500">No users found.</p>
+        <p className="text-xs text-tertiary">No users found.</p>
       ) : null}
     </div>
   );

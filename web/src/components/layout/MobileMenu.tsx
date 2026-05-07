@@ -81,16 +81,16 @@ export function MobileMenu({
         role="dialog"
         aria-modal="true"
         aria-label="Navigation menu"
-        className={`fixed inset-y-0 right-0 z-[9999] flex w-[min(80vw,300px)] flex-col border-l border-white/[0.08] shadow-2xl transition-transform duration-300 ease-out md:hidden ${
+        className={`fixed inset-y-0 right-0 z-[9999] flex w-[min(80vw,300px)] flex-col border-l border-[var(--surface-border)] shadow-2xl transition-transform duration-300 ease-out md:hidden ${
           open ? "translate-x-0" : "translate-x-full"
         }`}
-        style={{ backgroundColor: "#09090b" }}
+        style={{ backgroundColor: "var(--surface-1)" }}
       >
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--surface-border)] px-5 py-4">
           <Link
             href="/"
-            className="text-sm font-semibold text-indigo-300"
+            className="text-sm font-semibold text-indigo-500"
             onClick={() => setOpen(false)}
           >
             Nudge Film
@@ -98,7 +98,7 @@ export function MobileMenu({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 transition hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-tertiary transition hover:text-primary"
             aria-label="Close menu"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -114,7 +114,7 @@ export function MobileMenu({
               <Link
                 href={mobileInboxLink.href}
                 onClick={() => setOpen(false)}
-                className="mb-1 flex items-center justify-between rounded-xl bg-indigo-500/10 px-4 py-3 text-[15px] font-medium text-indigo-200 transition hover:bg-indigo-500/20"
+                className="mb-1 flex items-center justify-between rounded-xl bg-indigo-500/12 px-4 py-3 text-[15px] font-medium text-indigo-500 transition hover:bg-indigo-500/20"
               >
                 <span>{mobileInboxLink.label}</span>
                 {mobileInboxLink.count > 0 ? (
@@ -131,8 +131,8 @@ export function MobileMenu({
                 onClick={() => setOpen(false)}
                 className={`flex items-center rounded-xl px-4 py-3.5 text-[15px] font-medium transition ${
                   pathname === l.href
-                    ? "bg-indigo-500/15 text-indigo-300"
-                    : "text-zinc-200 hover:bg-white/[0.06] hover:text-white"
+                    ? "bg-indigo-500/15 text-indigo-500"
+                    : "text-secondary hover:bg-[var(--surface-2)] hover:text-primary"
                 }`}
               >
                 {l.label}
@@ -142,11 +142,11 @@ export function MobileMenu({
 
           {isAdmin && (
             <>
-              <div className="my-3 h-px bg-white/[0.08]" />
+              <div className="my-3 h-px bg-[var(--surface-border)]" />
               <Link
                 href="/admin"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 rounded-xl bg-indigo-500/10 px-4 py-3.5 text-[15px] font-medium text-indigo-300 transition hover:bg-indigo-500/20"
+                className="flex items-center gap-2.5 rounded-xl bg-indigo-500/10 px-4 py-3.5 text-[15px] font-medium text-indigo-500 transition hover:bg-indigo-500/20"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-500/20">
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-300" aria-hidden>
@@ -161,13 +161,13 @@ export function MobileMenu({
         </nav>
 
         {/* Footer — profile / auth */}
-        <div className="shrink-0 border-t border-white/[0.08] p-4">
+        <div className="shrink-0 border-t border-[var(--surface-border)] p-4">
           {user ? (
             <div className="space-y-2">
               <Link
                 href="/profile"
                 onClick={() => setOpen(false)}
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-white/[0.04]"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--surface-2)]"
               >
                 <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/10">
                   {avatarUrl ? (
@@ -186,21 +186,21 @@ export function MobileMenu({
                   )}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-white">{displayName}</p>
-                  <p className="text-xs text-zinc-500">View profile →</p>
+                  <p className="truncate text-sm font-medium text-primary">{displayName}</p>
+                  <p className="text-xs text-tertiary">View profile →</p>
                 </div>
               </Link>
               <Link
                 href="/settings"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl border border-white/10 py-2.5 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white"
+                className="flex w-full items-center justify-center rounded-xl border border-[var(--surface-border)] py-2.5 text-sm text-secondary transition hover:text-primary"
               >
                 Settings
               </Link>
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="w-full rounded-xl border border-white/10 py-2.5 text-sm text-zinc-400 transition hover:border-white/20 hover:text-white"
+                  className="w-full rounded-xl border border-[var(--surface-border)] py-2.5 text-sm text-secondary transition hover:text-primary"
                 >
                   Sign out
                 </button>
@@ -211,14 +211,14 @@ export function MobileMenu({
               <Link
                 href="/login"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl border border-white/10 py-2.5 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white"
+                className="flex w-full items-center justify-center rounded-xl border border-[var(--surface-border)] py-2.5 text-sm text-secondary transition hover:text-primary"
               >
                 Log in
               </Link>
               <Link
                 href="/signup"
                 onClick={() => setOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl bg-indigo-500 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400"
+                className="btn-brand flex w-full items-center justify-center rounded-xl py-2.5 text-sm font-semibold"
               >
                 Sign up free
               </Link>
@@ -231,7 +231,7 @@ export function MobileMenu({
 
   const bottomDock = (
     <nav
-      className="fixed inset-x-3 z-[60] rounded-2xl border border-white/15 bg-[#0a0d18]/90 px-2 py-1.5 backdrop-blur-xl md:hidden"
+      className="fixed inset-x-3 z-[60] rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)]/95 px-2 py-1.5 backdrop-blur-xl md:hidden"
       style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
       <ul className="grid grid-cols-5 gap-1">
@@ -242,7 +242,7 @@ export function MobileMenu({
               <Link
                 href={l.href}
                 className={`flex min-h-10 items-center justify-center rounded-xl px-1 text-[11px] font-medium transition ${
-                  active ? "bg-indigo-500/20 text-indigo-100" : "text-zinc-400 hover:text-zinc-100"
+                  active ? "bg-indigo-500/16 text-indigo-500" : "text-secondary hover:text-primary"
                 }`}
               >
                 {l.label}
@@ -259,7 +259,7 @@ export function MobileMenu({
       {/* Hamburger — visible only on mobile */}
       <button
         type="button"
-        className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-zinc-400 transition hover:border-white/20 hover:text-white md:hidden"
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary transition hover:text-primary md:hidden"
         onClick={() => setOpen(true)}
         aria-label="Open menu"
         aria-expanded={open}

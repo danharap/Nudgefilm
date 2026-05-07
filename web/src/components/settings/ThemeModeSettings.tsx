@@ -29,9 +29,9 @@ export function ThemeModeSettings() {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-zinc-900/40 p-5">
-      <h2 className="text-lg font-semibold text-white">Appearance</h2>
-      <p className="mt-1 text-sm text-zinc-400">
+    <section className="surface-card rounded-2xl p-5">
+      <h2 className="text-lg font-semibold text-primary">Appearance</h2>
+      <p className="mt-1 text-sm text-secondary">
         Dark mode matches your current cinematic style. Light mode gives a brighter look.
       </p>
       <div className="mt-4 flex gap-2">
@@ -40,8 +40,8 @@ export function ThemeModeSettings() {
           onClick={() => update("dark")}
           className={`rounded-full px-4 py-2 text-sm font-medium transition ${
             mode === "dark"
-              ? "bg-indigo-500 text-white"
-              : "border border-white/15 bg-white/[0.04] text-zinc-300 hover:text-white"
+              ? "btn-brand text-white"
+              : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
           }`}
         >
           Dark
@@ -51,8 +51,8 @@ export function ThemeModeSettings() {
           onClick={() => update("light")}
           className={`rounded-full px-4 py-2 text-sm font-medium transition ${
             mode === "light"
-              ? "bg-indigo-500 text-white"
-              : "border border-white/15 bg-white/[0.04] text-zinc-300 hover:text-white"
+              ? "btn-brand text-white"
+              : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
           }`}
         >
           Light

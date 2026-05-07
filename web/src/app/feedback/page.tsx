@@ -50,20 +50,20 @@ export default async function FeedbackPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <header className="mb-10 space-y-2">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
           Community
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white">
+        <h1 className="text-3xl font-semibold tracking-tight text-primary">
           App Reviews
         </h1>
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-secondary">
           What people think of Nudge Film.
           {!user ? (
             <>
               {" "}
               <Link
                 href="/login?redirect=/feedback"
-                className="text-indigo-300/80 underline underline-offset-2 hover:text-indigo-200"
+                className="text-indigo-500 underline underline-offset-2 hover:text-indigo-600"
               >
                 Sign in
               </Link>{" "}
@@ -82,12 +82,12 @@ export default async function FeedbackPage() {
 
       {/* Review list */}
       {reviews.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-16 text-center">
-          <p className="text-zinc-400">No reviews yet — be the first!</p>
+        <div className="surface-card-subtle rounded-2xl border border-dashed px-6 py-16 text-center">
+          <p className="text-secondary">No reviews yet — be the first!</p>
           {!user ? (
             <Link
               href="/login?redirect=/feedback"
-              className="mt-6 inline-block text-sm font-medium text-indigo-300 hover:text-indigo-200"
+              className="mt-6 inline-block text-sm font-medium text-indigo-500 hover:text-indigo-600"
             >
               Sign in to review →
             </Link>
@@ -96,16 +96,16 @@ export default async function FeedbackPage() {
       ) : (
         <ul className="space-y-5">
           {ownReview ? (
-            <li className="space-y-2 rounded-2xl border border-indigo-400/12 bg-zinc-900/40 p-5">
+            <li className="surface-card space-y-2 rounded-2xl p-5">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-primary">
                     {ownReview.reviewer_display_name}{" "}
                     <span className="ml-1.5 rounded-full border border-indigo-400/15 bg-indigo-400/10 px-2 py-0.5 text-xs text-indigo-300/80">
                       You
                     </span>
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-tertiary">
                     {ownReview.updated_at !== ownReview.created_at
                       ? `Updated ${formatDate(ownReview.updated_at)}`
                       : formatDate(ownReview.created_at)}
@@ -113,7 +113,7 @@ export default async function FeedbackPage() {
                 </div>
                 <StarDisplay rating={ownReview.rating} />
               </div>
-              <p className="text-sm leading-relaxed text-zinc-400">
+              <p className="text-sm leading-relaxed text-secondary">
                 {ownReview.body}
               </p>
             </li>
@@ -122,14 +122,14 @@ export default async function FeedbackPage() {
           {othersReviews.map((r) => (
             <li
               key={r.id}
-              className="space-y-2 rounded-2xl border border-white/10 bg-zinc-900/40 p-5"
+              className="surface-card space-y-2 rounded-2xl p-5"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-primary">
                     {r.reviewer_display_name}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-tertiary">
                     {r.updated_at !== r.created_at
                       ? `Updated ${formatDate(r.updated_at)}`
                       : formatDate(r.created_at)}
@@ -137,7 +137,7 @@ export default async function FeedbackPage() {
                 </div>
                 <StarDisplay rating={r.rating} />
               </div>
-              <p className="text-sm leading-relaxed text-zinc-400">{r.body}</p>
+              <p className="text-sm leading-relaxed text-secondary">{r.body}</p>
             </li>
           ))}
         </ul>

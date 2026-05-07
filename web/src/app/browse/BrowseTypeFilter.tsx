@@ -32,7 +32,7 @@ export function BrowseTypeFilter({ current }: { current: ContentType }) {
     <div
       role="group"
       aria-label="Content type filter"
-      className="inline-flex rounded-xl border border-white/[0.08] bg-zinc-900/60 p-1"
+      className="inline-flex rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] p-1"
     >
       {OPTIONS.map((opt) => {
         const active = opt.value === current;
@@ -44,7 +44,7 @@ export function BrowseTypeFilter({ current }: { current: ContentType }) {
             className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all ${
               active
                 ? "bg-indigo-500 text-white shadow-sm"
-                : "text-zinc-400 hover:text-white"
+                : "text-secondary hover:text-primary"
             }`}
             aria-pressed={active}
           >

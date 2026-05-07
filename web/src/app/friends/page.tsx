@@ -33,23 +33,23 @@ export default async function FriendsPage({
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
       <header className="mb-8 space-y-1">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
           Social
         </p>
-        <h1 className="text-3xl font-semibold text-white">Following</h1>
+        <h1 className="text-3xl font-semibold text-primary">Following</h1>
       </header>
 
       <section id="inbox" className="mb-10 scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Notifications</h2>
-          <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-300">
+          <h2 className="text-sm font-semibold text-primary">Notifications</h2>
+          <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-500">
             {followers.length}
           </span>
         </div>
         {followers.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-10 text-center">
-            <p className="text-sm text-zinc-400">No notifications yet.</p>
-            <p className="mt-1 text-xs text-zinc-500">
+          <div className="surface-card-subtle rounded-2xl border border-dashed px-6 py-10 text-center">
+            <p className="text-sm text-secondary">No notifications yet.</p>
+            <p className="mt-1 text-xs text-tertiary">
               New followers will appear here.
             </p>
           </div>
@@ -60,7 +60,7 @@ export default async function FriendsPage({
               return (
                 <li
                   key={p.id}
-                  className="flex items-center gap-3 rounded-xl border border-indigo-400/12 bg-zinc-900/40 p-3"
+                  className="surface-card-subtle flex items-center gap-3 rounded-xl p-3"
                 >
                   <Link href={`/user/${p.username ?? p.id}`}>
                     <Avatar url={p.avatar_url} name={name} size={40} />
@@ -68,11 +68,11 @@ export default async function FriendsPage({
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/user/${p.username ?? p.id}`}
-                      className="block truncate text-sm font-medium text-white hover:text-indigo-200"
+                      className="block truncate text-sm font-medium text-primary hover:text-indigo-500"
                     >
                       {name}
                     </Link>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-tertiary">
                       {p.username ? `@${p.username} ` : ""}followed you
                     </p>
                   </div>
@@ -86,7 +86,7 @@ export default async function FriendsPage({
 
       {/* Search */}
       <section className="mb-10">
-        <h2 className="mb-3 text-sm font-semibold text-white">
+        <h2 className="mb-3 text-sm font-semibold text-primary">
           Find People
         </h2>
         <UserSearch />
@@ -95,17 +95,17 @@ export default async function FriendsPage({
       {/* Following recent activity */}
       <section id="activity" className="mb-10 scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Recent Activity</h2>
-          <span className="text-xs text-zinc-500">
+          <h2 className="text-sm font-semibold text-primary">Recent Activity</h2>
+          <span className="text-xs text-tertiary">
             People you follow
           </span>
         </div>
         {activity.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-10 text-center">
-            <p className="text-sm text-zinc-400">
+          <div className="surface-card-subtle rounded-2xl border border-dashed px-6 py-10 text-center">
+            <p className="text-sm text-secondary">
               No recent activity yet.
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
+            <p className="mt-1 text-xs text-tertiary">
               Once people you follow log movies, you&apos;ll see their latest watches here.
             </p>
           </div>
@@ -130,7 +130,7 @@ export default async function FriendsPage({
                 >
                   <Link
                     href={`/movie/${item.movie.tmdb_id}`}
-                    className="group relative block aspect-[2/3] overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900"
+                    className="group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
                   >
                     {poster ? (
                       <Image
@@ -146,14 +146,14 @@ export default async function FriendsPage({
                       </div>
                     )}
                   </Link>
-                  <div className="mt-2 rounded-lg border border-white/[0.06] bg-zinc-900/50 px-2 py-1.5">
+                  <div className="mt-2 rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
                     <Link
                       href={`/user/${item.user.username ?? item.user.id}`}
-                      className="block truncate text-xs font-medium text-zinc-200 hover:text-indigo-200"
+                      className="block truncate text-xs font-medium text-secondary hover:text-indigo-500"
                     >
                       {name}
                     </Link>
-                    <p className="mt-0.5 text-[11px] text-zinc-500">
+                    <p className="mt-0.5 text-[11px] text-tertiary">
                       {item.user_rating != null ? `${item.user_rating}/10` : "Logged"}
                       {watchedDate ? ` · ${watchedDate}` : ""}
                     </p>
@@ -167,12 +167,12 @@ export default async function FriendsPage({
 
       {/* Following list */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-white">
+        <h2 className="mb-3 text-sm font-semibold text-primary">
           Following ({following.length})
         </h2>
         {following.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-12 text-center">
-            <p className="text-sm text-zinc-400">
+          <div className="surface-card-subtle rounded-2xl border border-dashed px-6 py-12 text-center">
+            <p className="text-sm text-secondary">
               You&apos;re not following anyone yet — search for people above.
             </p>
           </div>
@@ -183,7 +183,7 @@ export default async function FriendsPage({
               return (
                 <li
                   key={f.id}
-                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-zinc-900/40 p-3"
+                  className="surface-card-subtle flex items-center gap-3 rounded-xl p-3"
                 >
                   <Link href={`/user/${f.username ?? f.id}`}>
                     <Avatar url={f.avatar_url} name={name} size={40} />
@@ -191,15 +191,15 @@ export default async function FriendsPage({
                   <div className="min-w-0 flex-1">
                     <Link
                       href={`/user/${f.username ?? f.id}`}
-                      className="block truncate text-sm font-medium text-white hover:text-indigo-200"
+                      className="block truncate text-sm font-medium text-primary hover:text-indigo-500"
                     >
                       {name}
                     </Link>
                     {f.username ? (
-                      <p className="text-xs text-zinc-500">@{f.username}</p>
+                      <p className="text-xs text-tertiary">@{f.username}</p>
                     ) : null}
                     {f.bio ? (
-                      <p className="line-clamp-1 text-xs text-zinc-500">
+                      <p className="line-clamp-1 text-xs text-tertiary">
                         {f.bio}
                       </p>
                     ) : null}

@@ -66,7 +66,7 @@ function Stars({ rating }: { rating: number }) {
   return (
     <span className="flex gap-0.5 text-sm" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
-        <span key={s} className={s <= rating ? "text-indigo-300" : "text-zinc-700"}>★</span>
+        <span key={s} className={s <= rating ? "text-indigo-500" : "text-tertiary"}>★</span>
       ))}
     </span>
   );
@@ -167,11 +167,11 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </motion.div>
       </section>
 
-      <section className="relative border-y border-white/5 bg-[#070a12]/85 py-20">
+      <section className="relative border-y border-[var(--surface-border)] bg-[var(--surface-2)]/80 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300/70">How it works</p>
-            <h2 className="mt-3 text-2xl font-bold text-white sm:text-3xl">Pick the vibe. Get better recommendations.</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">How it works</p>
+            <h2 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">Pick the vibe. Get better recommendations.</h2>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
             {vibeOptions.map((v) => (
@@ -181,8 +181,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 onClick={() => setActiveVibe(v)}
                 className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
                   activeVibe === v
-                    ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-100"
-                    : "border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/25"
+                    ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-500"
+                    : "border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
                 }`}
               >
                 {v}
@@ -200,7 +200,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   initial={{ opacity: 0, y: 18 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35 }}
-                  className="group overflow-hidden rounded-2xl border border-white/10 bg-black/35"
+                  className="group overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
                 >
                   <Link href={href} className="block">
                     <div className="relative aspect-[2/3] overflow-hidden">
@@ -223,44 +223,44 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {(preview.length > 0 || !user) && (
-        <section className="border-t border-white/[0.05] bg-black/10 px-4 py-20 sm:px-6 sm:py-24">
+        <section className="border-t border-[var(--surface-border)] bg-[var(--surface-2)]/50 px-4 py-20 sm:px-6 sm:py-24">
           <div className="mx-auto max-w-5xl">
             <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-300/70">Reviews</p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">What people are saying</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">Reviews</p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary sm:text-3xl">What people are saying</h2>
               </div>
               {avgRating !== null && (
-                <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] px-5 py-3 text-center">
-                  <p className="text-3xl font-bold text-white">{avgRating.toFixed(1)}</p>
+                <div className="surface-card rounded-2xl px-5 py-3 text-center">
+                  <p className="text-3xl font-bold text-primary">{avgRating.toFixed(1)}</p>
                   <Stars rating={Math.round(avgRating)} />
                 </div>
               )}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {preview.map((r) => (
-                <div key={r.id} className="rounded-2xl border border-white/[0.07] bg-zinc-900/50 p-5">
+                <div key={r.id} className="surface-card rounded-2xl p-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-400/10 text-xs font-bold text-indigo-300">
                       {r.reviewer_display_name.slice(0, 1).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-white">{r.reviewer_display_name}</p>
-                      <p className="text-xs text-zinc-600">{formatDate(r.created_at)}</p>
+                      <p className="text-sm font-medium text-primary">{r.reviewer_display_name}</p>
+                      <p className="text-xs text-tertiary">{formatDate(r.created_at)}</p>
                     </div>
                     <Stars rating={r.rating} />
                   </div>
-                  <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-zinc-400">{r.body}</p>
+                  <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-secondary">{r.body}</p>
                 </div>
               ))}
             </div>
             <div className="mt-8 flex justify-center">
               {user ? (
-                <Link href="/feedback" className="rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400">
+                <Link href="/feedback" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
                   {hasReviewed ? "Edit your review" : "Leave a review"}
                 </Link>
               ) : (
-                <Link href="/login?redirect=/feedback" className="rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400">
+                <Link href="/login?redirect=/feedback" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
                   Sign in to leave a review
                 </Link>
               )}
@@ -287,8 +287,8 @@ function MagneticButton({
         href={href}
         className={`inline-flex min-h-12 items-center justify-center rounded-2xl px-7 py-3.5 text-base font-semibold transition ${
           strong
-            ? "bg-indigo-500 text-white shadow-xl shadow-indigo-950/50 hover:bg-indigo-400"
-            : "border border-white/15 bg-white/[0.04] text-zinc-100 backdrop-blur-md hover:border-white/30"
+            ? "btn-brand"
+            : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-primary backdrop-blur-md hover:bg-[var(--surface-1)]"
         }`}
       >
         {children}

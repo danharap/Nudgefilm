@@ -37,30 +37,30 @@ export function SiteHeaderClient(props: Props) {
 
   return (
     <motion.header
-      className="sticky top-0 z-30 border-b border-white/[0.06] backdrop-blur-xl"
+      className="glass-nav sticky top-0 z-30"
       animate={{
-        backgroundColor: elevated ? "rgba(6,8,15,0.92)" : "rgba(8,10,18,0.75)",
-        borderColor: elevated ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
+        backgroundColor: elevated ? "var(--surface-1)" : "var(--surface-2)",
+        borderColor: "var(--surface-border)",
       }}
       transition={{ duration: 0.35 }}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link href="/" className="shrink-0 text-base font-semibold tracking-tight text-white transition hover:opacity-90 sm:text-lg">
-          <span className="text-indigo-300">{APP_NAME}</span>
+        <Link href="/" className="shrink-0 text-base font-semibold tracking-tight text-primary transition hover:opacity-90 sm:text-lg">
+          <span className="text-indigo-500">{APP_NAME}</span>
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex">
           {publicLinks.map((l) => (
-            <Link key={l.href} href={l.href} className={`rounded-lg px-3 py-1.5 text-sm transition ${pathname === l.href ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
+            <Link key={l.href} href={l.href} className={`rounded-lg px-3 py-1.5 text-sm transition ${pathname === l.href ? "bg-[var(--surface-3)] text-primary" : "text-secondary hover:bg-[var(--surface-2)] hover:text-primary"}`}>
               {l.label}
             </Link>
           ))}
           {user && authedLinks.map((l) => (
-            <Link key={l.href} href={l.href} className={`rounded-lg px-3 py-1.5 text-sm transition ${pathname === l.href ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"}`}>
+            <Link key={l.href} href={l.href} className={`rounded-lg px-3 py-1.5 text-sm transition ${pathname === l.href ? "bg-[var(--surface-3)] text-primary" : "text-secondary hover:bg-[var(--surface-2)] hover:text-primary"}`}>
               {l.label}
             </Link>
           ))}
-          {isAdmin && <Link href="/admin" className="ml-1 rounded-lg bg-indigo-500/10 px-3 py-1.5 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/20">Admin</Link>}
+          {isAdmin && <Link href="/admin" className="ml-1 rounded-lg bg-indigo-500/10 px-3 py-1.5 text-sm font-medium text-indigo-500 transition hover:bg-indigo-500/20">Admin</Link>}
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
@@ -69,7 +69,7 @@ export function SiteHeaderClient(props: Props) {
               <Link
                 href="/friends"
                 onClick={() => setNotificationsCleared(true)}
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] text-zinc-300 transition hover:border-white/20 hover:text-white"
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary transition hover:text-primary"
                 aria-label={`Notifications${effectiveNotificationCount > 0 ? ` (${effectiveNotificationCount})` : ""}`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -84,7 +84,7 @@ export function SiteHeaderClient(props: Props) {
               </Link>
               <Link
                 href="/settings"
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] text-zinc-300 transition hover:border-white/20 hover:text-white"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary transition hover:text-primary"
                 aria-label="Settings"
                 title="Settings"
               >
@@ -93,8 +93,8 @@ export function SiteHeaderClient(props: Props) {
                   <circle cx="12" cy="12" r="3.2" stroke="currentColor" strokeWidth="1.4" />
                 </svg>
               </Link>
-              <Link href="/profile" className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-white/[0.04]">
-                <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-zinc-800 ring-1 ring-white/10">
+              <Link href="/profile" className="flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition hover:bg-[var(--surface-2)]">
+                <div className="relative h-7 w-7 shrink-0 overflow-hidden rounded-full bg-zinc-800 ring-1 ring-[var(--surface-border)]">
                   {avatarUrl ? (
                     <Image src={avatarUrl} alt={displayName ?? ""} fill className="object-cover" sizes="28px" unoptimized />
                   ) : (
@@ -103,18 +103,18 @@ export function SiteHeaderClient(props: Props) {
                     </span>
                   )}
                 </div>
-                <span className="max-w-[120px] truncate text-sm font-medium text-zinc-200">{displayName}</span>
+                <span className="max-w-[120px] truncate text-sm font-medium text-primary">{displayName}</span>
               </Link>
               <form action={signOut}>
-                <button type="submit" className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-sm text-zinc-400 transition hover:border-white/20 hover:text-white">
+                <button type="submit" className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-sm text-secondary transition hover:text-primary">
                   Sign out
                 </button>
               </form>
             </>
           ) : (
             <>
-              <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm text-zinc-400 transition hover:text-white">Log in</Link>
-              <Link href="/signup" className="rounded-lg bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-400">Sign up</Link>
+              <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm text-secondary transition hover:text-primary">Log in</Link>
+              <Link href="/signup" className="btn-brand rounded-lg px-3 py-1.5 text-sm font-medium">Sign up</Link>
             </>
           )}
         </div>

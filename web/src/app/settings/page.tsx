@@ -13,10 +13,10 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <header className="mb-8">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
           Account
         </p>
-        <h1 className="mt-2 text-3xl font-semibold text-white">Settings</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-primary">Settings</h1>
       </header>
       <ThemeModeSettings />
     </div>

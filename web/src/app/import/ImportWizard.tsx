@@ -108,9 +108,9 @@ export function ImportWizard() {
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
       {/* Resume banner */}
       {resumeBanner && (
-        <div className="sticky top-0 z-10 border-b border-indigo-400/15 bg-indigo-500/10 px-4 py-3">
+        <div className="sticky top-0 z-10 border-b border-indigo-400/20 bg-indigo-500/10 px-4 py-3 backdrop-blur-sm">
           <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
-            <p className="text-sm text-indigo-300">
+            <p className="text-sm text-indigo-500">
               You have an unfinished import. Want to pick up where you left off?
             </p>
             <div className="flex shrink-0 gap-2">
@@ -122,7 +122,7 @@ export function ImportWizard() {
               </button>
               <button
                 onClick={handleDismissResume}
-                className="rounded-full px-3 py-1 text-xs text-zinc-500 hover:text-zinc-300 transition"
+                className="rounded-full px-3 py-1 text-xs text-tertiary hover:text-primary transition"
               >
                 Dismiss
               </button>
@@ -133,7 +133,7 @@ export function ImportWizard() {
 
       {/* Step breadcrumbs */}
       {step !== "welcome" && (
-        <div className="border-b border-white/5 bg-black/20 px-4 py-3">
+        <div className="border-b border-[var(--surface-border)] bg-[var(--surface-2)] px-4 py-3">
           <div className="mx-auto flex max-w-xl items-center justify-center gap-0">
             {STEPS.map((s, i) => {
               const done = i < crumbIndex;
@@ -145,8 +145,8 @@ export function ImportWizard() {
                       active
                         ? "bg-indigo-400/15 text-indigo-400"
                         : done
-                          ? "text-zinc-500"
-                          : "text-zinc-700"
+                          ? "text-secondary"
+                          : "text-tertiary"
                     }`}
                   >
                     <span
@@ -154,8 +154,8 @@ export function ImportWizard() {
                         active
                           ? "bg-indigo-400 text-zinc-900"
                           : done
-                            ? "bg-zinc-700 text-zinc-400"
-                            : "bg-zinc-800 text-zinc-600"
+                            ? "bg-zinc-600 text-zinc-200"
+                            : "bg-zinc-500 text-zinc-200"
                       }`}
                     >
                       {done ? "✓" : i + 1}
@@ -164,7 +164,7 @@ export function ImportWizard() {
                   </div>
                   {i < STEPS.length - 1 && (
                     <div
-                      className={`mx-1 h-px w-6 ${i < crumbIndex ? "bg-zinc-600" : "bg-zinc-800"}`}
+                      className={`mx-1 h-px w-6 ${i < crumbIndex ? "bg-zinc-500" : "bg-zinc-400"}`}
                     />
                   )}
                 </div>
@@ -232,15 +232,15 @@ function ParsedPreview({ parsed }: { parsed: ParsedImport }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="mx-auto mb-8 w-full max-w-xl rounded-xl bg-white/5 p-4">
-      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-600">
+    <div className="surface-card-subtle mx-auto mb-8 w-full max-w-xl rounded-xl p-4">
+      <p className="mb-3 text-xs font-medium uppercase tracking-wider text-tertiary">
         Found in your export
       </p>
       <div className="flex flex-wrap gap-4">
         {items.map((item) => (
           <div key={item.label} className="text-center">
-            <div className="text-lg font-bold text-white">{item.value.toLocaleString()}</div>
-            <div className="text-xs text-zinc-500">{item.label}</div>
+            <div className="text-lg font-bold text-primary">{item.value.toLocaleString()}</div>
+            <div className="text-xs text-tertiary">{item.label}</div>
           </div>
         ))}
       </div>

@@ -41,21 +41,21 @@ export default async function WatchlistPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
       <header className="mb-10 space-y-2">
-        <h1 className="text-3xl font-semibold text-white">Watchlist</h1>
-        <p className="text-sm text-zinc-400">
+        <h1 className="text-3xl font-semibold text-primary">Watchlist</h1>
+        <p className="text-sm text-secondary">
           Films you&apos;re keeping on deck.{" "}
           {!user ? "Sign in to sync this list across devices." : null}
         </p>
         <div className="flex flex-wrap gap-2 pt-2">
           <Link
             href="/browse"
-            className="rounded-full border border-white/12 bg-white/[0.03] px-4 py-2 text-xs font-medium text-zinc-200 transition hover:border-white/25 hover:text-white"
+            className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-2)] px-4 py-2 text-xs font-medium text-secondary transition hover:text-primary"
           >
             Browse titles
           </Link>
           <Link
             href="/recommend"
-            className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-medium text-indigo-200 transition hover:border-indigo-300/40 hover:text-indigo-100"
+            className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-medium text-indigo-500 transition hover:border-indigo-300/40"
           >
             Find by vibe
           </Link>
@@ -63,18 +63,18 @@ export default async function WatchlistPage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-16 text-center">
-          <p className="text-zinc-400">Nothing saved yet.</p>
+        <div className="surface-card-subtle rounded-2xl border border-dashed px-6 py-16 text-center">
+          <p className="text-secondary">Nothing saved yet.</p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             <Link
               href="/browse"
-              className="rounded-full border border-white/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-white/25 hover:text-white"
+              className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-2)] px-4 py-2 text-sm font-medium text-secondary transition hover:text-primary"
             >
               Browse and add
             </Link>
             <Link
               href="/recommend"
-              className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-200 transition hover:border-indigo-300/40 hover:text-indigo-100"
+              className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-500 transition hover:border-indigo-300/40"
             >
               Find by vibe
             </Link>
@@ -88,7 +88,7 @@ export default async function WatchlistPage() {
             return (
               <li
                 key={rowId}
-                className="flex gap-4 rounded-2xl border border-white/10 bg-zinc-900/40 p-4"
+                className="surface-card premium-card flex gap-4 rounded-2xl p-4"
               >
                 <Link
                   href={href}
@@ -107,15 +107,15 @@ export default async function WatchlistPage() {
                 <div className="min-w-0 flex-1">
                   <Link
                     href={href}
-                    className="font-medium text-white hover:text-indigo-200"
+                    className="font-medium text-primary hover:text-indigo-500"
                   >
                     {movie.title}
                   </Link>
                   {movie.release_year ? (
-                    <p className="text-xs text-zinc-500">{movie.release_year}</p>
+                    <p className="text-xs text-tertiary">{movie.release_year}</p>
                   ) : null}
                   {movie.vote_average != null ? (
-                    <p className="text-xs text-indigo-200/80">
+                    <p className="text-xs text-indigo-500/80">
                       ★ {Number(movie.vote_average).toFixed(1)}
                     </p>
                   ) : null}
@@ -123,7 +123,7 @@ export default async function WatchlistPage() {
                     <input type="hidden" name="tmdbId" value={movie.tmdb_id} />
                     <button
                       type="submit"
-                      className="text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
+                      className="text-xs text-tertiary underline-offset-2 hover:text-primary hover:underline"
                     >
                       Remove
                     </button>

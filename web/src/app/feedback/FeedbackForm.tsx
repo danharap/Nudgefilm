@@ -26,9 +26,9 @@ export function FeedbackForm({ existing, compact = false }: Props) {
 
   if (!editing && existing) {
     return (
-      <div className={compact ? "space-y-3" : "rounded-2xl border border-white/10 bg-zinc-900/40 p-5 space-y-3"}>
+      <div className={compact ? "space-y-3" : "surface-card space-y-3 rounded-2xl p-5"}>
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-zinc-300">Your review</p>
+          <p className="text-sm font-medium text-primary">Your review</p>
           <div className="flex gap-2">
             <button
               type="button"
@@ -64,7 +64,7 @@ export function FeedbackForm({ existing, compact = false }: Props) {
             </span>
           ))}
         </div>
-        <p className="text-sm leading-relaxed text-zinc-400">{existing.body}</p>
+        <p className="text-sm leading-relaxed text-secondary">{existing.body}</p>
         {error ? (
           <p className="text-xs text-red-300/90" role="alert">
             {error}
@@ -97,15 +97,15 @@ export function FeedbackForm({ existing, compact = false }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className={compact ? "space-y-4" : "rounded-2xl border border-white/10 bg-zinc-900/40 p-5 space-y-4"}
+      className={compact ? "space-y-4" : "surface-card space-y-4 rounded-2xl p-5"}
     >
-      <p className="text-sm font-medium text-zinc-300">
+      <p className="text-sm font-medium text-primary">
         {existing ? "Update your review" : "Leave a review"}
       </p>
 
       {/* Star rating */}
       <div>
-        <p className="mb-2 text-xs text-zinc-500">Rating (required)</p>
+        <p className="mb-2 text-xs text-tertiary">Rating (required)</p>
         <div
           className="flex gap-1"
           role="group"
@@ -120,7 +120,7 @@ export function FeedbackForm({ existing, compact = false }: Props) {
               onClick={() => setRating(s)}
               aria-label={`${s} star${s > 1 ? "s" : ""}`}
               className={`text-2xl transition-colors ${
-                s <= (hovered || rating) ? "text-indigo-400" : "text-zinc-600"
+                s <= (hovered || rating) ? "text-indigo-400" : "text-zinc-500"
               } hover:text-indigo-300`}
             >
               ★
@@ -131,7 +131,7 @@ export function FeedbackForm({ existing, compact = false }: Props) {
 
       {/* Review text */}
       <div className="space-y-1">
-        <label htmlFor="feedback-body" className="text-xs text-zinc-500">
+        <label htmlFor="feedback-body" className="text-xs text-tertiary">
           Review (min 10 characters)
         </label>
         <textarea
@@ -141,9 +141,9 @@ export function FeedbackForm({ existing, compact = false }: Props) {
           onChange={(e) => setBody(e.target.value)}
           placeholder="Share what you think about Nudge Film…"
           maxLength={2000}
-          className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-400/25"
+          className="input-premium w-full resize-none rounded-xl px-4 py-3 text-sm"
         />
-        <p className="text-right text-xs text-zinc-600">{body.length}/2000</p>
+        <p className="text-right text-xs text-tertiary">{body.length}/2000</p>
       </div>
 
       {error ? (
@@ -161,7 +161,7 @@ export function FeedbackForm({ existing, compact = false }: Props) {
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-full bg-indigo-500 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-300 disabled:opacity-60"
+          className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold disabled:opacity-60"
         >
           {isPending ? "Saving…" : existing ? "Update review" : "Submit review"}
         </button>
@@ -174,7 +174,7 @@ export function FeedbackForm({ existing, compact = false }: Props) {
               setBody(existing.body);
               setError(null);
             }}
-            className="rounded-full border border-white/15 px-4 py-2.5 text-sm text-zinc-400 hover:text-zinc-200"
+            className="rounded-full border border-[var(--surface-border)] px-4 py-2.5 text-sm text-secondary hover:text-primary"
           >
             Cancel
           </button>

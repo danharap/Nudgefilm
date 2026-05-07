@@ -130,13 +130,13 @@ export function RecommendClient() {
       className="mx-auto max-w-3xl space-y-10 px-4 py-12 sm:px-6"
     >
       <header className="reveal space-y-2">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
           Step by step
         </p>
-        <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
           What do you want to watch?
         </h1>
-        <p className="max-w-xl text-sm leading-relaxed text-zinc-400">
+        <p className="max-w-xl text-sm leading-relaxed text-secondary">
           A few honest inputs — we&apos;ll hand back a tight shortlist, not an
           endless catalog.
         </p>
@@ -151,8 +151,8 @@ export function RecommendClient() {
       </header>
 
       <section className="reveal space-y-3" style={{ animationDelay: "0.05s" }}>
-        <p className="text-sm font-medium text-zinc-300">Vibe</p>
-        <p className="text-xs leading-relaxed text-zinc-500">
+            <p className="text-sm font-medium text-primary">Vibe</p>
+        <p className="text-xs leading-relaxed text-tertiary">
           Pick a mood. We&apos;ll find films that match it. Keep at least one selected.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -164,7 +164,7 @@ export function RecommendClient() {
               className={`rounded-full border px-3 py-1.5 text-sm transition ${
                 vibes.includes(value)
                   ? "border-indigo-400/40 bg-indigo-400/12 text-indigo-100"
-                  : "border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                  : "border-[var(--surface-border)] text-secondary hover:text-primary"
               }`}
             >
               {label}
@@ -176,8 +176,8 @@ export function RecommendClient() {
       <section className="reveal space-y-3" style={{ animationDelay: "0.12s" }}>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <p className="text-sm font-medium text-zinc-300">Genres (optional)</p>
-            <p className="text-xs leading-relaxed text-zinc-500">
+            <p className="text-sm font-medium text-primary">Genres (optional)</p>
+            <p className="text-xs leading-relaxed text-tertiary">
               Optional — overrides vibe if selected. Leave blank to let vibes decide.
             </p>
           </div>
@@ -185,7 +185,7 @@ export function RecommendClient() {
             <button
               type="button"
               onClick={() => setGenres([])}
-              className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-xs text-zinc-500 transition hover:text-zinc-300"
+              className="shrink-0 rounded-full border border-[var(--surface-border)] px-2.5 py-1 text-xs text-tertiary transition hover:text-primary"
             >
               Clear ({genres.length})
             </button>
@@ -195,7 +195,7 @@ export function RecommendClient() {
           <button
             type="button"
             onClick={() => setGenrePanelOpen((p) => !p)}
-            className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-300 transition hover:border-white/20"
+            className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary transition hover:text-primary"
           >
             {genrePanelOpen ? "Close genres" : "Browse genres"}
           </button>
@@ -218,12 +218,12 @@ export function RecommendClient() {
           </div>
         )}
         {genrePanelOpen ? (
-          <div className="space-y-3 rounded-2xl border border-white/10 bg-[#0a0f1b]/70 p-4 backdrop-blur-sm">
+          <div className="space-y-3 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)]/90 p-4 backdrop-blur-sm">
             <input
               value={genreSearch}
               onChange={(e) => setGenreSearch(e.target.value)}
               placeholder="Search genres..."
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-400/25"
+              className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             />
             <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
               {filteredGenres.map((g) => (
@@ -234,7 +234,7 @@ export function RecommendClient() {
                   className={`rounded-xl border px-3 py-2 text-left text-xs transition ${
                     genres.includes(g.id)
                       ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-100"
-                      : "border-white/[0.08] text-zinc-400 hover:border-white/20 hover:text-zinc-200"
+                      : "border-[var(--surface-border)] text-secondary hover:text-primary"
                   }`}
                 >
                   {g.name}
@@ -250,7 +250,7 @@ export function RecommendClient() {
         style={{ animationDelay: "0.15s" }}
       >
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="rtmin">
+          <label className="text-sm text-secondary" htmlFor="rtmin">
             Min runtime (min)
           </label>
           <input
@@ -258,12 +258,12 @@ export function RecommendClient() {
             inputMode="numeric"
             value={runtimeMin}
             onChange={(e) => setRuntimeMin(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             placeholder="e.g. 90"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="rtmax">
+          <label className="text-sm text-secondary" htmlFor="rtmax">
             Max runtime (min)
           </label>
           <input
@@ -271,12 +271,12 @@ export function RecommendClient() {
             inputMode="numeric"
             value={runtimeMax}
             onChange={(e) => setRuntimeMax(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             placeholder="e.g. 130"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="vote">
+          <label className="text-sm text-secondary" htmlFor="vote">
             Minimum TMDb rating
           </label>
           <input
@@ -287,24 +287,24 @@ export function RecommendClient() {
             max={10}
             value={minVote}
             onChange={(e) => setMinVote(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="lang">
+          <label className="text-sm text-secondary" htmlFor="lang">
             Original language (ISO)
           </label>
           <input
             id="lang"
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             placeholder="e.g. en"
             maxLength={2}
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="eraMin">
+          <label className="text-sm text-secondary" htmlFor="eraMin">
             Release from year
           </label>
           <input
@@ -312,12 +312,12 @@ export function RecommendClient() {
             inputMode="numeric"
             value={eraMin}
             onChange={(e) => setEraMin(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             placeholder="e.g. 1990"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm text-zinc-400" htmlFor="eraMax">
+          <label className="text-sm text-secondary" htmlFor="eraMax">
             Release through year
           </label>
           <input
@@ -325,7 +325,7 @@ export function RecommendClient() {
             inputMode="numeric"
             value={eraMax}
             onChange={(e) => setEraMax(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white outline-none focus:ring-2 focus:ring-indigo-400/25"
+            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             placeholder="e.g. 2024"
           />
         </div>
@@ -362,7 +362,7 @@ export function RecommendClient() {
                 onChange={(e) => setWatchRegion(e.target.value.toUpperCase())}
                 maxLength={2}
                 placeholder="e.g. US"
-                className="ml-2 w-16 rounded-lg border border-white/10 bg-black/30 px-2 py-1 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-400/30"
+                className="input-premium ml-2 w-16 rounded-lg px-2 py-1 text-sm"
               />
             </label>
           </div>
@@ -378,7 +378,7 @@ export function RecommendClient() {
       <button
         type="submit"
         disabled={loading}
-        className="reveal w-full rounded-2xl bg-indigo-500 px-6 py-4 text-center text-base font-semibold text-white shadow-lg shadow-indigo-950/40 transition hover:bg-indigo-400 disabled:opacity-60 sm:w-auto"
+        className="btn-brand reveal w-full rounded-2xl px-6 py-4 text-center text-base font-semibold disabled:opacity-60 sm:w-auto"
         style={{ animationDelay: "0.22s" }}
       >
         {loading ? "Finding films…" : "Curate my shortlist"}
@@ -425,13 +425,13 @@ function ToggleOption({
       className={`flex w-full items-start gap-4 rounded-xl border px-4 py-3 text-left transition ${
         checked
           ? "border-indigo-400/25 bg-indigo-400/8"
-          : "border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
+          : "border-[var(--surface-border)] bg-[var(--surface-2)] hover:bg-[var(--surface-1)]"
       }`}
     >
       {/* Custom toggle pill */}
       <div
         className={`mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-          checked ? "bg-indigo-500" : "bg-zinc-700"
+          checked ? "bg-indigo-500" : "bg-zinc-500"
         }`}
       >
         <div
@@ -441,10 +441,10 @@ function ToggleOption({
         />
       </div>
       <div>
-        <p className={`text-sm font-medium ${checked ? "text-indigo-100" : "text-zinc-300"}`}>
+        <p className={`text-sm font-medium ${checked ? "text-indigo-500" : "text-primary"}`}>
           {label}
         </p>
-        <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">{description}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-tertiary">{description}</p>
       </div>
     </button>
   );

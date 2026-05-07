@@ -61,7 +61,7 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
   }
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.07] bg-zinc-900/60 shadow-lg shadow-black/30 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300/40 hover:shadow-indigo-950/35">
+    <article className="premium-card group flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300/40">
       <Link
         href={href}
         className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800"
@@ -97,11 +97,11 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
         <div>
           <Link
             href={href}
-            className="line-clamp-2 text-sm font-medium text-white transition hover:text-indigo-200"
+            className="line-clamp-2 text-sm font-medium text-primary transition hover:text-indigo-500"
           >
             {movie.title}
           </Link>
-          <p className="mt-0.5 text-xs text-zinc-500">{year}</p>
+          <p className="mt-0.5 text-xs text-tertiary">{year}</p>
         </div>
 
         <div className="mt-auto flex gap-1.5 pt-1">
@@ -118,8 +118,8 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
             }
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition disabled:opacity-50 ${
               watched
-                ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200"
-                : "border border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-white"
+                ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-500"
+                : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
             }`}
           >
             {watched ? "✓ Watched" : "Watched"}
@@ -143,8 +143,8 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
             }
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition disabled:opacity-50 ${
               watchlisted
-                ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
-                : "border border-white/[0.08] bg-white/[0.04] text-zinc-400 hover:bg-white/[0.08] hover:text-white"
+                ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-500 hover:bg-indigo-400/20"
+                : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
             }`}
           >
             {watchlisted ? "✓ Queued — Remove" : "Watchlist"}

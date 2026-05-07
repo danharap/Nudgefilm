@@ -170,7 +170,7 @@ function MovieGrid({
   isLoggedIn: boolean;
 }) {
   if (movies.length === 0) {
-    return <p className="py-16 text-center text-sm text-zinc-500">No results found.</p>;
+    return <p className="py-16 text-center text-sm text-tertiary">No results found.</p>;
   }
   return (
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
@@ -221,9 +221,9 @@ export default async function BrowsePage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
       <header className="mb-8 space-y-2">
-        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-300/70">Discover</p>
-        <h1 className="text-3xl font-semibold text-white">Browse</h1>
-        <p className="text-sm text-zinc-400">
+        <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">Discover</p>
+        <h1 className="text-3xl font-semibold text-primary">Browse</h1>
+        <p className="text-sm text-secondary">
           Search or explore what&apos;s trending right now.
         </p>
       </header>
@@ -247,7 +247,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                 <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${colors.ping} opacity-75`} />
                 <span className={`relative inline-flex size-2 rounded-full ${colors.dot}`} />
               </span>
-              <h2 className="text-lg font-semibold text-white">{data.spotlightLabel}</h2>
+              <h2 className="text-lg font-semibold text-primary">{data.spotlightLabel}</h2>
             </span>
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${colors.badge}`}>
               {data.spotlightBadge}
@@ -260,7 +260,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
               const href = item.mediaType === "tv" ? `/show/${item.id}` : `/movie/${item.id}`;
               return (
                 <Link key={`${item.mediaType}-${item.id}`} href={href} className="group relative w-32 shrink-0 sm:w-36">
-                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/[0.08] bg-zinc-900 transition duration-300 group-hover:border-indigo-400/30 group-hover:shadow-lg group-hover:shadow-indigo-950/40">
+                  <div className="premium-card relative aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition duration-300 group-hover:border-indigo-400/35">
                     {poster ? (
                       <Image
                         src={poster}
@@ -285,10 +285,10 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                       </div>
                     )}
                   </div>
-                  <p className="mt-2 truncate text-xs font-medium text-zinc-200 group-hover:text-white">
+                  <p className="mt-2 truncate text-xs font-medium text-secondary group-hover:text-primary">
                     {item.title}
                   </p>
-                  {year && <p className="mt-0.5 text-[11px] text-zinc-600">{year}</p>}
+                  {year && <p className="mt-0.5 text-[11px] text-tertiary">{year}</p>}
                 </Link>
               );
             })}
@@ -298,7 +298,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
 
       {/* Trending */}
       <section className="mb-12">
-        <h2 className="mb-4 text-lg font-semibold text-white">{trendingLabel}</h2>
+        <h2 className="mb-4 text-lg font-semibold text-primary">{trendingLabel}</h2>
         <MovieGrid
           movies={data.trending.slice(0, 10) as BrowseMovie[]}
           watchedIds={watchedIds}
@@ -309,7 +309,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
 
       {/* Popular */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold text-white">{popularLabel}</h2>
+        <h2 className="mb-4 text-lg font-semibold text-primary">{popularLabel}</h2>
         <MovieGrid
           movies={data.popular.slice(0, 20) as BrowseMovie[]}
           watchedIds={watchedIds}

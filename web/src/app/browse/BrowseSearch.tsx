@@ -94,17 +94,17 @@ export function BrowseSearch({
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className="w-full rounded-2xl border border-white/10 bg-black/40 px-5 py-3.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:ring-2 focus:ring-indigo-400/25"
+        className="input-premium w-full rounded-2xl px-5 py-3.5 text-sm"
       />
 
       {(results.length > 0 || loading || error) && debounced.length >= 2 ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl shadow-black/50">
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] shadow-2xl">
           {loading ? (
-            <p className="px-4 py-3 text-xs text-zinc-500">Searching…</p>
+            <p className="px-4 py-3 text-xs text-tertiary">Searching…</p>
           ) : error ? (
             <p className="px-4 py-3 text-xs text-red-300/80">{error}</p>
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-[var(--surface-border)]">
               {results.map((m) => {
                 const year = m.release_date?.slice(0, 4) ?? "—";
                 const poster = posterUrl(m.poster_path, "w92");
@@ -112,7 +112,7 @@ export function BrowseSearch({
                 const href = isTV ? `/show/${m.id}` : `/movie/${m.id}`;
                 return (
                   <li key={`${m.mediaType ?? "movie"}-${m.id}`} className="flex items-center gap-3 px-3 py-3">
-                    <Link href={href} className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">
+                    <Link href={href} className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]">
                       {poster ? (
                         <Image src={poster} alt="" fill className="object-cover" sizes="40px" />
                       ) : null}
@@ -121,17 +121,17 @@ export function BrowseSearch({
                       <div className="flex items-center gap-2">
                         <Link
                           href={href}
-                          className="truncate text-sm font-medium text-white hover:text-indigo-200 block"
+                          className="block truncate text-sm font-medium text-primary hover:text-indigo-500"
                         >
                           {m.title}
                         </Link>
                         {isTV && (
-                          <span className="shrink-0 rounded bg-violet-600/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          <span className="shrink-0 rounded bg-violet-600/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                             TV
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-tertiary">
                         {year} · ★ {m.vote_average?.toFixed(1) ?? "—"}
                       </p>
                     </div>
@@ -146,7 +146,7 @@ export function BrowseSearch({
                             "Added to diary.",
                           )
                         }
-                        className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 disabled:opacity-50"
+                        className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
                       >
                         Watched
                       </button>
@@ -161,7 +161,7 @@ export function BrowseSearch({
                             "Added to watchlist.",
                           )
                         }
-                        className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-zinc-300 hover:bg-white/10 disabled:opacity-50"
+                        className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
                       >
                         + List
                       </button>
