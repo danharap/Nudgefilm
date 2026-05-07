@@ -20,6 +20,8 @@
   --text-tertiary: #94a3b8;
   --shadow-soft: 0 16px 34px rgba(5, 8, 20, 0.38);
   --shadow-lift: 0 26px 48px rgba(5, 8, 22, 0.45);
+  /** Opaque panel for browse search dropdown (avoids transparent --surface-1 over content) */
+  --search-popover-bg: #0b0e18;
 }
 
 html[data-theme="light"] {
@@ -42,6 +44,7 @@ html[data-theme="light"] {
   --text-tertiary: #6a7a95;
   --shadow-soft: 0 14px 30px rgba(66, 86, 120, 0.13);
   --shadow-lift: 0 24px 42px rgba(66, 86, 120, 0.18);
+  --search-popover-bg: #ffffff;
 }
 
 @theme inline {

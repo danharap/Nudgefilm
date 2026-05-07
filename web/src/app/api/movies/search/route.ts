@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const MAX_RESULTS = 15;
+const MAX_RESULTS = 20;
 
 type Hit = {
   id: number;

@@ -234,7 +234,12 @@ export default async function BrowsePage({ searchParams }: PageProps) {
           <BrowseTypeFilter current={contentType} />
         </Suspense>
         <div className="flex-1">
-          <BrowseSearch isLoggedIn={isLoggedIn} type={searchType} />
+          <BrowseSearch
+            isLoggedIn={isLoggedIn}
+            type={searchType}
+            watchedIds={watchedIds}
+            watchlistIds={watchlistIds}
+          />
         </div>
       </div>
 

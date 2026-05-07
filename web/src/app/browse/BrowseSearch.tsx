@@ -1,6 +1,7 @@
 "use client";
 
 import { addTVToWatchlist, addToWatchlist, markTVWatched, markWatched } from "@/app/actions/library";
+import { BrowseMovieCard, type BrowseMovie } from "@/app/browse/BrowseMovieCard";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,58 +19,132 @@ type Hit = {
 
 type SearchType = "movies" | "tv" | "all";
 
+function hitToBrowseMovie(m: Hit): BrowseMovie {
+  return {
+    id: m.id,
+    title: m.title,
+    release_date: m.release_date,
+    poster_path: m.poster_path,
+    vote_average: m.vote_average,
+    vote_count: 0,
+    overview: "",
+    genre_ids: [],
+    mediaType: m.mediaType,
+  };
+}
+
+async function fetchSearchHits(q: string, type: SearchType): Promise<Hit[]> {
+  const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${type}`;
+  const res = await fetch(url, { credentials: "same-origin" });
+  const data = (await res.json()) as { results?: Hit[]; error?: string };
+  if (!res.ok) throw new Error(data.error ?? "Search failed");
+  return data.results ?? [];
+}
+
 export function BrowseSearch({
   isLoggedIn,
   type = "all",
+  watchedIds,
+  watchlistIds,
 }: {
   isLoggedIn: boolean;
   type?: SearchType;
+  watchedIds: Set<number>;
+  watchlistIds: Set<number>;
 }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [results, setResults] = useState<Hit[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [quickResults, setQuickResults] = useState<Hit[]>([]);
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [quickError, setQuickError] = useState<string | null>(null);
+
+  const [committedQuery, setCommittedQuery] = useState<string | null>(null);
+  const [gridResults, setGridResults] = useState<BrowseMovie[]>([]);
+  const [gridLoading, setGridLoading] = useState(false);
+
   const [isPending, startTransition] = useTransition();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const gridAnchorRef = useRef<HTMLDivElement>(null);
 
   const placeholder =
-    type === "tv" ? "Search any TV show by title…" :
-    type === "movies" ? "Search any film by title…" :
-    "Search films and TV shows…";
+    type === "tv"
+      ? "Search any TV show by title…"
+      : type === "movies"
+        ? "Search any film by title…"
+        : "Search films and TV shows…";
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(t);
   }, [query]);
 
-  const runSearch = useCallback(
-    async (q: string) => {
-      if (q.length < 2) {
-        setResults([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (debounced.length < 2) {
+        setQuickResults([]);
+        setQuickError(null);
+        setQuickLoading(false);
         return;
       }
-      setLoading(true);
-      setError(null);
-      try {
-        const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${type}`;
-        const res = await fetch(url, { credentials: "same-origin" });
-        const data = (await res.json()) as { results?: Hit[]; error?: string };
-        if (!res.ok) throw new Error(data.error ?? "Search failed");
-        setResults(data.results ?? []);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Search failed");
-        setResults([]);
-      } finally {
-        setLoading(false);
+      if (committedQuery !== null && debounced === committedQuery) {
+        setQuickResults([]);
+        setQuickError(null);
+        setQuickLoading(false);
+        return;
       }
-    },
-    [type],
-  );
+      setQuickLoading(true);
+      setQuickError(null);
+      try {
+        const hits = await fetchSearchHits(debounced, type);
+        if (!cancelled) {
+          setQuickResults(hits);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setQuickError(e instanceof Error ? e.message : "Search failed");
+          setQuickResults([]);
+        }
+      } finally {
+        if (!cancelled) setQuickLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [debounced, committedQuery, type]);
 
-  useEffect(() => {
-    void runSearch(debounced);
-  }, [debounced, runSearch]);
+  const showQuickPanel =
+    debounced.length >= 2 &&
+    (committedQuery === null || debounced !== committedQuery) &&
+    (quickLoading || quickError !== null || quickResults.length > 0);
+
+  const runCommittedSearch = useCallback(async () => {
+    const q = query.trim();
+    if (q.length < 2) {
+      toast.error("Type at least 2 characters to search.");
+      return;
+    }
+    if (debounced === q && quickResults.length > 0 && !quickLoading) {
+      setCommittedQuery(q);
+      setGridResults(quickResults.map(hitToBrowseMovie));
+      gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    setGridLoading(true);
+    setQuickError(null);
+    setCommittedQuery(q);
+    try {
+      const hits = await fetchSearchHits(q, type);
+      setGridResults(hits.map(hitToBrowseMovie));
+      gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Search failed");
+      setGridResults([]);
+      setCommittedQuery(null);
+    } finally {
+      setGridLoading(false);
+    }
+  }, [query, type, debounced, quickResults, quickLoading]);
 
   function act(id: number, action: () => Promise<void>, msg: string) {
     if (!isLoggedIn) {
@@ -86,33 +161,76 @@ export function BrowseSearch({
     });
   }
 
-  return (
-    <div ref={containerRef} className="relative">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={placeholder}
-        autoComplete="off"
-        className="input-premium w-full rounded-2xl px-5 py-3.5 text-sm"
-      />
+  function clearSearch() {
+    setQuery("");
+    setDebounced("");
+    setCommittedQuery(null);
+    setGridResults([]);
+    setQuickResults([]);
+    setQuickError(null);
+  }
 
-      {(results.length > 0 || loading || error) && debounced.length >= 2 ? (
-        <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] shadow-2xl">
-          {loading ? (
-            <p className="px-4 py-3 text-xs text-tertiary">Searching…</p>
-          ) : error ? (
-            <p className="px-4 py-3 text-xs text-red-300/80">{error}</p>
-          ) : (
-            <ul className="divide-y divide-[var(--surface-border)]">
-              {results.map((m) => {
+  return (
+    <div className="w-full space-y-6">
+      <div className="relative z-20">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void runCommittedSearch();
+              }
+            }}
+            placeholder={placeholder}
+            autoComplete="off"
+            className="input-premium min-h-[48px] flex-1 rounded-2xl px-5 py-3.5 text-sm"
+            aria-label="Search titles"
+            aria-expanded={showQuickPanel}
+            aria-controls="browse-search-suggestions"
+          />
+          <button
+            type="button"
+            onClick={() => void runCommittedSearch()}
+            disabled={gridLoading}
+            className="btn-brand shrink-0 rounded-2xl px-6 py-3.5 text-sm font-semibold disabled:opacity-60"
+          >
+            {gridLoading ? "Searching…" : "Search"}
+          </button>
+        </div>
+
+        {/* Quick picks — solid background so posters behind don’t bleed through */}
+        {showQuickPanel ? (
+          <div
+            id="browse-search-suggestions"
+            className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-[var(--surface-border)] shadow-2xl ring-1 ring-black/10"
+            style={{
+              backgroundColor: "var(--search-popover-bg)",
+              boxShadow: "var(--shadow-lift)",
+            }}
+          >
+            {quickLoading ? (
+              <p className="px-4 py-3 text-xs text-tertiary">Searching…</p>
+            ) : quickError ? (
+              <p className="px-4 py-3 text-xs text-red-400">{quickError}</p>
+            ) : (
+              <ul className="divide-y divide-[var(--surface-border)]">
+                {quickResults.map((m) => {
                 const year = m.release_date?.slice(0, 4) ?? "—";
                 const poster = posterUrl(m.poster_path, "w92");
                 const isTV = m.mediaType === "tv";
                 const href = isTV ? `/show/${m.id}` : `/movie/${m.id}`;
                 return (
-                  <li key={`${m.mediaType ?? "movie"}-${m.id}`} className="flex items-center gap-3 px-3 py-3">
-                    <Link href={href} className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]">
+                  <li
+                    key={`${m.mediaType ?? "movie"}-${m.id}`}
+                    className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
+                  >
+                    <Link
+                      href={href}
+                      className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
+                    >
                       {poster ? (
                         <Image src={poster} alt="" fill className="object-cover" sizes="40px" />
                       ) : null}
@@ -121,12 +239,12 @@ export function BrowseSearch({
                       <div className="flex items-center gap-2">
                         <Link
                           href={href}
-                          className="block truncate text-sm font-medium text-primary hover:text-indigo-500"
+                          className="block truncate text-sm font-medium text-primary hover:text-indigo-400"
                         >
                           {m.title}
                         </Link>
                         {isTV && (
-                          <span className="shrink-0 rounded bg-violet-600/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          <span className="shrink-0 rounded bg-violet-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                             TV
                           </span>
                         )}
@@ -168,11 +286,63 @@ export function BrowseSearch({
                     </div>
                   </li>
                 );
-              })}
-            </ul>
-          )}
-        </div>
-      ) : null}
+                })}
+              </ul>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      <p className="text-xs text-tertiary">
+        <span className="text-secondary">Tip:</span> suggestions appear as you type; press{" "}
+        <kbd className="rounded border border-[var(--surface-border)] bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[10px] text-secondary">
+          Enter
+        </kbd>{" "}
+        or <span className="text-secondary">Search</span> for full results in the grid below.
+      </p>
+
+      {/* Full results — same cards as Trending / Popular */}
+      <div ref={gridAnchorRef}>
+        {committedQuery ? (
+          <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/40 p-4 sm:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-primary">Results</h2>
+                <p className="text-sm text-tertiary">
+                  For &ldquo;{committedQuery}&rdquo;
+                  {gridResults.length > 0 ? (
+                    <span className="text-tertiary"> · {gridResults.length} titles</span>
+                  ) : null}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-3 py-1.5 text-xs font-medium text-secondary transition hover:text-primary"
+              >
+                Clear search
+              </button>
+            </div>
+            {gridLoading ? (
+              <p className="py-12 text-center text-sm text-tertiary">Loading results…</p>
+            ) : gridResults.length === 0 ? (
+              <p className="py-12 text-center text-sm text-tertiary">No matches. Try another title.</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {gridResults.map((m) => (
+                  <BrowseMovieCard
+                    key={`${m.mediaType ?? "movie"}-${m.id}`}
+                    movie={m}
+                    isWatched={watchedIds.has(m.id)}
+                    isWatchlisted={watchlistIds.has(m.id)}
+                    isLoggedIn={isLoggedIn}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+        ) : null}
+      </div>
     </div>
   );
 }
