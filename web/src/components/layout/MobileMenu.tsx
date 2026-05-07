@@ -190,6 +190,13 @@ export function MobileMenu({
                   <p className="text-xs text-zinc-500">View profile →</p>
                 </div>
               </Link>
+              <Link
+                href="/settings"
+                onClick={() => setOpen(false)}
+                className="flex w-full items-center justify-center rounded-xl border border-white/10 py-2.5 text-sm text-zinc-300 transition hover:border-white/20 hover:text-white"
+              >
+                Settings
+              </Link>
               <form action={signOut}>
                 <button
                   type="submit"
