@@ -5,7 +5,7 @@ import { BrowseMovieCard, type BrowseMovie } from "@/app/browse/BrowseMovieCard"
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
 type Hit = {
@@ -46,11 +46,14 @@ export function BrowseSearch({
   type = "all",
   watchedIds,
   watchlistIds,
+  toolbarStart,
 }: {
   isLoggedIn: boolean;
   type?: SearchType;
   watchedIds: Set<number>;
   watchlistIds: Set<number>;
+  /** e.g. All / Movies / TV filter — kept in the same row as the search bar */
+  toolbarStart?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -172,34 +175,39 @@ export function BrowseSearch({
 
   return (
     <div className="w-full space-y-6">
-      <div className="relative z-20">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void runCommittedSearch();
-              }
-            }}
-            placeholder={placeholder}
-            autoComplete="off"
-            className="input-premium min-h-[48px] flex-1 rounded-2xl px-5 py-3.5 text-sm"
-            aria-label="Search titles"
-            aria-expanded={showQuickPanel}
-            aria-controls="browse-search-suggestions"
-          />
-          <button
-            type="button"
-            onClick={() => void runCommittedSearch()}
-            disabled={gridLoading}
-            className="btn-brand shrink-0 rounded-2xl px-6 py-3.5 text-sm font-semibold disabled:opacity-60"
-          >
-            {gridLoading ? "Searching…" : "Search"}
-          </button>
-        </div>
+      {/* One compact row on desktop so the type filter doesn’t center against the full results block */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-x-4">
+        {toolbarStart ? (
+          <div className="flex shrink-0 justify-start sm:self-center">{toolbarStart}</div>
+        ) : null}
+        <div className={`relative z-20 min-w-0 ${toolbarStart ? "" : "sm:col-span-full"}`}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void runCommittedSearch();
+                }
+              }}
+              placeholder={placeholder}
+              autoComplete="off"
+              className="input-premium min-h-[48px] flex-1 rounded-2xl px-5 py-3.5 text-sm"
+              aria-label="Search titles"
+              aria-expanded={showQuickPanel}
+              aria-controls="browse-search-suggestions"
+            />
+            <button
+              type="button"
+              onClick={() => void runCommittedSearch()}
+              disabled={gridLoading}
+              className="btn-brand shrink-0 rounded-2xl px-6 py-3.5 text-sm font-semibold disabled:opacity-60"
+            >
+              {gridLoading ? "Searching…" : "Search"}
+            </button>
+          </div>
 
         {/* Quick picks — solid background so posters behind don’t bleed through */}
         {showQuickPanel ? (
@@ -218,79 +226,80 @@ export function BrowseSearch({
             ) : (
               <ul className="divide-y divide-[var(--surface-border)]">
                 {quickResults.map((m) => {
-                const year = m.release_date?.slice(0, 4) ?? "—";
-                const poster = posterUrl(m.poster_path, "w92");
-                const isTV = m.mediaType === "tv";
-                const href = isTV ? `/show/${m.id}` : `/movie/${m.id}`;
-                return (
-                  <li
-                    key={`${m.mediaType ?? "movie"}-${m.id}`}
-                    className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
-                  >
-                    <Link
-                      href={href}
-                      className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
+                  const year = m.release_date?.slice(0, 4) ?? "—";
+                  const poster = posterUrl(m.poster_path, "w92");
+                  const isTV = m.mediaType === "tv";
+                  const href = isTV ? `/show/${m.id}` : `/movie/${m.id}`;
+                  return (
+                    <li
+                      key={`${m.mediaType ?? "movie"}-${m.id}`}
+                      className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
                     >
-                      {poster ? (
-                        <Image src={poster} alt="" fill className="object-cover" sizes="40px" />
-                      ) : null}
-                    </Link>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={href}
-                          className="block truncate text-sm font-medium text-primary hover:text-indigo-400"
-                        >
-                          {m.title}
-                        </Link>
-                        {isTV && (
-                          <span className="shrink-0 rounded bg-violet-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                            TV
-                          </span>
-                        )}
+                      <Link
+                        href={href}
+                        className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
+                      >
+                        {poster ? (
+                          <Image src={poster} alt="" fill className="object-cover" sizes="40px" />
+                        ) : null}
+                      </Link>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={href}
+                            className="block truncate text-sm font-medium text-primary hover:text-indigo-400"
+                          >
+                            {m.title}
+                          </Link>
+                          {isTV && (
+                            <span className="shrink-0 rounded bg-violet-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                              TV
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-tertiary">
+                          {year} · ★ {m.vote_average?.toFixed(1) ?? "—"}
+                        </p>
                       </div>
-                      <p className="text-xs text-tertiary">
-                        {year} · ★ {m.vote_average?.toFixed(1) ?? "—"}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 gap-1.5">
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() =>
-                          act(
-                            m.id,
-                            () => (isTV ? markTVWatched(m.id) : markWatched(m.id)),
-                            "Added to diary.",
-                          )
-                        }
-                        className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
-                      >
-                        Watched
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isPending}
-                        onClick={() =>
-                          act(
-                            m.id,
-                            () =>
-                              isTV ? addTVToWatchlist(m.id) : addToWatchlist(m.id),
-                            "Added to watchlist.",
-                          )
-                        }
-                        className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
-                      >
-                        + List
-                      </button>
-                    </div>
-                  </li>
-                );
+                      <div className="flex shrink-0 gap-1.5">
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            act(
+                              m.id,
+                              () => (isTV ? markTVWatched(m.id) : markWatched(m.id)),
+                              "Added to diary.",
+                            )
+                          }
+                          className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
+                        >
+                          Watched
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isPending}
+                          onClick={() =>
+                            act(
+                              m.id,
+                              () =>
+                                isTV ? addTVToWatchlist(m.id) : addToWatchlist(m.id),
+                              "Added to watchlist.",
+                            )
+                          }
+                          className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
+                        >
+                          + List
+                        </button>
+                      </div>
+                    </li>
+                  );
                 })}
               </ul>
             )}
           </div>
         ) : null}
+        </div>
       </div>
 
       <p className="text-xs text-tertiary">

@@ -228,19 +228,22 @@ export default async function BrowsePage({ searchParams }: PageProps) {
         </p>
       </header>
 
-      {/* Type filter + search */}
-      <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <Suspense>
-          <BrowseTypeFilter current={contentType} />
-        </Suspense>
-        <div className="flex-1">
-          <BrowseSearch
-            isLoggedIn={isLoggedIn}
-            type={searchType}
-            watchedIds={watchedIds}
-            watchlistIds={watchlistIds}
-          />
-        </div>
+      <div className="mb-10">
+        <BrowseSearch
+          toolbarStart={
+            <Suspense
+              fallback={
+                <div className="h-10 w-[280px] max-w-full animate-pulse rounded-xl bg-[var(--surface-2)]" />
+              }
+            >
+              <BrowseTypeFilter current={contentType} />
+            </Suspense>
+          }
+          isLoggedIn={isLoggedIn}
+          type={searchType}
+          watchedIds={watchedIds}
+          watchlistIds={watchlistIds}
+        />
       </div>
 
       {/* Spotlight rail (Now in Theaters / Now Airing / New This Week) */}
