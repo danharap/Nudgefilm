@@ -17,6 +17,34 @@ export async function signInWithEmail(formData: FormData) {
   redirect(next);
 }
 
+export async function signInWithGoogle(formData: FormData) {
+  const nextRaw = String(formData.get("redirect") ?? "/auth/post-login");
+  const next =
+    nextRaw.startsWith("/") && !nextRaw.startsWith("//")
+      ? nextRaw
+      : "/auth/post-login";
+
+  const origin = await getAppOriginAsync();
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}`,
+      queryParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+  });
+
+  if (error || !data?.url) {
+    const message = error?.message || "Unable to start Google sign-in.";
+    redirect(`/login?error=${encodeURIComponent(message)}`);
+  }
+
+  redirect(data.url);
+}
+
 const USERNAME_RE = /^[a-z0-9_]{3,24}$/;
 
 export async function signUpWithEmail(formData: FormData) {
