@@ -15,8 +15,7 @@ export default async function FriendsPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const params = await searchParams;
-  const activeTab = params.tab === "activity" ? "activity" : "inbox";
+  await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -39,29 +38,6 @@ export default async function FriendsPage({
         </p>
         <h1 className="text-3xl font-semibold text-white">Following</h1>
       </header>
-
-      <div className="mb-6 flex gap-2">
-        <Link
-          href="/friends?tab=inbox"
-          className={`rounded-full px-4 py-1.5 text-sm transition ${
-            activeTab === "inbox"
-              ? "bg-indigo-500/20 text-indigo-100"
-              : "border border-white/10 text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          Inbox
-        </Link>
-        <Link
-          href="/friends?tab=activity"
-          className={`rounded-full px-4 py-1.5 text-sm transition ${
-            activeTab === "activity"
-              ? "bg-indigo-500/20 text-indigo-100"
-              : "border border-white/10 text-zinc-400 hover:text-zinc-200"
-          }`}
-        >
-          Activity
-        </Link>
-      </div>
 
       <section id="inbox" className="mb-10 scroll-mt-24">
         <div className="mb-3 flex items-center justify-between">
