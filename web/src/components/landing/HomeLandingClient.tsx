@@ -620,18 +620,18 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </div>
       </section>
 
-      <section className="border-y border-[var(--surface-border)] bg-[var(--surface-2)]/55 py-16 sm:py-18">
+      <section className="border-y border-[var(--surface-border)] bg-[var(--surface-2)]/55 py-12 sm:py-16">
         <div className="mx-auto flex max-w-4xl flex-col items-center px-4 text-center sm:px-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
             Ready when you are
           </p>
-          <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
+          <h3 className="mt-2.5 text-xl font-bold text-primary sm:mt-3 sm:text-3xl">
             Pick faster tonight. Leave a quick review after.
           </h3>
-          <p className="mt-2 max-w-2xl text-sm text-secondary">
+          <p className="mt-2 max-w-xl text-sm text-secondary sm:max-w-2xl">
             Keep your diary up to date and help friends decide what to watch.
           </p>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-5 flex w-full max-w-sm flex-col gap-2.5 sm:mt-6 sm:max-w-none sm:w-auto sm:flex-row sm:gap-3">
             <Link href="/recommend" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
               Find a film tonight
             </Link>
