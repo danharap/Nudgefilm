@@ -508,9 +508,9 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </div>
       </section>
 
-      {/* Social proof + community */}
+      {/* Social proof + community — same width + horizontal rhythm as product demo card */}
       <section className="py-14 sm:py-16">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="mx-2 max-w-7xl px-4 sm:mx-auto sm:px-5 lg:px-6">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
