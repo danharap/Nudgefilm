@@ -204,6 +204,31 @@ export function MobileMenu({
     </>
   );
 
+  const bottomDock = (
+    <nav
+      className="fixed inset-x-3 z-[60] rounded-2xl border border-white/15 bg-[#0a0d18]/90 px-2 py-1.5 backdrop-blur-xl md:hidden"
+      style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+    >
+      <ul className="grid grid-cols-5 gap-1">
+        {bottomLinks.map((l) => {
+          const active = pathname === l.href;
+          return (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                className={`flex min-h-10 items-center justify-center rounded-xl px-1 text-[11px] font-medium transition ${
+                  active ? "bg-indigo-500/20 text-indigo-100" : "text-zinc-400 hover:text-zinc-100"
+                }`}
+              >
+                {l.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+
   return (
     <>
       {/* Hamburger — visible only on mobile */}
@@ -222,27 +247,7 @@ export function MobileMenu({
 
       {/* Portal drawer to <body> to escape header's backdrop-filter stacking context */}
       {mounted && createPortal(drawer, document.body)}
-
-      {/* Floating bottom nav for mobile */}
-      <nav className="fixed inset-x-3 bottom-3 z-[60] rounded-2xl border border-white/15 bg-[#0a0d18]/90 px-2 py-1.5 backdrop-blur-xl md:hidden">
-        <ul className="grid grid-cols-5 gap-1">
-          {bottomLinks.map((l) => {
-            const active = pathname === l.href;
-            return (
-              <li key={l.href}>
-                <Link
-                  href={l.href}
-                  className={`flex min-h-10 items-center justify-center rounded-xl px-1 text-[11px] font-medium transition ${
-                    active ? "bg-indigo-500/20 text-indigo-100" : "text-zinc-400 hover:text-zinc-100"
-                  }`}
-                >
-                  {l.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      {mounted && createPortal(bottomDock, document.body)}
     </>
   );
 }
