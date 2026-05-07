@@ -47,7 +47,9 @@ export default async function SignupPage({ searchParams }: Props) {
       </p>
       {q.message === "check_email" ? (
         <p className="mt-4 rounded-lg border border-indigo-400/25 bg-indigo-400/10 px-3 py-2 text-sm text-indigo-200">
-          Check your inbox to confirm your email, then come back to log in.
+          We sent a confirmation link to your email. Open it to finish sign-up, then log in here. If
+          nothing arrives in a few minutes, check spam or promotions — the sender is your auth
+          provider (e.g. Supabase), not Gmail specifically.
         </p>
       ) : null}
       {err ? (
@@ -87,8 +89,13 @@ export default async function SignupPage({ searchParams }: Props) {
           Continue with Google
         </button>
       </form>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        <span className="text-zinc-400">Google:</span> No separate “confirm email” message from this
+        app — Google already verified you. Finish in the browser window that opens. Your Google
+        address can be Gmail, iCloud, or anything; Apple Mail is fine.
+      </p>
       <p className="mt-2 text-xs text-zinc-500">
-        We will import your name and photo from Google. You can edit your username and profile details anytime.
+        We import your name and photo from Google. You can edit your profile anytime.
       </p>
       <div className="mt-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-white/10" />

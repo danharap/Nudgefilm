@@ -23,6 +23,8 @@ const VIBE_OPTIONS: { value: string; label: string }[] = [
   { value: "nostalgic", label: "Nostalgic" },
 ];
 
+const STEP_LABELS = ["Genres", "Vibe", "Filters", "Finish"] as const;
+
 export function RecommendClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -36,6 +38,7 @@ export function RecommendClient() {
   }, [searchParams]);
   const prefilledVibes = useMemo(() => inferVibesFromGenres(prefilledGenres), [prefilledGenres]);
 
+  const [step, setStep] = useState(0);
   const [vibes, setVibes] = useState<string[]>(prefilledVibes);
   const [genres, setGenres] = useState<number[]>(prefilledGenres);
   const [runtimeMin, setRuntimeMin] = useState("");
@@ -50,7 +53,6 @@ export function RecommendClient() {
   const [watchRegion, setWatchRegion] = useState("US");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [genrePanelOpen, setGenrePanelOpen] = useState(prefilledGenres.length === 0);
   const [genreSearch, setGenreSearch] = useState("");
 
   function toggleVibe(value: string) {
@@ -73,8 +75,48 @@ export function RecommendClient() {
     g.name.toLowerCase().includes(genreSearch.trim().toLowerCase()),
   );
 
+  function goBack() {
+    setError(null);
+    setStep((s) => Math.max(0, s - 1));
+  }
+
+  function goFromGenres() {
+    setError(null);
+    if (genres.length === 0) {
+      setError("Pick at least one genre, or use “Use mood instead” below.");
+      return;
+    }
+    setStep(1);
+  }
+
+  function skipGenresForMoodOnly() {
+    setError(null);
+    setGenres([]);
+    setStep(1);
+  }
+
+  function goFromVibe() {
+    setError(null);
+    if (genres.length === 0 && vibes.length === 0) {
+      setError("Pick at least one vibe when you skip genres.");
+      return;
+    }
+    setStep(2);
+  }
+
+  function skipVibe() {
+    setError(null);
+    setStep(2);
+  }
+
+  function goFromFilters() {
+    setError(null);
+    setStep(3);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (step !== 3) return;
     if (genres.length === 0 && vibes.length === 0) {
       setError("Pick at least one genre or one vibe.");
       return;
@@ -125,78 +167,87 @@ export function RecommendClient() {
     }
   }
 
+  const progressPct = ((step + 1) / STEP_LABELS.length) * 100;
+
   return (
     <form
       onSubmit={onSubmit}
-      className="mx-auto max-w-3xl space-y-10 px-4 py-12 sm:px-6"
+      className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:space-y-10 sm:px-6"
     >
-      <header className="reveal space-y-2">
+      <header className="reveal space-y-3">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
-          Step by step
+          Find a film
         </p>
         <h1 className="text-3xl font-semibold tracking-tight text-primary sm:text-4xl">
           What do you want to watch?
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-secondary">
-          A few honest inputs — we&apos;ll hand back a tight shortlist, not an
-          endless catalog.
+          One step at a time — we&apos;ll hand back a tight shortlist, not an endless catalog.
         </p>
         {prefilledTitle ? (
           <div className="inline-flex max-w-xl items-start gap-2 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-left text-xs text-indigo-100/90">
             <span className="mt-0.5">✨</span>
             <span>
-              Prefilled from <strong>{prefilledTitle}</strong>. We selected vibe and genres automatically — tweak anything before running.
+              Prefilled from <strong>{prefilledTitle}</strong>. We selected vibe and genres
+              automatically — tweak anything before running.
             </span>
           </div>
         ) : null}
+
+        <div className="space-y-2 pt-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-medium text-secondary">
+              Step {step + 1} of {STEP_LABELS.length}
+              <span className="text-tertiary"> · {STEP_LABELS[step]}</span>
+            </p>
+            <span className="tabular-nums text-xs text-tertiary">{Math.round(progressPct)}%</span>
+          </div>
+          <div className="h-1 w-full overflow-hidden rounded-full bg-[var(--surface-2)]">
+            <div
+              className="h-full rounded-full bg-indigo-500 transition-[width] duration-300 ease-out"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
       </header>
 
-      <section className="reveal space-y-3" style={{ animationDelay: "0.05s" }}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-primary">Genres</p>
-            <p className="text-xs leading-relaxed text-tertiary">
-              Start here — pick the kinds of films you want. Add a vibe below to narrow the
-              feel, or leave vibe blank.
-            </p>
-          </div>
-          {genres.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setGenres([])}
-              className="shrink-0 rounded-full border border-[var(--surface-border)] px-2.5 py-1 text-xs text-tertiary transition hover:text-primary"
-            >
-              Clear ({genres.length})
-            </button>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setGenrePanelOpen((p) => !p)}
-            className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary transition hover:text-primary"
-          >
-            {genrePanelOpen ? "Close genres" : "Browse genres"}
-          </button>
-          {genres.length > 0 ? (
-            <p className="text-xs [color:var(--accent-text)]">{genres.length} selected</p>
-          ) : null}
-        </div>
-        {genres.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-            {TMDB_GENRE_OPTIONS.filter((g) => genres.includes(g.id)).map((g) => (
+      {/* Step 0 — Genres */}
+      {step === 0 ? (
+        <section className="reveal space-y-4" aria-labelledby="step-genres-title">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <h2 id="step-genres-title" className="text-sm font-medium text-primary">
+                Genres
+              </h2>
+              <p className="text-xs leading-relaxed text-tertiary">
+                Pick what kinds of films you want first. On the next step you can add a mood — or
+                skip it if genres are enough.
+              </p>
+            </div>
+            {genres.length > 0 ? (
               <button
-                key={g.id}
                 type="button"
-                onClick={() => toggleGenre(g.id)}
-                className="accent-selected shrink-0 rounded-full border px-3 py-1.5 text-xs transition"
+                onClick={() => setGenres([])}
+                className="shrink-0 rounded-full border border-[var(--surface-border)] px-2.5 py-1 text-xs text-tertiary transition hover:text-primary"
               >
-                {g.name} ×
+                Clear ({genres.length})
               </button>
-            ))}
+            ) : null}
           </div>
-        )}
-        {genrePanelOpen ? (
+          {genres.length > 0 ? (
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {TMDB_GENRE_OPTIONS.filter((g) => genres.includes(g.id)).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => toggleGenre(g.id)}
+                  className="accent-selected shrink-0 rounded-full border px-3 py-1.5 text-xs transition"
+                >
+                  {g.name} ×
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="space-y-3 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)]/90 p-4 backdrop-blur-sm">
             <input
               value={genreSearch}
@@ -204,7 +255,7 @@ export function RecommendClient() {
               placeholder="Search genres..."
               className="input-premium w-full rounded-xl px-3 py-2 text-sm"
             />
-            <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
+            <div className="grid max-h-[min(320px,50vh)] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
               {filteredGenres.map((g) => (
                 <button
                   key={g.id}
@@ -221,170 +272,269 @@ export function RecommendClient() {
               ))}
             </div>
           </div>
-        ) : null}
-      </section>
 
-      <section className="reveal space-y-3" style={{ animationDelay: "0.12s" }}>
-        <p className="text-sm font-medium text-primary">Vibe (optional)</p>
-        <p className="text-xs leading-relaxed text-tertiary">
-          Optional mood on top of your genres. If you only picked genres, you can skip this.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {VIBE_OPTIONS.map(({ value, label }) => (
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--surface-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
             <button
-              key={value}
               type="button"
-              onClick={() => toggleVibe(value)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                vibes.includes(value)
-                  ? "accent-selected"
-                  : "border-[var(--surface-border)] text-secondary hover:text-primary"
-              }`}
+              onClick={skipGenresForMoodOnly}
+              className="text-left text-sm text-tertiary underline decoration-dotted underline-offset-4 hover:text-secondary"
             >
-              {label}
+              Use mood instead — I&apos;ll pick vibes only
             </button>
-          ))}
-        </div>
-      </section>
-
-      <section
-        className="reveal grid gap-4 sm:grid-cols-2"
-        style={{ animationDelay: "0.15s" }}
-      >
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="rtmin">
-            Min runtime (min)
-          </label>
-          <input
-            id="rtmin"
-            inputMode="numeric"
-            value={runtimeMin}
-            onChange={(e) => setRuntimeMin(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-            placeholder="e.g. 90"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="rtmax">
-            Max runtime (min)
-          </label>
-          <input
-            id="rtmax"
-            inputMode="numeric"
-            value={runtimeMax}
-            onChange={(e) => setRuntimeMax(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-            placeholder="e.g. 130"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="vote">
-            Minimum TMDb rating
-          </label>
-          <input
-            id="vote"
-            type="number"
-            step="0.1"
-            min={0}
-            max={10}
-            value={minVote}
-            onChange={(e) => setMinVote(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="lang">
-            Original language (ISO)
-          </label>
-          <input
-            id="lang"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-            placeholder="e.g. en"
-            maxLength={2}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="eraMin">
-            Release from year
-          </label>
-          <input
-            id="eraMin"
-            inputMode="numeric"
-            value={eraMin}
-            onChange={(e) => setEraMin(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-            placeholder="e.g. 1990"
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm text-secondary" htmlFor="eraMax">
-            Release through year
-          </label>
-          <input
-            id="eraMax"
-            inputMode="numeric"
-            value={eraMax}
-            onChange={(e) => setEraMax(e.target.value)}
-            className="input-premium w-full rounded-xl px-3 py-2 text-sm"
-            placeholder="e.g. 2024"
-          />
-        </div>
-      </section>
-
-      <section
-        className="reveal flex flex-col gap-2"
-        style={{ animationDelay: "0.18s" }}
-      >
-        <ToggleOption
-          checked={surpriseMe}
-          onChange={setSurpriseMe}
-          label="Mix it up"
-          description="Randomly shifts the genre weighting so you don't always get the same type of result."
-        />
-        <ToggleOption
-          checked={hiddenGem}
-          onChange={setHiddenGem}
-          label="Hidden gems only"
-          description="Favours well-rated films that flew under the radar — less blockbuster, more discovery."
-        />
-        <ToggleOption
-          checked={streamingOnly}
-          onChange={setStreamingOnly}
-          label="Available to stream"
-          description="Only show films you can watch right now on a subscription service."
-        />
-        {streamingOnly ? (
-          <div className="ml-14 mt-1">
-            <label className="text-xs text-zinc-500">
-              Your region (2-letter country code)
-              <input
-                value={watchRegion}
-                onChange={(e) => setWatchRegion(e.target.value.toUpperCase())}
-                maxLength={2}
-                placeholder="e.g. US"
-                className="input-premium ml-2 w-16 rounded-lg px-2 py-1 text-sm"
-              />
-            </label>
+            <button
+              type="button"
+              onClick={goFromGenres}
+              className="btn-brand rounded-xl px-6 py-3 text-sm font-semibold"
+            >
+              Continue
+            </button>
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
 
-      {error ? (
+      {/* Step 1 — Vibe */}
+      {step === 1 ? (
+        <section className="reveal space-y-4" aria-labelledby="step-vibe-title">
+          <div className="space-y-1">
+            <h2 id="step-vibe-title" className="text-sm font-medium text-primary">
+              Vibe {genres.length > 0 ? "(optional)" : null}
+            </h2>
+            <p className="text-xs leading-relaxed text-tertiary">
+              {genres.length > 0
+                ? "Optional mood on top of your genres. You can skip if the genres are enough."
+                : "You skipped genres — pick a mood (or several) so we can narrow the list."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {VIBE_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => toggleVibe(value)}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  vibes.includes(value)
+                    ? "accent-selected"
+                    : "border-[var(--surface-border)] text-secondary hover:text-primary"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--surface-border)] pt-6 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={goBack}
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] px-5 py-3 text-sm font-medium text-primary transition hover:bg-[var(--surface-1)]"
+            >
+              Back
+            </button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              {genres.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={skipVibe}
+                  className="rounded-xl px-4 py-3 text-sm font-medium text-tertiary transition hover:text-primary"
+                >
+                  Skip vibe
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={goFromVibe}
+                className="btn-brand rounded-xl px-6 py-3 text-sm font-semibold"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Step 2 — Filters */}
+      {step === 2 ? (
+        <section className="reveal space-y-4" aria-labelledby="step-filters-title">
+          <h2 id="step-filters-title" className="text-sm font-medium text-primary">
+            Filters
+          </h2>
+          <p className="text-xs text-tertiary">
+            All optional. You can leave defaults and continue.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="rtmin">
+                Min runtime (min)
+              </label>
+              <input
+                id="rtmin"
+                inputMode="numeric"
+                value={runtimeMin}
+                onChange={(e) => setRuntimeMin(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+                placeholder="e.g. 90"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="rtmax">
+                Max runtime (min)
+              </label>
+              <input
+                id="rtmax"
+                inputMode="numeric"
+                value={runtimeMax}
+                onChange={(e) => setRuntimeMax(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+                placeholder="e.g. 130"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="vote">
+                Minimum TMDb rating
+              </label>
+              <input
+                id="vote"
+                type="number"
+                step="0.1"
+                min={0}
+                max={10}
+                value={minVote}
+                onChange={(e) => setMinVote(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="lang">
+                Original language (ISO)
+              </label>
+              <input
+                id="lang"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+                placeholder="e.g. en"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="eraMin">
+                Release from year
+              </label>
+              <input
+                id="eraMin"
+                inputMode="numeric"
+                value={eraMin}
+                onChange={(e) => setEraMin(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+                placeholder="e.g. 1990"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm text-secondary" htmlFor="eraMax">
+                Release through year
+              </label>
+              <input
+                id="eraMax"
+                inputMode="numeric"
+                value={eraMax}
+                onChange={(e) => setEraMax(e.target.value)}
+                className="input-premium w-full rounded-xl px-3 py-2 text-sm"
+                placeholder="e.g. 2024"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--surface-border)] pt-6 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={goBack}
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] px-5 py-3 text-sm font-medium text-primary transition hover:bg-[var(--surface-1)]"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={goFromFilters}
+              className="btn-brand rounded-xl px-6 py-3 text-sm font-semibold"
+            >
+              Continue
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {/* Step 3 — Extras + submit */}
+      {step === 3 ? (
+        <section className="reveal space-y-4" aria-labelledby="step-finish-title">
+          <h2 id="step-finish-title" className="text-sm font-medium text-primary">
+            Finish
+          </h2>
+          <p className="text-xs text-tertiary">Extras — toggle what you need, then run the search.</p>
+          <div className="flex flex-col gap-2">
+            <ToggleOption
+              checked={surpriseMe}
+              onChange={setSurpriseMe}
+              label="Mix it up"
+              description="Randomly shifts the genre weighting so you don't always get the same type of result."
+            />
+            <ToggleOption
+              checked={hiddenGem}
+              onChange={setHiddenGem}
+              label="Hidden gems only"
+              description="Favours well-rated films that flew under the radar — less blockbuster, more discovery."
+            />
+            <ToggleOption
+              checked={streamingOnly}
+              onChange={setStreamingOnly}
+              label="Available to stream"
+              description="Only show films you can watch right now on a subscription service."
+            />
+            {streamingOnly ? (
+              <div className="ml-14 mt-1">
+                <label className="text-xs text-zinc-500">
+                  Your region (2-letter country code)
+                  <input
+                    value={watchRegion}
+                    onChange={(e) => setWatchRegion(e.target.value.toUpperCase())}
+                    maxLength={2}
+                    placeholder="e.g. US"
+                    className="input-premium ml-2 w-16 rounded-lg px-2 py-1 text-sm"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
+
+          {error ? (
+            <p className="text-sm text-red-300/90" role="alert">
+              {error}
+            </p>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-3 border-t border-[var(--surface-border)] pt-6 sm:flex-row sm:justify-between">
+            <button
+              type="button"
+              onClick={goBack}
+              className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] px-5 py-3 text-sm font-medium text-primary transition hover:bg-[var(--surface-1)]"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-brand rounded-2xl px-6 py-4 text-center text-base font-semibold disabled:opacity-60"
+            >
+              {loading ? "Finding films…" : "Curate my shortlist"}
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {step < 3 && error ? (
         <p className="text-sm text-red-300/90" role="alert">
           {error}
         </p>
       ) : null}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-brand reveal w-full rounded-2xl px-6 py-4 text-center text-base font-semibold disabled:opacity-60 sm:w-auto"
-        style={{ animationDelay: "0.22s" }}
-      >
-        {loading ? "Finding films…" : "Curate my shortlist"}
-      </button>
     </form>
   );
 }
@@ -429,7 +579,6 @@ function ToggleOption({
           : "border-[var(--surface-border)] bg-[var(--surface-2)] hover:bg-[var(--surface-1)]"
       }`}
     >
-      {/* Custom toggle pill */}
       <div
         className={`mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
           checked ? "bg-indigo-500" : "bg-zinc-500"

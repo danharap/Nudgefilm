@@ -66,6 +66,10 @@ export default async function LoginPage({ searchParams }: Props) {
           Continue with Google
         </button>
       </form>
+      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+        Using Google? You won&apos;t get a confirmation email from us — sign-in completes after you
+        approve Google. That works with any email on your Google account (Gmail, iCloud, etc.).
+      </p>
       <div className="mt-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-white/10" />
         <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">or</span>
