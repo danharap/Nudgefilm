@@ -39,7 +39,6 @@ export function SiteHeaderClient(props: Props) {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
         <Link href="/" className="shrink-0 text-base font-semibold tracking-tight text-white transition hover:opacity-90 sm:text-lg">
           <span className="text-indigo-300">{APP_NAME}</span>
-          <span className="hidden text-zinc-500 sm:inline"> - movie mood engine</span>
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex">
