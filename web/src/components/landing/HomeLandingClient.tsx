@@ -484,7 +484,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
                       viewport={{ once: true, amount: 0.4 }}
                       transition={{ duration: 0.45, delay: 0.72 }}
-                      className="pointer-events-none relative ml-auto w-[min(260px,88vw)] rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
+                      className="pointer-events-none relative w-full rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
                     >
                       <div className="flex items-start gap-2">
                         <span className="mt-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/90 text-[10px] font-bold text-black">
@@ -620,69 +620,28 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </div>
       </section>
 
-      <section className="relative border-y border-[var(--surface-border)] bg-[var(--surface-2)]/80 py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">Vibe picks</p>
-            <h2 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">Pick the vibe. Browse less.</h2>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-secondary">
-              Choose a mood and get a focused set fast.
-            </p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
-            {vibeOptions.map((v) => (
-              <button
-                key={v}
-                type="button"
-                onClick={() => setActiveVibe(v)}
-                className={`shrink-0 rounded-full border px-4 py-2 text-sm transition ${
-                  activeVibe === v
-                    ? "border-indigo-400/45 bg-indigo-400/15 text-indigo-500"
-                    : "border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
-                }`}
-              >
-                {v}
-              </button>
-            ))}
-          </div>
-          <p className="mt-3 text-xs text-tertiary">
-            Because you picked <span className="font-medium text-secondary">{activeVibe}</span>,
-            here&apos;s a tight set for tonight.
+      <section className="border-y border-[var(--surface-border)] bg-[var(--surface-2)]/55 py-16 sm:py-18">
+        <div className="mx-auto flex max-w-4xl flex-col items-center px-4 text-center sm:px-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
+            Ready when you are
           </p>
-          <motion.div
-            layout
-            className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
-          >
-            {showcased.map((movie) => {
-              const image = posterUrl(movie.poster_path, "w342");
-              const href = movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
-              return (
-                <motion.div
-                  key={`${activeVibe}-${movie.id}`}
-                  layout
-                  initial={reduceMotion ? undefined : { opacity: 0, y: 18, scale: 0.98 }}
-                  animate={reduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.4 }}
-                  whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
-                  className="group overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] shadow-sm shadow-black/20"
-                >
-                  <Link href={href} className="block">
-                    <div className="relative aspect-[2/3] overflow-hidden">
-                      {image ? (
-                        <Image src={image} alt={movie.title} fill className="object-cover transition duration-500 group-hover:scale-105" sizes="(max-width:640px) 46vw, 20vw" />
-                      ) : (
-                        <div className="skeleton h-full w-full" />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-2">
-                        <p className="line-clamp-2 text-xs font-medium text-white">{movie.title}</p>
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+          <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
+            Pick faster tonight. Leave a quick review after.
+          </h3>
+          <p className="mt-2 max-w-2xl text-sm text-secondary">
+            Keep your diary up to date and help friends decide what to watch.
+          </p>
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Link href="/recommend" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
+              Find a film tonight
+            </Link>
+            <Link
+              href={user ? "/feedback" : "/login?redirect=/feedback"}
+              className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-6 py-2.5 text-sm font-semibold text-primary transition hover:bg-[var(--surface-2)]"
+            >
+              {hasReviewed ? "Edit your review" : "Leave a review"}
+            </Link>
+          </div>
         </div>
       </section>
 
