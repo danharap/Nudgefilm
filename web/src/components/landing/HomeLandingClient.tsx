@@ -202,11 +202,10 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
               Product demo
             </p>
             <h2 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-              Tell us the vibe. We&apos;ll narrow the night.
+              Pick the vibe. Get a shortlist.
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-secondary sm:text-base">
-              A calmer way to go from endless scrolling to a tight shortlist. Scroll to see how
-              Nudge Film turns a feeling into a focused set of picks.
+              Fast recommendations for tonight. No endless browse loop.
             </p>
           </div>
         </div>
@@ -470,61 +469,106 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </div>
       </section>
 
-      {/* Guided story strip */}
-      <section className="py-16 sm:py-20">
+      {/* Social proof + community */}
+      <section className="py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-8 max-w-2xl">
+          <div className="mb-7 max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
-              Why it works
+              Community
             </p>
             <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-              A simple movie night flow, designed to finish.
+              See what your friends are watching.
             </h3>
+            <p className="mt-2 text-sm text-secondary">
+              Ratings, quick notes, and watchlists in one place.
+            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            {[
-              {
-                title: "Stop scrolling",
-                desc: "Skip endless catalogs and start from mood instead of volume.",
-                badge: "01",
-              },
-              {
-                title: "Pick the vibe",
-                desc: "Cozy, funny, emotional, intense - choose what tonight feels like.",
-                badge: "02",
-              },
-              {
-                title: "Get a shortlist",
-                desc: "Receive a focused set of strong matches with real reasons.",
-                badge: "03",
-              },
-              {
-                title: "Track your taste",
-                desc: "Rate, log, and keep your diary and watchlist in sync.",
-                badge: "04",
-              },
-              {
-                title: "Share with friends",
-                desc: "See what friends rated and swap recommendations naturally.",
-                badge: "05",
-              },
-            ].map((step, i) => (
+
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(preview.length ? preview.slice(0, 4) : reviews.slice(0, 4)).map((r, i) => (
+                <motion.article
+                  key={`${r.id}-${i}`}
+                  initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.35 }}
+                  transition={{ duration: 0.35, delay: i * 0.05 }}
+                  className="surface-card-subtle rounded-2xl p-4"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300">
+                      {r.reviewer_display_name.slice(0, 1).toUpperCase()}
+                    </div>
+                    <p className="text-xs font-medium text-primary">{r.reviewer_display_name}</p>
+                    <p className="text-[11px] text-tertiary">{formatDate(r.created_at)}</p>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Stars rating={r.rating} />
+                    <span className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] text-secondary">
+                      Logged tonight
+                    </span>
+                  </div>
+                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-tertiary">{r.body}</p>
+                </motion.article>
+              ))}
+            </div>
+
+            <div className="grid gap-3">
               <motion.article
-                key={step.title}
                 initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.4, delay: i * 0.04 }}
-                whileHover={reduceMotion ? undefined : { y: -4 }}
-                className="premium-card surface-card-subtle rounded-2xl p-4"
+                transition={{ duration: 0.35, delay: 0.08 }}
+                className="surface-card rounded-2xl p-4"
               >
-                <span className="inline-flex rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-semibold text-indigo-500">
-                  {step.badge}
-                </span>
-                <p className="mt-3 text-sm font-semibold text-primary">{step.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-tertiary">{step.desc}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                  Friends feed
+                </p>
+                <div className="mt-3 space-y-2">
+                  {["Jules rated The Shining ★★★★☆", "Mika added Psycho to watchlist", "Sam reviewed Cure: 'cold and precise'"].map((itemText) => (
+                    <div
+                      key={itemText}
+                      className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-secondary"
+                    >
+                      {itemText}
+                    </div>
+                  ))}
+                </div>
               </motion.article>
-            ))}
+
+              <motion.article
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.35 }}
+                transition={{ duration: 0.35, delay: 0.12 }}
+                className="surface-card rounded-2xl p-4"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                  Your profile
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full border border-indigo-500/35 bg-indigo-500/10" />
+                  <div>
+                    <p className="text-sm font-semibold text-primary">nudgefilm_user</p>
+                    <p className="text-xs text-tertiary">124 watched · 38 watchlist</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                    <p className="text-sm font-semibold text-primary">4.2</p>
+                    <p className="text-[10px] text-tertiary">Avg rating</p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                    <p className="text-sm font-semibold text-primary">19</p>
+                    <p className="text-[10px] text-tertiary">Reviews</p>
+                  </div>
+                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                    <p className="text-sm font-semibold text-primary">7</p>
+                    <p className="text-[10px] text-tertiary">Friends</p>
+                  </div>
+                </div>
+              </motion.article>
+            </div>
           </div>
         </div>
       </section>
@@ -532,11 +576,10 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       <section className="relative border-y border-[var(--surface-border)] bg-[var(--surface-2)]/80 py-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">How it works</p>
-            <h2 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">Pick the vibe. Get better recommendations.</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">Vibe picks</p>
+            <h2 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">Pick the vibe. Browse less.</h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-secondary">
-              Start with a feeling — cozy, intense, emotional — and we&apos;ll build a shortlist
-              around it so you can press play faster.
+              Choose a mood and get a focused set fast.
             </p>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
@@ -556,11 +599,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
             ))}
           </div>
           <p className="mt-3 text-xs text-tertiary">
-            Because you picked{" "}
-            <span className="font-medium text-secondary">
-              {activeVibe}
-            </span>
-            , here&apos;s a tight, rewatchable set of titles — no endless scroll.
+            Because you picked <span className="font-medium text-secondary">{activeVibe}</span>,
+            here&apos;s a tight set for tonight.
           </p>
           <motion.div
             layout
