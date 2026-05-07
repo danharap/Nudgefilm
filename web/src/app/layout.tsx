@@ -1,6 +1,7 @@
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { APP_NAME } from "@/config/brand";
 import { getConfiguredOrigin, getMetadataBase } from "@/lib/site-url";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -100,6 +101,7 @@ export default function RootLayout({
           </a>
           . Not endorsed or certified by TMDb.
         </footer>
+        <SpeedInsights />
       </body>
     </html>
   );
