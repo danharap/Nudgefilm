@@ -2,6 +2,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { APP_NAME } from "@/config/brand";
 import { getConfiguredOrigin, getMetadataBase } from "@/lib/site-url";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
@@ -69,6 +70,12 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="theme-color" content="#09090b" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('nudge-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}else{document.documentElement.setAttribute('data-theme','dark');}}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();",
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
@@ -101,6 +108,8 @@ export default function RootLayout({
           </a>
           . Not endorsed or certified by TMDb.
         </footer>
+        <Analytics />
+        <SpeedInsights />
         <Analytics />
       </body>
     </html>

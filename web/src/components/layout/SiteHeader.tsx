@@ -9,7 +9,8 @@ const publicLinks = [
 
 const authedLinks = [
   { href: "/watchlist", label: "Watchlist" },
-  { href: "/friends", label: "Following" },
+  { href: "/friends", label: "Social" },
+  { href: "/settings", label: "Settings" },
   { href: "/import", label: "Import" },
 ];
 

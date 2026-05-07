@@ -4,8 +4,8 @@ import { STORAGE_KEY_LAST_RECOMMENDATION } from "@/config/brand";
 import { TMDB_GENRE_OPTIONS } from "@/config/tmdbGenres";
 import type { RecommendationInput } from "@/features/recommendations/schema";
 import type { FinderMeta, RecommendedMovie } from "@/types/movie";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 /** Canonical value sent to the API (normalized in engine via normalizeMoodKey). */
 const VIBE_OPTIONS: { value: string; label: string }[] = [
@@ -25,8 +25,21 @@ const VIBE_OPTIONS: { value: string; label: string }[] = [
 
 export function RecommendClient() {
   const router = useRouter();
-  const [vibes, setVibes] = useState<string[]>(["comforting"]);
-  const [genres, setGenres] = useState<number[]>([]);
+  const searchParams = useSearchParams();
+  const prefilledTitle = searchParams.get("title")?.trim() ?? "";
+  const prefilledGenres = useMemo(() => {
+    const raw = searchParams.get("genres") ?? "";
+    return raw
+      .split(",")
+      .map((v) => Number(v.trim()))
+      .filter((n) => Number.isFinite(n) && n > 0);
+  }, [searchParams]);
+  const prefilledVibes = useMemo(() => inferVibesFromGenres(prefilledGenres), [prefilledGenres]);
+
+  const [vibes, setVibes] = useState<string[]>(
+    prefilledVibes.length > 0 ? prefilledVibes : ["comforting"],
+  );
+  const [genres, setGenres] = useState<number[]>(prefilledGenres);
   const [runtimeMin, setRuntimeMin] = useState("");
   const [runtimeMax, setRuntimeMax] = useState("");
   const [minVote, setMinVote] = useState("6.5");
@@ -127,6 +140,14 @@ export function RecommendClient() {
           A few honest inputs — we&apos;ll hand back a tight shortlist, not an
           endless catalog.
         </p>
+        {prefilledTitle ? (
+          <div className="inline-flex max-w-xl items-start gap-2 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-left text-xs text-indigo-100/90">
+            <span className="mt-0.5">✨</span>
+            <span>
+              Prefilled from <strong>{prefilledTitle}</strong>. We selected vibe and genres automatically — tweak anything before running.
+            </span>
+          </div>
+        ) : null}
       </header>
 
       <section className="reveal space-y-3" style={{ animationDelay: "0.05s" }}>
@@ -364,6 +385,20 @@ export function RecommendClient() {
       </button>
     </form>
   );
+}
+
+function inferVibesFromGenres(genreIds: number[]) {
+  const set = new Set(genreIds);
+  const vibes = new Set<string>();
+  if (set.has(35)) vibes.add("funny");
+  if (set.has(10749)) vibes.add("romantic");
+  if (set.has(18)) vibes.add("emotional");
+  if (set.has(53) || set.has(27) || set.has(80)) vibes.add("intense");
+  if (set.has(14) || set.has(878) || set.has(9648)) vibes.add("weird");
+  if (set.has(12) || set.has(28)) vibes.add("adventurous");
+  if (set.has(10751)) vibes.add("comforting");
+  if (vibes.size === 0) vibes.add("comforting");
+  return [...vibes].slice(0, 3);
 }
 
 // ---------------------------------------------------------------------------

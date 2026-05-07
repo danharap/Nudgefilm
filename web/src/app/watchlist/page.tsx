@@ -46,17 +46,39 @@ export default async function WatchlistPage() {
           Films you&apos;re keeping on deck.{" "}
           {!user ? "Sign in to sync this list across devices." : null}
         </p>
+        <div className="flex flex-wrap gap-2 pt-2">
+          <Link
+            href="/browse"
+            className="rounded-full border border-white/12 bg-white/[0.03] px-4 py-2 text-xs font-medium text-zinc-200 transition hover:border-white/25 hover:text-white"
+          >
+            Browse titles
+          </Link>
+          <Link
+            href="/recommend"
+            className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-medium text-indigo-200 transition hover:border-indigo-300/40 hover:text-indigo-100"
+          >
+            Find by vibe
+          </Link>
+        </div>
       </header>
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-16 text-center">
           <p className="text-zinc-400">Nothing saved yet.</p>
-          <Link
-            href="/recommend"
-            className="mt-6 inline-block text-sm font-medium text-indigo-300 hover:text-indigo-200"
-          >
-            Find something to queue →
-          </Link>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/browse"
+              className="rounded-full border border-white/12 bg-white/[0.03] px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-white/25 hover:text-white"
+            >
+              Browse and add
+            </Link>
+            <Link
+              href="/recommend"
+              className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-sm font-medium text-indigo-200 transition hover:border-indigo-300/40 hover:text-indigo-100"
+            >
+              Find by vibe
+            </Link>
+          </div>
         </div>
       ) : (
         <ul className="flex flex-col gap-4">

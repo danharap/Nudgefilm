@@ -102,6 +102,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
   const backdrop = posterUrl(movie.backdrop_path, "original");
   const poster = posterUrl(movie.poster_path, "w500");
+  const similarHref = `/recommend?source=movie&title=${encodeURIComponent(movie.title)}&genres=${encodeURIComponent(movie.genres.map((g) => g.id).join(","))}&fromTmdbId=${tmdbId}`;
 
   return (
     <article>
@@ -210,6 +211,7 @@ export default async function MovieDetailPage({ params }: Props) {
           isLoggedIn={!!user}
           existing={existing}
           inWatchlist={inWatchlist}
+          similarHref={similarHref}
         />
 
         {!user ? (

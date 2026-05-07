@@ -12,6 +12,7 @@ export function FollowButton({
 }) {
   const [following, setFollowing] = useState(initialFollowing);
   const [isPending, startTransition] = useTransition();
+  const [isHovering, setIsHovering] = useState(false);
 
   function toggle() {
     const next = !following;
@@ -33,13 +34,15 @@ export function FollowButton({
     <button
       onClick={toggle}
       disabled={isPending}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
       className={`rounded-full px-4 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
         following
           ? "border border-white/15 bg-white/5 text-zinc-300 hover:border-red-400/40 hover:bg-red-900/20 hover:text-red-300"
           : "bg-indigo-400 text-black hover:bg-indigo-300"
       }`}
     >
-      {following ? "Following" : "Follow"}
+      {following ? (isHovering ? "Unfollow" : "Following") : "Follow"}
     </button>
   );
 }

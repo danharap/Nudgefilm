@@ -13,11 +13,12 @@ type Props = {
   isLoggedIn: boolean;
   existing: ExistingEntry;
   inWatchlist: boolean;
+  similarHref: string;
 };
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist }: Props) {
+export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist, similarHref }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -105,6 +106,12 @@ export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist }: Props
         >
           {queued ? "✓ In watchlist · Remove" : "Watchlist"}
         </button>
+        <Link
+          href={similarHref}
+          className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
+        >
+          Find similar
+        </Link>
       </div>
 
       {showForm && (

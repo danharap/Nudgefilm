@@ -22,6 +22,16 @@ A production-style app for indecisive viewers: **vibe** chips or **genre-strict*
 4. Copy **Project URL** and the **anon / public** key from **Project Settings → API** for env vars below.  
    If the dashboard shows a **publishable** key (`sb_publishable_…`) and sign-in fails, use the **legacy anon** JWT (`eyJ…`) in `NEXT_PUBLIC_SUPABASE_ANON_KEY` instead — the JS client must match what your project expects.
 
+5. (Google OAuth) In **Authentication → Providers → Google**, use the Supabase callback URL:
+
+   - `https://<your-project-ref>.supabase.co/auth/v1/callback`
+
+   Then add your app callback URLs to **Authentication → URL Configuration → Redirect URLs**:
+
+   - `http://localhost:3000/auth/callback`
+   - `https://nudgefilm.com/auth/callback`
+   - Your preview callback(s), e.g. `https://<preview>.vercel.app/auth/callback`
+
 ## 2. Local app
 
 ```bash
