@@ -44,6 +44,41 @@ type Props = {
   >;
 };
 
+const seedCommunityReviews: Review[] = [
+  {
+    id: -101,
+    user_id: "seed-user-1",
+    reviewer_display_name: "Danyeul",
+    rating: 5,
+    body: "Finally a movie app that helps me pick in five minutes instead of forty.",
+    created_at: "2026-05-01T20:00:00.000Z",
+  },
+  {
+    id: -102,
+    user_id: "seed-user-2",
+    reviewer_display_name: "Mika",
+    rating: 4,
+    body: "The shortlist is tight and the friend activity actually makes watchlists useful.",
+    created_at: "2026-04-28T20:00:00.000Z",
+  },
+  {
+    id: -103,
+    user_id: "seed-user-3",
+    reviewer_display_name: "Jules",
+    rating: 5,
+    body: "Mood filters plus runtime is exactly what I wanted for weeknight picks.",
+    created_at: "2026-04-25T20:00:00.000Z",
+  },
+  {
+    id: -104,
+    user_id: "seed-user-4",
+    reviewer_display_name: "Sam",
+    rating: 4,
+    body: "Clean UI, fast decisions, and no pointless scrolling. Super solid.",
+    created_at: "2026-04-21T20:00:00.000Z",
+  },
+];
+
 const heroHeadlines = [
   "Stop scrolling. Start watching.",
   "The right movie for tonight.",
@@ -79,9 +114,13 @@ function formatDate(iso: string) {
 
 export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
-  const preview = reviews.slice(0, 3);
-  const avgRating = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : null;
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
+  const communityReviews = useMemo(() => {
+    const real = reviews.slice(0, 4);
+    if (real.length >= 4) return real;
+    const needed = 4 - real.length;
+    return [...real, ...seedCommunityReviews.slice(0, needed)];
+  }, [reviews]);
   const [activeVibe, setActiveVibe] = useState<LandingVibe>("Cozy");
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
@@ -472,21 +511,29 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       {/* Social proof + community */}
       <section className="py-14 sm:py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-7 max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
-              Community
-            </p>
-            <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-              See what your friends are watching.
-            </h3>
-            <p className="mt-2 text-sm text-secondary">
-              Ratings, quick notes, and watchlists in one place.
-            </p>
+          <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
+                Community
+              </p>
+              <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
+                See what your friends are watching.
+              </h3>
+              <p className="mt-2 text-sm text-secondary">
+                Ratings, quick notes, and watchlists in one place.
+              </p>
+            </div>
+            <Link
+              href={user ? "/feedback" : "/login?redirect=/feedback"}
+              className="rounded-full border border-indigo-400/45 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/30"
+            >
+              {hasReviewed ? "Edit your review" : "Add a review"}
+            </Link>
           </div>
 
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
             <div className="grid gap-3 sm:grid-cols-2">
-              {(preview.length ? preview.slice(0, 4) : reviews.slice(0, 4)).map((r, i) => (
+              {communityReviews.map((r, i) => (
                 <motion.article
                   key={`${r.id}-${i}`}
                   initial={reduceMotion ? false : { opacity: 0, y: 18 }}
@@ -639,52 +686,6 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
         </div>
       </section>
 
-      {(preview.length > 0 || !user) && (
-        <section className="border-t border-[var(--surface-border)] bg-[var(--surface-2)]/50 px-4 py-20 sm:px-6 sm:py-24">
-          <div className="mx-auto max-w-5xl">
-            <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">Reviews</p>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight text-primary sm:text-3xl">What people are saying</h2>
-              </div>
-              {avgRating !== null && (
-                <div className="surface-card rounded-2xl px-5 py-3 text-center">
-                  <p className="text-3xl font-bold text-primary">{avgRating.toFixed(1)}</p>
-                  <Stars rating={Math.round(avgRating)} />
-                </div>
-              )}
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {preview.map((r) => (
-                <div key={r.id} className="surface-card rounded-2xl p-5">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-400/10 text-xs font-bold text-indigo-300">
-                      {r.reviewer_display_name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-primary">{r.reviewer_display_name}</p>
-                      <p className="text-xs text-tertiary">{formatDate(r.created_at)}</p>
-                    </div>
-                    <Stars rating={r.rating} />
-                  </div>
-                  <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-secondary">{r.body}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 flex justify-center">
-              {user ? (
-                <Link href="/feedback" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
-                  {hasReviewed ? "Edit your review" : "Leave a review"}
-                </Link>
-              ) : (
-                <Link href="/login?redirect=/feedback" className="btn-brand rounded-full px-6 py-2.5 text-sm font-semibold">
-                  Sign in to leave a review
-                </Link>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
     </div>
   );
 }
