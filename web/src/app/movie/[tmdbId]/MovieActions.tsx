@@ -16,11 +16,12 @@ type Props = {
   isLoggedIn: boolean;
   existing: ExistingEntry;
   inWatchlist: boolean;
+  similarHref: string;
 };
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist }: Props) {
+export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist, similarHref }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showRateForm, setShowRateForm] = useState(false);
@@ -57,7 +58,7 @@ export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist }: Prop
           Sign in to log / rate
         </Link>
         <Link
-          href="/recommend"
+          href={similarHref}
           className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
         >
           Find similar
@@ -117,7 +118,7 @@ export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist }: Prop
         </button>
 
         <Link
-          href="/recommend"
+          href={similarHref}
           className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
         >
           Find similar

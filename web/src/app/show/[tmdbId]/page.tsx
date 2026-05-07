@@ -94,6 +94,7 @@ export default async function ShowDetailPage({ params }: Props) {
 
   const backdrop = posterUrl(show.backdrop_path, "original");
   const poster = posterUrl(show.poster_path, "w500");
+  const similarHref = `/recommend?source=tv&title=${encodeURIComponent(show.name)}&genres=${encodeURIComponent((show.genres ?? []).map((g) => g.id).join(","))}&fromTmdbId=${tmdbId}`;
   const year = show.first_air_date?.slice(0, 4);
   const runtime =
     show.episode_run_time?.length > 0
@@ -262,6 +263,7 @@ export default async function ShowDetailPage({ params }: Props) {
           isLoggedIn={!!user}
           existing={existing}
           inWatchlist={inWatchlist}
+          similarHref={similarHref}
         />
 
         {!user && (

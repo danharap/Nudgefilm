@@ -6,7 +6,7 @@ import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MobileMenu } from "./MobileMenu";
 
 type NavLink = { href: string; label: string };
@@ -26,7 +26,14 @@ export function SiteHeaderClient(props: Props) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
+  const [notificationsCleared, setNotificationsCleared] = useState(false);
   useMotionValueEvent(scrollY, "change", (v) => setElevated(v > 8));
+  useEffect(() => {
+    if (pathname.startsWith("/friends")) setNotificationsCleared(true);
+  }, [pathname]);
+  const effectiveNotificationCount = notificationsCleared || pathname.startsWith("/friends")
+    ? 0
+    : pendingRequestCount;
 
   return (
     <motion.header
@@ -60,17 +67,18 @@ export function SiteHeaderClient(props: Props) {
           {user ? (
             <>
               <Link
-                href="/friends?tab=inbox"
+                href="/friends"
+                onClick={() => setNotificationsCleared(true)}
                 className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.02] text-zinc-300 transition hover:border-white/20 hover:text-white"
-                aria-label={`Notifications${pendingRequestCount > 0 ? ` (${pendingRequestCount})` : ""}`}
+                aria-label={`Notifications${effectiveNotificationCount > 0 ? ` (${effectiveNotificationCount})` : ""}`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M12 3a7 7 0 0 1 7 7v3.7l1.2 2.3c.3.7-.2 1.5-1 1.5H4.8c-.8 0-1.3-.8-1-1.5L5 13.7V10a7 7 0 0 1 7-7z" stroke="currentColor" strokeWidth="1.6" />
                   <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
-                {pendingRequestCount > 0 ? (
+                {effectiveNotificationCount > 0 ? (
                   <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-indigo-500 px-1 text-center text-[10px] font-semibold text-white">
-                    {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
+                    {effectiveNotificationCount > 9 ? "9+" : effectiveNotificationCount}
                   </span>
                 ) : null}
               </Link>

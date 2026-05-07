@@ -45,6 +45,7 @@ export function MobileMenu({
   }, [open]);
 
   const allLinks = [...publicLinks, ...(user ? authedLinks : [])];
+  const effectiveNotificationCount = pathname.startsWith("/friends") ? 0 : pendingRequestCount;
   const bottomLinks = user
     ? [
         { href: "/", label: "Home" },
@@ -60,7 +61,7 @@ export function MobileMenu({
         { href: "/login", label: "Log in" },
         { href: "/signup", label: "Sign up" },
       ];
-  const mobileInboxLink = user ? { href: "/friends?tab=inbox", label: "Notifications", count: pendingRequestCount } : null;
+  const mobileInboxLink = user ? { href: "/friends", label: "Notifications", count: effectiveNotificationCount } : null;
 
   const drawer = (
     <>
