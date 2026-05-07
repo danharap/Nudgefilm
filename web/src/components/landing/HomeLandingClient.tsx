@@ -39,6 +39,7 @@ type Props = {
       poster_path: string | null;
       genre_ids: number[];
       mediaType: "movie" | "tv";
+      vote_average: number;
     }>
   >;
 };
