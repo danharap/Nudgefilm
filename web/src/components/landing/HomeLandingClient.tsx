@@ -102,6 +102,10 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     () => suggestionsByVibe[activeVibe] ?? [],
     [activeVibe, suggestionsByVibe],
   );
+  const horrorShowcase = useMemo(
+    () => suggestionsByVibe["Late Night"] ?? [],
+    [suggestionsByVibe],
+  );
 
   const scrollSectionRef = useRef<HTMLDivElement | null>(null);
   const { scrollYProgress } = useScroll({
@@ -179,8 +183,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {/* Product scroll reveal */}
-      <section ref={scrollSectionRef} className="relative py-20 sm:py-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <section ref={scrollSectionRef} className="relative py-20 sm:py-24">
+        <div className="mx-auto max-w-7xl px-3 sm:px-5">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500/75">
               Product demo
@@ -195,7 +199,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           </div>
         </div>
 
-        <div className="relative mt-10 h-[150vh] sm:h-[180vh]">
+        <div className="relative mt-8 h-[110vh] sm:h-[125vh]">
           <motion.div
             style={
               reduceMotionBg
@@ -206,24 +210,51 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     opacity: cardOpacity,
                   }
             }
-            className="surface-card sticky top-16 mx-4 max-w-6xl rounded-3xl px-4 py-4 shadow-2xl sm:top-20 sm:mx-auto sm:px-6 sm:py-6 lg:px-8 lg:py-7"
+            className="surface-card sticky top-16 mx-2 max-w-7xl rounded-3xl px-4 py-4 shadow-2xl sm:top-20 sm:mx-auto sm:px-5 sm:py-5 lg:px-6 lg:py-6"
           >
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1.15fr)_minmax(0,1.3fr)] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1.4fr)]">
               {/* Left: vibe + filters */}
               <div className="space-y-4 border-b border-[var(--surface-border)] pb-4 sm:border-b-0 sm:border-r sm:pb-0 sm:pr-5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-indigo-500/80">
-                  Tonight&apos;s vibe
+                  Tonight&apos;s setup
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Cozy", "Funny", "Emotional", "Intense"].map((label) => (
+                  {["Horror", "Late Night", "Intense", "Weird"].map((label) => (
                     <span
                       key={label}
-                      className="chip inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs"
+                      className="accent-selected inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/90" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
                       {label}
                     </span>
                   ))}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-secondary">Genres</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {["Horror", "Thriller", "Mystery"].map((label) => (
+                      <span key={label} className="chip rounded-full px-3 py-1 text-xs">
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-secondary">Filters</p>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] text-tertiary">
+                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
+                      Min rating: <span className="font-semibold text-secondary">7.0+</span>
+                    </div>
+                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
+                      Runtime: <span className="font-semibold text-secondary">95-130m</span>
+                    </div>
+                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
+                      Era: <span className="font-semibold text-secondary">1998-2024</span>
+                    </div>
+                    <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-1.5">
+                      Language: <span className="font-semibold text-secondary">EN</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="space-y-2 pt-2">
                   <p className="text-xs font-medium text-secondary">Guardrails</p>
@@ -244,8 +275,9 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                         Shortlist
                       </p>
                       <p className="text-xs text-tertiary">
-                        Because you picked <span className="font-medium text-secondary">Cozy</span>{" "}
-                        and <span className="font-medium text-secondary">Emotional</span>.
+                        Because you picked <span className="font-medium text-secondary">Horror</span>{" "}
+                        + <span className="font-medium text-secondary">Thriller</span> with{" "}
+                        <span className="font-medium text-secondary">7.0+ ratings</span>.
                       </p>
                     </div>
                     <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-[11px] font-medium text-indigo-500">
@@ -253,7 +285,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                    {(showcased.length ? showcased.slice(0, 3) : []).map((movie, i) => {
+                    {(horrorShowcase.length ? horrorShowcase.slice(0, 3) : showcased.slice(0, 3)).map((movie, i) => {
                       const image = posterUrl(movie.poster_path, "w342");
                       const href =
                         movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
@@ -285,7 +317,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                                   {movie.title}
                                 </p>
                                 <p className="mt-0.5 text-[10px] text-zinc-300/90">
-                                  ★ {movie.vote_average?.toFixed(1) ?? "—"} · Watchlist · Friends 4.3
+                                  ★ {movie.vote_average?.toFixed(1) ?? "—"} · Min 7.0 matched · Friends 4.3
                                 </p>
                               </div>
                             </div>
@@ -310,18 +342,18 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     </p>
                     <ul className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-tertiary">
                       <li>
-                        • Slow, character-driven pacing with{" "}
-                        <span className="font-medium text-secondary">warm cinematography</span>.
+                        • High-tension pacing and{" "}
+                        <span className="font-medium text-secondary">dread-forward atmosphere</span>.
                       </li>
                       <li>
-                        • Rated <span className="font-medium text-secondary">8.1/10</span> from{" "}
-                        <span className="font-medium text-secondary">15k</span> TMDb votes.
+                        • Rated <span className="font-medium text-secondary">7.0+</span> with strong
+                        vote counts and low-noise picks.
                       </li>
                       <li>
                         • Logged by <span className="font-medium text-secondary">3 friends</span> in
                         the last month.
                       </li>
-                      <li>• Streaming tonight on your saved region.</li>
+                      <li>• Runtime kept near 2 hours for a focused horror night.</li>
                     </ul>
                   </div>
                   <div className="relative space-y-3">
