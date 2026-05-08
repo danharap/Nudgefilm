@@ -249,11 +249,12 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
         </div>
 
         <section className="mt-8">
-          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-white/10 px-1 pb-3">
+          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-white/10 px-1 pt-1 pb-3">
             {SHOW_TABS.map((tab) => (
               <Link
                 key={tab}
                 href={tabHref(tab)}
+                scroll={false}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium capitalize transition ${
                   activeTab === tab
                     ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/30"

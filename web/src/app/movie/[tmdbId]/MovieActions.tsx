@@ -1,8 +1,6 @@
 "use client";
 
 import { addToWatchlist, markWatched, removeFromWatchlist } from "@/app/actions/library";
-import { addTmdbMovieToList } from "@/app/actions/lists";
-import { removeFavouriteMovie, setFavouriteMovie } from "@/app/actions/library";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -19,8 +17,6 @@ type Props = {
   existing: ExistingEntry;
   inWatchlist: boolean;
   similarHref: string;
-  favouritePosition: 1 | 2 | 3 | 4 | null;
-  availableLists: Array<{ id: string; name: string; emoji: string | null }>;
   trailerUrl?: string | null;
   shareUrl: string;
 };
@@ -33,8 +29,6 @@ export function MovieActions({
   existing,
   inWatchlist,
   similarHref,
-  favouritePosition,
-  availableLists,
   trailerUrl,
   shareUrl,
 }: Props) {
@@ -44,7 +38,6 @@ export function MovieActions({
   const [rating, setRating] = useState<number>(existing?.user_rating ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [queued, setQueued] = useState(inWatchlist);
-  const [selectedListId, setSelectedListId] = useState(availableLists[0]?.id ?? "");
 
   function run(
     action: () => Promise<void>,
@@ -143,28 +136,6 @@ export function MovieActions({
           {queued ? "✓ In watchlist · Remove" : "Watchlist"}
         </button>
 
-        <button
-          type="button"
-          disabled={isPending}
-          onClick={() =>
-            run(
-              () =>
-                favouritePosition
-                  ? removeFavouriteMovie(favouritePosition)
-                  : setFavouriteMovie(tmdbId, 1),
-              favouritePosition
-                ? "Removed from favourites."
-                : "Added to favourites (slot #1).",
-            )
-          }
-          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
-            favouritePosition
-              ? "border border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
-              : "border border-white/10 text-zinc-300 hover:border-amber-400/30 hover:text-amber-100"
-          }`}
-        >
-          {favouritePosition ? `★ Favourite #${favouritePosition}` : "☆ Add favourite"}
-        </button>
         <Link
           href={similarHref}
           className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
@@ -204,36 +175,6 @@ export function MovieActions({
           Share
         </button>
       </div>
-
-      {availableLists.length > 0 ? (
-        <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/20 p-3 sm:flex-row sm:items-center">
-          <p className="text-xs text-zinc-400">Add to list</p>
-          <select
-            value={selectedListId}
-            onChange={(e) => setSelectedListId(e.target.value)}
-            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-indigo-400/30"
-          >
-            {availableLists.map((list) => (
-              <option key={list.id} value={list.id}>
-                {(list.emoji ? `${list.emoji} ` : "") + list.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={isPending || !selectedListId}
-            onClick={() =>
-              run(
-                () => addTmdbMovieToList(selectedListId, tmdbId),
-                "Added to list.",
-              )
-            }
-            className="rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 transition hover:border-indigo-400/30 disabled:opacity-50"
-          >
-            Add
-          </button>
-        </div>
-      ) : null}
 
       {/* Rate / log form */}
       {showRateForm ? (

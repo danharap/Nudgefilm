@@ -70,8 +70,6 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
   // Load existing diary entry + friends' ratings for this movie.
   let existing: { user_rating: number | null; notes: string | null } | null = null;
   let inWatchlist = false;
-  let favouritePosition: 1 | 2 | 3 | 4 | null = null;
-  let availableLists: Array<{ id: string; name: string; emoji: string | null }> = [];
   type FriendRating = { name: string; username: string | null; avatar_url: string | null; rating: number };
   let friendRatings: FriendRating[] = [];
   type Review = {
@@ -134,27 +132,7 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
           .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
           .eq("status", "accepted"),
       ]);
-      const [{ data: favRow }, { data: listRows }] = await Promise.all([
-        supabase
-          .from("favourite_movies")
-          .select("position")
-          .eq("user_id", user.id)
-          .eq("movie_id", movieRow.id)
-          .maybeSingle(),
-        supabase
-          .from("profile_lists")
-          .select("id, name, emoji")
-          .eq("user_id", user.id)
-          .order("position", { ascending: true }),
-      ]);
-
       inWatchlist = !!watchlistRow?.id;
-      favouritePosition = (favRow?.position as 1 | 2 | 3 | 4 | undefined) ?? null;
-      availableLists = (listRows ?? []).map((l) => ({
-        id: String(l.id),
-        name: String(l.name),
-        emoji: (l.emoji as string | null) ?? null,
-      }));
 
       if (entry) {
         existing = {
@@ -290,8 +268,6 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
               existing={existing}
               inWatchlist={inWatchlist}
               similarHref={similarHref}
-              favouritePosition={favouritePosition}
-              availableLists={availableLists}
               trailerUrl={trailerUrl}
               shareUrl={shareUrl}
             />
@@ -303,11 +279,12 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
           </div>
         </section>
         <section className="mt-8 sm:mt-10">
-          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-white/10 px-1 pb-3">
+          <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-white/10 px-1 pt-1 pb-3">
             {MOVIE_TABS.map((tab) => (
               <Link
                 key={tab}
                 href={tabHref(tab)}
+                scroll={false}
                 className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium capitalize transition ${
                   activeTab === tab
                     ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/30"
