@@ -14,11 +14,21 @@ type Props = {
   existing: ExistingEntry;
   inWatchlist: boolean;
   similarHref: string;
+  trailerUrl?: string | null;
+  shareUrl: string;
 };
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist, similarHref }: Props) {
+export function ShowActions({
+  tmdbId,
+  isLoggedIn,
+  existing,
+  inWatchlist,
+  similarHref,
+  trailerUrl,
+  shareUrl,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
@@ -59,13 +69,13 @@ export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist, similar
   }
 
   return (
-    <div className="mt-10 space-y-4">
-      <div className="flex flex-wrap justify-center gap-3 md:justify-start">
+    <div className="mt-10 space-y-4 rounded-2xl border border-white/10 bg-[var(--surface-1)]/70 p-4 backdrop-blur-sm sm:p-5">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <button
           type="button"
           disabled={isPending}
           onClick={() => setShowForm((p) => !p)}
-          className={`rounded-full px-5 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
             existing
               ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
               : "bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25"
@@ -98,7 +108,7 @@ export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist, similar
               );
             }
           }}
-          className={`rounded-full px-5 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
             queued
               ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
               : "border border-white/10 text-zinc-300 hover:border-indigo-400/30 hover:text-white"
@@ -108,10 +118,38 @@ export function ShowActions({ tmdbId, isLoggedIn, existing, inWatchlist, similar
         </button>
         <Link
           href={similarHref}
-          className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
+          className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
         >
           Find similar
         </Link>
+        {trailerUrl ? (
+          <a
+            href={trailerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          >
+            Watch trailer
+          </a>
+        ) : (
+          <button type="button" disabled className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-500">
+            No trailer
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(shareUrl);
+              toast.success("Link copied.");
+            } catch {
+              toast.error("Could not copy link.");
+            }
+          }}
+          className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+        >
+          Share
+        </button>
       </div>
 
       {showForm && (

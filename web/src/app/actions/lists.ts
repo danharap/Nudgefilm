@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { getMovieDetails } from "@/lib/tmdb/client";
 import { revalidatePath } from "next/cache";
 
 async function getAuthedUser() {
@@ -151,6 +152,49 @@ export async function addMovieToList(listId: string, movieId: number) {
   }
 
   revalidatePath("/profile");
+}
+
+async function ensureMovieRowByTmdb(tmdbId: number): Promise<number> {
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("movies")
+    .select("id")
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle();
+  if (existing?.id) return Number(existing.id);
+
+  const d = await getMovieDetails(tmdbId);
+  const year =
+    d.release_date && d.release_date.length >= 4
+      ? Number(d.release_date.slice(0, 4))
+      : null;
+
+  const row = {
+    tmdb_id: tmdbId,
+    title: d.title,
+    release_year: Number.isFinite(year) ? year : null,
+    poster_path: d.poster_path,
+    backdrop_path: d.backdrop_path,
+    overview: d.overview,
+    runtime: d.runtime,
+    vote_average: d.vote_average,
+    vote_count: d.vote_count,
+    genres: d.genres,
+  };
+
+  const { data, error } = await supabase
+    .from("movies")
+    .upsert(row, { onConflict: "tmdb_id" })
+    .select("id")
+    .single();
+
+  if (error) throw new Error("Could not prepare movie for list.");
+  return Number(data.id);
+}
+
+export async function addTmdbMovieToList(listId: string, tmdbId: number) {
+  const movieId = await ensureMovieRowByTmdb(tmdbId);
+  return addMovieToList(listId, movieId);
 }
 
 export async function removeMovieFromList(listId: string, movieId: number) {

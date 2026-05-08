@@ -1,6 +1,8 @@
 "use client";
 
 import { addToWatchlist, markWatched, removeFromWatchlist } from "@/app/actions/library";
+import { addTmdbMovieToList } from "@/app/actions/lists";
+import { removeFavouriteMovie, setFavouriteMovie } from "@/app/actions/library";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -17,17 +19,32 @@ type Props = {
   existing: ExistingEntry;
   inWatchlist: boolean;
   similarHref: string;
+  favouritePosition: 1 | 2 | 3 | 4 | null;
+  availableLists: Array<{ id: string; name: string; emoji: string | null }>;
+  trailerUrl?: string | null;
+  shareUrl: string;
 };
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist, similarHref }: Props) {
+export function MovieActions({
+  tmdbId,
+  isLoggedIn,
+  existing,
+  inWatchlist,
+  similarHref,
+  favouritePosition,
+  availableLists,
+  trailerUrl,
+  shareUrl,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showRateForm, setShowRateForm] = useState(false);
   const [rating, setRating] = useState<number>(existing?.user_rating ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [queued, setQueued] = useState(inWatchlist);
+  const [selectedListId, setSelectedListId] = useState(availableLists[0]?.id ?? "");
 
   function run(
     action: () => Promise<void>,
@@ -63,19 +80,28 @@ export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist, simila
         >
           Find similar
         </Link>
+        {trailerUrl ? (
+          <a
+            href={trailerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-white/10 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          >
+            Watch trailer
+          </a>
+        ) : null}
       </div>
     );
   }
 
   return (
-    <div className="mt-10 space-y-4">
-      {/* Primary actions */}
-      <div className="flex flex-wrap justify-center gap-3 md:justify-start">
+    <div className="mt-10 space-y-4 rounded-2xl border border-white/10 bg-[var(--surface-1)]/70 p-4 backdrop-blur-sm sm:p-5">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <button
           type="button"
           disabled={isPending}
           onClick={() => setShowRateForm((p) => !p)}
-          className={`rounded-full px-5 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
             existing
               ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
               : "bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25"
@@ -108,7 +134,7 @@ export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist, simila
               );
             }
           }}
-          className={`rounded-full px-5 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
             queued
               ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
               : "border border-white/10 text-zinc-300 hover:border-indigo-400/30 hover:text-white"
@@ -117,13 +143,97 @@ export function MovieActions({ tmdbId, isLoggedIn, existing, inWatchlist, simila
           {queued ? "✓ In watchlist · Remove" : "Watchlist"}
         </button>
 
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() =>
+            run(
+              () =>
+                favouritePosition
+                  ? removeFavouriteMovie(favouritePosition)
+                  : setFavouriteMovie(tmdbId, 1),
+              favouritePosition
+                ? "Removed from favourites."
+                : "Added to favourites (slot #1).",
+            )
+          }
+          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+            favouritePosition
+              ? "border border-amber-400/30 bg-amber-400/10 text-amber-200 hover:bg-amber-400/20"
+              : "border border-white/10 text-zinc-300 hover:border-amber-400/30 hover:text-amber-100"
+          }`}
+        >
+          {favouritePosition ? `★ Favourite #${favouritePosition}` : "☆ Add favourite"}
+        </button>
         <Link
           href={similarHref}
-          className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
+          className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
         >
           Find similar
         </Link>
+        {trailerUrl ? (
+          <a
+            href={trailerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          >
+            Watch trailer
+          </a>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-500"
+          >
+            No trailer
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(shareUrl);
+              toast.success("Link copied.");
+            } catch {
+              toast.error("Could not copy link.");
+            }
+          }}
+          className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+        >
+          Share
+        </button>
       </div>
+
+      {availableLists.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/20 p-3 sm:flex-row sm:items-center">
+          <p className="text-xs text-zinc-400">Add to list</p>
+          <select
+            value={selectedListId}
+            onChange={(e) => setSelectedListId(e.target.value)}
+            className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:border-indigo-400/30"
+          >
+            {availableLists.map((list) => (
+              <option key={list.id} value={list.id}>
+                {(list.emoji ? `${list.emoji} ` : "") + list.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            disabled={isPending || !selectedListId}
+            onClick={() =>
+              run(
+                () => addTmdbMovieToList(selectedListId, tmdbId),
+                "Added to list.",
+              )
+            }
+            className="rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 transition hover:border-indigo-400/30 disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+      ) : null}
 
       {/* Rate / log form */}
       {showRateForm ? (

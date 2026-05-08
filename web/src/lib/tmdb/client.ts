@@ -60,6 +60,7 @@ export async function discoverMovies(searchParams: URLSearchParams) {
 export type MovieDetailsResponse = {
   id: number;
   title: string;
+  tagline?: string | null;
   overview: string;
   poster_path: string | null;
   backdrop_path: string | null;
@@ -69,6 +70,13 @@ export type MovieDetailsResponse = {
   popularity: number;
   runtime: number | null;
   genres: { id: number; name: string }[];
+  spoken_languages?: { english_name: string; iso_639_1: string; name: string }[];
+  original_language?: string;
+  production_countries?: { iso_3166_1: string; name: string }[];
+  production_companies?: { id: number; name: string; logo_path: string | null }[];
+  status?: string;
+  homepage?: string | null;
+  imdb_id?: string | null;
 };
 
 export async function getMovieDetails(tmdbId: number) {
@@ -168,6 +176,11 @@ export type TVDetailsResponse = {
   number_of_episodes: number;
   episode_run_time: number[];
   status: string;
+  homepage?: string | null;
+  spoken_languages?: { english_name: string; iso_639_1: string; name: string }[];
+  original_language?: string;
+  production_countries?: { iso_3166_1: string; name: string }[];
+  production_companies?: { id: number; name: string; logo_path: string | null }[];
   genres: { id: number; name: string }[];
   networks: { id: number; name: string; logo_path: string | null }[];
   seasons: {
@@ -216,4 +229,132 @@ export async function searchTV(query: string, page = "1") {
     "/search/tv",
     { query: q, page, include_adult: "false" },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Rich details: credits, trailers, providers, people
+// ---------------------------------------------------------------------------
+
+export type TmdbCastMember = {
+  id: number;
+  name: string;
+  character?: string;
+  profile_path: string | null;
+  known_for_department?: string;
+  order?: number;
+};
+
+export type TmdbCrewMember = {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  profile_path: string | null;
+};
+
+export type CreditsResponse = {
+  cast: TmdbCastMember[];
+  crew: TmdbCrewMember[];
+};
+
+export type VideosResponse = {
+  results: Array<{
+    id: string;
+    key: string;
+    name: string;
+    site: string;
+    type: string;
+    official: boolean;
+    published_at?: string;
+  }>;
+};
+
+export type ExternalIdsResponse = {
+  imdb_id?: string | null;
+  facebook_id?: string | null;
+  instagram_id?: string | null;
+  twitter_id?: string | null;
+  wikidata_id?: string | null;
+};
+
+export type WatchProviderRegion = {
+  link?: string;
+  flatrate?: Array<{ provider_id: number; provider_name: string; logo_path: string | null }>;
+  rent?: Array<{ provider_id: number; provider_name: string; logo_path: string | null }>;
+  buy?: Array<{ provider_id: number; provider_name: string; logo_path: string | null }>;
+};
+
+export type WatchProvidersResponse = {
+  results: Record<string, WatchProviderRegion>;
+};
+
+export async function getMovieCredits(tmdbId: number) {
+  return tmdbFetch<CreditsResponse>(`/movie/${tmdbId}/credits`);
+}
+
+export async function getMovieVideos(tmdbId: number) {
+  return tmdbFetch<VideosResponse>(`/movie/${tmdbId}/videos`);
+}
+
+export async function getMovieExternalIds(tmdbId: number) {
+  return tmdbFetch<ExternalIdsResponse>(`/movie/${tmdbId}/external_ids`);
+}
+
+export async function getMovieWatchProviders(tmdbId: number) {
+  return tmdbFetch<WatchProvidersResponse>(`/movie/${tmdbId}/watch/providers`);
+}
+
+export async function getTVCredits(tmdbId: number) {
+  return tmdbFetch<CreditsResponse>(`/tv/${tmdbId}/credits`);
+}
+
+export async function getTVVideos(tmdbId: number) {
+  return tmdbFetch<VideosResponse>(`/tv/${tmdbId}/videos`);
+}
+
+export async function getTVExternalIds(tmdbId: number) {
+  return tmdbFetch<ExternalIdsResponse>(`/tv/${tmdbId}/external_ids`);
+}
+
+export async function getTVWatchProviders(tmdbId: number) {
+  return tmdbFetch<WatchProvidersResponse>(`/tv/${tmdbId}/watch/providers`);
+}
+
+export type PersonDetailsResponse = {
+  id: number;
+  name: string;
+  biography: string;
+  profile_path: string | null;
+  known_for_department: string | null;
+  birthday: string | null;
+  place_of_birth: string | null;
+  popularity: number;
+};
+
+export type PersonCredit = {
+  id: number;
+  media_type: "movie" | "tv";
+  title?: string;
+  name?: string;
+  release_date?: string;
+  first_air_date?: string;
+  poster_path: string | null;
+  vote_average: number;
+  popularity: number;
+  character?: string;
+  job?: string;
+  department?: string;
+};
+
+export type PersonCreditsResponse = {
+  cast: PersonCredit[];
+  crew: PersonCredit[];
+};
+
+export async function getPersonDetails(personId: number) {
+  return tmdbFetch<PersonDetailsResponse>(`/person/${personId}`);
+}
+
+export async function getPersonCombinedCredits(personId: number) {
+  return tmdbFetch<PersonCreditsResponse>(`/person/${personId}/combined_credits`);
 }
