@@ -1,7 +1,7 @@
 import { HomeLanding } from "@/components/landing/HomeLanding";
 import { redirect } from "next/navigation";
 
-/** Supabase may send PKCE confirm links to Site URL (?code=) if redirect mismatch — forward into callback */
+/** Supabase may send auth links to Site URL (?code=); forward into callback unchanged. */
 export default async function HomePage({
   searchParams,
 }: {
@@ -18,7 +18,6 @@ export default async function HomePage({
       } else pairs.push([key, value]);
     }
     const sp = new URLSearchParams(pairs);
-    if (!sp.has("post_verify")) sp.set("post_verify", "login");
     redirect(`/auth/callback?${sp.toString()}`);
   }
 
