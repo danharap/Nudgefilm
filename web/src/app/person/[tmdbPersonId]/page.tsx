@@ -34,6 +34,23 @@ function normalizeSort(value: string | undefined): SortOption {
   return (SORT_OPTIONS as readonly string[]).includes(value ?? "") ? (value as SortOption) : "popularity";
 }
 
+function dedupeCredits(credits: PersonCredit[]): PersonCredit[] {
+  const byKey = new Map<string, PersonCredit>();
+  for (const credit of credits) {
+    const key = `${credit.media_type}:${credit.id}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, credit);
+      continue;
+    }
+    // Keep whichever entry has better signal for ranking/display.
+    const existingScore = (existing.popularity ?? 0) + (existing.vote_average ?? 0);
+    const nextScore = (credit.popularity ?? 0) + (credit.vote_average ?? 0);
+    if (nextScore > existingScore) byKey.set(key, credit);
+  }
+  return [...byKey.values()];
+}
+
 export default async function PersonPage({ params, searchParams }: Props) {
   const { tmdbPersonId: rawId } = await params;
   const { role: roleParam, sort: sortParam } = await searchParams;
@@ -54,10 +71,10 @@ export default async function PersonPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const allCredits: PersonCredit[] = [
+  const allCredits: PersonCredit[] = dedupeCredits([
     ...(credits.cast ?? []).map((c) => ({ ...c, media_type: c.media_type ?? "movie" })),
     ...(credits.crew ?? []).map((c) => ({ ...c, media_type: c.media_type ?? "movie" })),
-  ].filter((c) => c.media_type === "movie" || c.media_type === "tv");
+  ].filter((c) => c.media_type === "movie" || c.media_type === "tv"));
 
   const filtered = allCredits.filter((credit) => {
     if (role === "all") return true;
@@ -130,25 +147,27 @@ export default async function PersonPage({ params, searchParams }: Props) {
       </section>
 
       <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          {ROLE_OPTIONS.map((r) => (
-            <Link
-              key={r}
-              href={`/person/${personId}?role=${r}&sort=${sort}`}
-              className={`min-h-10 rounded-full px-3 py-1.5 text-xs font-medium capitalize ${
-                role === r ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/30" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              {r}
-            </Link>
-          ))}
-          <div className="flex w-full items-center gap-2 pt-1 sm:ml-auto sm:w-auto sm:pt-0">
-            <span className="text-xs text-zinc-500">Sort</span>
+        <div className="mb-5 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.02] p-3 sm:p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {ROLE_OPTIONS.map((r) => (
+              <Link
+                key={r}
+                href={`/person/${personId}?role=${r}&sort=${sort}`}
+                className={`min-h-10 rounded-full px-3.5 py-1.5 text-xs font-medium capitalize transition ${
+                  role === r ? "bg-indigo-500/20 text-indigo-200 ring-1 ring-indigo-400/30" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
+                }`}
+              >
+                {r}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <span className="mr-1 text-xs font-medium uppercase tracking-wide text-zinc-500">Sort</span>
             {SORT_OPTIONS.map((s) => (
               <Link
                 key={s}
                 href={`/person/${personId}?role=${role}&sort=${s}`}
-                className={`min-h-10 rounded-full px-3 py-1.5 text-xs capitalize ${
+                className={`min-h-10 rounded-full px-3.5 py-1.5 text-xs font-medium capitalize transition ${
                   sort === s ? "bg-violet-500/20 text-violet-200 ring-1 ring-violet-400/30" : "bg-white/5 text-zinc-400 hover:text-zinc-200"
                 }`}
               >
