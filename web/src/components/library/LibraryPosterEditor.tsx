@@ -123,15 +123,18 @@ export function LibraryPosterEditor(props: Props) {
 
   return (
     <div
-      className="absolute right-0.5 top-0.5 z-10 flex gap-0.5"
-      onClick={(e) => e.preventDefault()}
-      onPointerDown={(e) => e.stopPropagation()}
+      className="pointer-events-none absolute right-0.5 top-0.5 z-20 flex gap-0.5 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100"
     >
+      {/*
+        Must not use display:none — Safari and others block programmatic input.click().
+        sr-only keeps the input focusable for a11y without showing it.
+      */}
       <input
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        className="hidden"
+        className="sr-only"
+        tabIndex={-1}
         onChange={onPickFile}
       />
       <button
@@ -141,8 +144,10 @@ export function LibraryPosterEditor(props: Props) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          // Sync call inside user gesture — required for file picker.
           inputRef.current?.click();
         }}
+        onPointerDown={(e) => e.stopPropagation()}
         className="flex size-7 items-center justify-center rounded-md bg-black/75 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/90 disabled:opacity-40"
       >
         <ImagePlus className="size-3.5" />
@@ -157,6 +162,7 @@ export function LibraryPosterEditor(props: Props) {
             e.stopPropagation();
             onReset();
           }}
+          onPointerDown={(e) => e.stopPropagation()}
           className="flex size-7 items-center justify-center rounded-md bg-black/75 text-white ring-1 ring-white/15 backdrop-blur-sm transition hover:bg-black/90 disabled:opacity-40"
         >
           <RotateCcw className="size-3.5" />

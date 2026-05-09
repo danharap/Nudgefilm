@@ -272,14 +272,6 @@ export function FilmsSection({
                   movie.tmdb_id >= TV_TMDB_OFFSET && movie.tmdb_id < TV_SEASON_OFFSET;
                 return (
                   <div key={movie.id} className="group relative">
-                    {canEditPoster ? (
-                      <LibraryPosterEditor
-                        variant="watched"
-                        userId={diaryOwnerUserId}
-                        watchedRowId={watched_row_id}
-                        hasCustom={!!custom_poster_url?.trim()}
-                      />
-                    ) : null}
                     <Link
                       href={href}
                       title={movie.title}
@@ -302,6 +294,14 @@ export function FilmsSection({
                         </div>
                       )}
                     </Link>
+                    {canEditPoster ? (
+                      <LibraryPosterEditor
+                        variant="watched"
+                        userId={diaryOwnerUserId}
+                        watchedRowId={watched_row_id}
+                        hasCustom={!!custom_poster_url?.trim()}
+                      />
+                    ) : null}
                     {isTvSeason ? (
                       <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                         S

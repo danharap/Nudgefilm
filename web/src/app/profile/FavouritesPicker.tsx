@@ -107,15 +107,6 @@ export function FavouritesPicker({ slots, userId }: { slots: Slot[]; userId: str
 
           return (
             <div key={pos} className="group relative">
-              {filled ? (
-                <LibraryPosterEditor
-                  variant="favourite"
-                  userId={userId}
-                  position={pos}
-                  hasCustom={!!slot?.custom_poster_url?.trim()}
-                  slotFilled
-                />
-              ) : null}
               <button
                 type="button"
                 onClick={() => openSlot(pos)}
@@ -146,6 +137,15 @@ export function FavouritesPicker({ slots, userId }: { slots: Slot[]; userId: str
                   </span>
                 </span>
               </button>
+              {filled ? (
+                <LibraryPosterEditor
+                  variant="favourite"
+                  userId={userId}
+                  position={pos}
+                  hasCustom={!!slot?.custom_poster_url?.trim()}
+                  slotFilled
+                />
+              ) : null}
 
               {filled ? (
                 <button

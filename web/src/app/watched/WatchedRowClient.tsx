@@ -42,15 +42,7 @@ export function WatchedRowClient({
 
   return (
     <li className="flex gap-4 rounded-2xl border border-white/10 bg-zinc-900/40 p-4">
-      <div className="relative h-28 w-20 shrink-0">
-        {userId ? (
-          <LibraryPosterEditor
-            variant="watched"
-            userId={userId}
-            watchedRowId={watchedRowId}
-            hasCustom={!!custom_poster_url?.trim()}
-          />
-        ) : null}
+      <div className="group relative h-28 w-20 shrink-0">
         <Link
           href={href}
           className="relative block h-28 w-20 overflow-hidden rounded-lg bg-zinc-800"
@@ -70,6 +62,14 @@ export function WatchedRowClient({
             />
           ) : null}
         </Link>
+        {userId ? (
+          <LibraryPosterEditor
+            variant="watched"
+            userId={userId}
+            watchedRowId={watchedRowId}
+            hasCustom={!!custom_poster_url?.trim()}
+          />
+        ) : null}
       </div>
       <div className="min-w-0 flex-1">
         <Link href={href} className="font-medium text-white hover:text-indigo-200">
