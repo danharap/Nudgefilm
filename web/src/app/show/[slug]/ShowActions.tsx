@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  addToWatchlist,
-  markWatched,
-  removeFromWatchlist,
-  removeFromWatched,
+  addTVToWatchlist,
+  markTVWatched,
+  removeTVFromWatchlist,
+  removeTVFromWatched,
 } from "@/app/actions/library";
 import { Bookmark, Check, Eye, Play, Share2, Sparkles, Star } from "lucide-react";
 import Link from "next/link";
@@ -19,6 +19,7 @@ type ExistingEntry = {
 
 type Props = {
   tmdbId: number;
+  loginRedirectPath: string;
   isLoggedIn: boolean;
   existing: ExistingEntry;
   inWatchlist: boolean;
@@ -29,8 +30,9 @@ type Props = {
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function MovieActions({
+export function ShowActions({
   tmdbId,
+  loginRedirectPath,
   isLoggedIn,
   existing,
   inWatchlist,
@@ -77,7 +79,7 @@ export function MovieActions({
     return (
       <div className="mt-10 flex flex-wrap items-center justify-center gap-3 md:justify-start">
         <Link
-          href={`/login?redirect=/movie/${tmdbId}`}
+          href={`/login?redirect=${encodeURIComponent(loginRedirectPath)}`}
           className="rounded-full bg-indigo-500/15 px-5 py-2.5 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/25"
         >
           Sign in to log / rate
@@ -133,7 +135,7 @@ export function MovieActions({
             if (queued) {
               setQueued(false);
               run(
-                () => removeFromWatchlist(tmdbId),
+                () => removeTVFromWatchlist(tmdbId),
                 "Removed from watchlist.",
                 undefined,
                 () => setQueued(true),
@@ -141,7 +143,7 @@ export function MovieActions({
             } else {
               setQueued(true);
               run(
-                () => addToWatchlist(tmdbId),
+                () => addTVToWatchlist(tmdbId),
                 "Added to watchlist.",
                 undefined,
                 () => setQueued(false),
@@ -172,7 +174,7 @@ export function MovieActions({
             if (logged) {
               setLogged(false);
               run(
-                () => removeFromWatched(tmdbId),
+                () => removeTVFromWatched(tmdbId),
                 "Removed from diary.",
                 () => {
                   setRating(0);
@@ -184,14 +186,14 @@ export function MovieActions({
             } else {
               setLogged(true);
               run(
-                () => markWatched(tmdbId, rating > 0 ? rating : null, notes.trim() || null),
+                () => markTVWatched(tmdbId, rating > 0 ? rating : null, notes.trim() || null),
                 "Added to diary.",
                 undefined,
                 () => setLogged(false),
               );
             }
           }}
-          aria-label={logged ? "Remove from diary" : "Mark movie as watched"}
+          aria-label={logged ? "Remove from diary" : "Mark show as watched"}
           title={logged ? "Click again to remove from your diary" : "Add to your diary"}
           className={`group flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 disabled:opacity-50 ${
             logged
@@ -207,7 +209,7 @@ export function MovieActions({
 
         <Link
           href={similarHref}
-          aria-label="Find similar movies"
+          aria-label="Find similar TV shows"
           className="group flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-sm font-medium text-zinc-200 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-indigo-500/10"
         >
           <Sparkles className="size-4 text-zinc-300 transition group-hover:text-indigo-300" />
@@ -255,14 +257,12 @@ export function MovieActions({
         </button>
       </div>
 
-      {/* Rate / log form */}
       {showRateForm ? (
         <div className="space-y-4 rounded-2xl border border-indigo-400/25 bg-[linear-gradient(180deg,rgba(18,22,46,0.88),rgba(8,10,24,0.9))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm">
           <p className="text-sm font-medium text-zinc-300">
-            {logged ? "Update your log" : "Log this film"}
+            {logged ? "Update your log" : "Log this show"}
           </p>
 
-          {/* 1–10 rating */}
           <div className="space-y-2">
             <p className="text-xs text-zinc-500">Your rating (optional)</p>
             <div className="flex flex-wrap gap-1.5">
@@ -289,17 +289,16 @@ export function MovieActions({
             )}
           </div>
 
-          {/* Notes */}
           <div className="space-y-1">
-            <label htmlFor="movie-notes" className="text-xs text-zinc-500">
+            <label htmlFor="show-notes" className="text-xs text-zinc-500">
               Notes (optional)
             </label>
             <textarea
-              id="movie-notes"
+              id="show-notes"
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Thoughts, watch date, who you watched with…"
+              placeholder="Thoughts, favourite season, who you watched with…"
               className="w-full resize-none rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-indigo-400/30 focus:ring-2 focus:ring-indigo-400/20 transition"
             />
           </div>
@@ -311,12 +310,12 @@ export function MovieActions({
               onClick={() =>
                 run(
                   () =>
-                    markWatched(
+                    markTVWatched(
                       tmdbId,
                       rating > 0 ? rating : null,
                       notes.trim() || null,
                     ),
-                  logged ? "Log updated." : "Movie logged to your diary.",
+                  logged ? "Log updated." : "Show logged to your diary.",
                   () => setShowRateForm(false),
                 )
               }

@@ -2,6 +2,7 @@
 
 import { addTVToWatchlist, addToWatchlist, markTVWatched, markWatched } from "@/app/actions/library";
 import { BrowseMovieCard, type BrowseMovie } from "@/app/browse/BrowseMovieCard";
+import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
@@ -229,7 +230,7 @@ export function BrowseSearch({
                   const year = m.release_date?.slice(0, 4) ?? "—";
                   const poster = posterUrl(m.poster_path, "w92");
                   const isTV = m.mediaType === "tv";
-                  const href = isTV ? `/show/${m.id}` : `/movie/${m.id}`;
+                  const href = browseMediaPath(m.title, m.id, m.mediaType);
                   return (
                     <li
                       key={`${m.mediaType ?? "movie"}-${m.id}`}

@@ -267,6 +267,16 @@ export function SummaryStep({ matchedData, onStartOver }: SummaryStepProps) {
           <p className="mt-1 text-sm text-zinc-400">
             Your Letterboxd history has been added to your library.
           </p>
+          {matchedData.skippedCount > 0 ? (
+            <p className="mt-3 max-w-md text-xs leading-relaxed text-zinc-500">
+              {matchedData.skippedCount} title{matchedData.skippedCount !== 1 ? "s" : ""} couldn&apos;t
+              be matched reliably on TMDB and were skipped. You can add those manually from{" "}
+              <Link href="/browse" className="text-indigo-400/90 underline hover:text-indigo-300">
+                Browse
+              </Link>{" "}
+              if you want them in your diary.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -283,13 +293,20 @@ export function SummaryStep({ matchedData, onStartOver }: SummaryStepProps) {
           value={r.watchlistImported}
           label="Watchlist added"
         />
-        {(r.watchedDuplicates > 0 || matchedData.skippedCount > 0) && (
+        {r.watchedDuplicates > 0 ? (
           <StatCard
             icon={<XCircle className="h-5 w-5 text-zinc-600" />}
-            value={r.watchedDuplicates + matchedData.skippedCount}
-            label="Skipped"
+            value={r.watchedDuplicates}
+            label="Duplicates skipped"
           />
-        )}
+        ) : null}
+        {matchedData.skippedCount > 0 ? (
+          <StatCard
+            icon={<XCircle className="h-5 w-5 text-amber-600/80" />}
+            value={matchedData.skippedCount}
+            label="No TMDB match"
+          />
+        ) : null}
         {matchedData.likedFilmTitles.length > 0 && (
           <StatCard
             icon={<Heart className="h-5 w-5 text-rose-400" />}

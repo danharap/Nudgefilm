@@ -2,7 +2,7 @@ import { UserSearch } from "./UserSearch";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { getFollowers, getFollowing, getSocialActivity } from "@/features/users/service";
-import { posterUrl } from "@/lib/tmdb/constants";
+import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -129,7 +129,10 @@ export default async function FriendsPage({
                   style={{ animationDelay: `${Math.min(i * 0.03, 0.2)}s` }}
                 >
                   <Link
-                    href={`/movie/${item.movie.tmdb_id}`}
+                    href={detailHrefFromStoredMovie({
+                      tmdb_id: item.movie.tmdb_id,
+                      title: item.movie.title,
+                    })}
                     className="group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
                   >
                     {poster ? (

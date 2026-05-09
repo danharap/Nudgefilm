@@ -25,6 +25,8 @@ type MovieRow = {
   title: string;
   poster_path: string | null;
   vote_average: number | null;
+  vote_count?: number | null;
+  parent_show_tmdb_id?: number | null;
 };
 
 type FavRow = {
@@ -45,6 +47,8 @@ type ListMovieRow = {
   tmdb_id: number;
   title: string;
   poster_path: string | null;
+  vote_count?: number | null;
+  parent_show_tmdb_id?: number | null;
 };
 
 type ListRaw = {
@@ -128,7 +132,7 @@ export default async function PublicProfilePage({
     target.watchlist_public
       ? supabase
           .from("watchlist")
-          .select("movies ( id, tmdb_id, title, poster_path )")
+          .select("movies ( id, tmdb_id, title, poster_path, vote_count, parent_show_tmdb_id )")
           .eq("user_id", target.id)
           .order("created_at", { ascending: false })
           .limit(48)
@@ -136,7 +140,7 @@ export default async function PublicProfilePage({
     supabase
       .from("profile_lists")
       .select(
-        "id, name, emoji, description, is_public, position, profile_list_movies ( position, movies ( id, tmdb_id, title, poster_path ) )",
+        "id, name, emoji, description, is_public, position, profile_list_movies ( position, movies ( id, tmdb_id, title, poster_path, vote_count, parent_show_tmdb_id ) )",
       )
       .eq("user_id", target.id)
       .eq("is_public", true)
@@ -389,7 +393,7 @@ export default async function PublicProfilePage({
                         return (
                           <Link
                             key={movie.id}
-                            href={`/movie/${movie.tmdb_id}`}
+                            href={detailHrefFromStoredMovie(movie)}
                             title={movie.title}
                             className="group relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
                           >
@@ -441,7 +445,7 @@ export default async function PublicProfilePage({
               return (
                 <Link
                   key={movie.id}
-                  href={`/movie/${movie.tmdb_id}`}
+                  href={detailHrefFromStoredMovie(movie)}
                   className="group relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
                 >
                   {poster ? (

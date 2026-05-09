@@ -10,6 +10,7 @@ import {
   getNowAiringTV,
   type TVShowResult,
 } from "@/lib/tmdb/client";
+import { browseMediaPath } from "@/lib/media-slug";
 import { browseCanonicalTmdbId, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
@@ -265,7 +266,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
             {data.spotlight.slice(0, 20).map((item) => {
               const poster = posterUrl(item.poster_path, "w342");
               const year = item.release_date?.slice(0, 4);
-              const href = item.mediaType === "tv" ? `/show/${item.id}` : `/movie/${item.id}`;
+              const href = browseMediaPath(item.title, item.id, item.mediaType);
               return (
                 <Link key={`${item.mediaType}-${item.id}`} href={href} className="group relative w-32 shrink-0 sm:w-36">
                   <div className="premium-card relative aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition duration-300 group-hover:border-indigo-400/35">

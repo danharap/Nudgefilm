@@ -1,3 +1,5 @@
+import { movieDetailPath, tvDetailPath } from "@/lib/media-slug";
+
 export const TMDB_API_BASE = "https://api.themoviedb.org/3";
 export const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
 
@@ -35,12 +37,14 @@ export function browseCanonicalTmdbId(movieTmdbId: number): number | null {
 /** Detail-page URL from a `movies` row (movies table shared with TV / seasons). */
 export function detailHrefFromStoredMovie(movie: {
   tmdb_id: number;
+  title?: string | null;
   vote_count?: number | null;
   /** Populated for TV season rows — preferred over vote_count for parent show id. */
   parent_show_tmdb_id?: number | null;
 }): string {
   const id = Number(movie.tmdb_id);
   if (!Number.isFinite(id)) return "/browse";
+  const label = (movie.title && movie.title.trim()) || "Unknown";
   if (id >= TV_SEASON_OFFSET) {
     const fromCol =
       movie.parent_show_tmdb_id != null ? Number(movie.parent_show_tmdb_id) : NaN;
@@ -48,10 +52,13 @@ export function detailHrefFromStoredMovie(movie: {
       movie.vote_count != null ? Number(movie.vote_count) : NaN;
     const parent = Number.isFinite(fromCol) ? fromCol : fromLegacy;
     if (Number.isFinite(parent) && parent > 0 && parent < TV_TMDB_OFFSET) {
+      // Numeric only: detail page redirects to slug URL after loading the show.
       return `/show/${parent}`;
     }
     return "/browse?type=tv";
   }
-  if (id >= TV_TMDB_OFFSET) return `/show/${id - TV_TMDB_OFFSET}`;
-  return `/movie/${id}`;
+  if (id >= TV_TMDB_OFFSET) {
+    return tvDetailPath(label, id - TV_TMDB_OFFSET);
+  }
+  return movieDetailPath(label, id);
 }

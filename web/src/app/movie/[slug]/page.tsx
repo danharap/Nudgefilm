@@ -14,12 +14,16 @@ import { getConfiguredOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import {
+  movieDetailSegment,
+  parseTrailingTmdbIdFromSlugParam,
+} from "@/lib/media-slug";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: Promise<{ tmdbId: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ tab?: string; reviewedBy?: string; libraryMovieId?: string }>;
 };
 
@@ -41,11 +45,12 @@ function pickTrailer(videos: Array<{ key: string; site: string; type: string; of
 }
 
 export default async function MovieDetailPage({ params, searchParams }: Props) {
-  const { tmdbId: raw } = await params;
+  const { slug: rawSlug } = await params;
+  const raw = decodeURIComponent(rawSlug);
   const { tab: tabParam, reviewedBy: reviewedByParam, libraryMovieId: libraryMovieIdParam } =
     await searchParams;
-  const tmdbId = Number(raw);
-  if (!Number.isFinite(tmdbId)) notFound();
+  const tmdbId = parseTrailingTmdbIdFromSlugParam(raw);
+  if (tmdbId === null) notFound();
   const activeTab: MovieTab = isMovieTab(tabParam) ? tabParam : "cast";
 
   let movie;
@@ -63,6 +68,16 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
     ]);
   } catch {
     notFound();
+  }
+
+  const canonicalSegment = movieDetailSegment(movie.title, tmdbId);
+  if (raw !== canonicalSegment) {
+    const sp = new URLSearchParams();
+    if (tabParam) sp.set("tab", tabParam);
+    if (reviewedByParam?.trim()) sp.set("reviewedBy", reviewedByParam.trim());
+    if (libraryMovieIdParam?.trim()) sp.set("libraryMovieId", libraryMovieIdParam.trim());
+    const qs = sp.toString();
+    permanentRedirect(`/movie/${canonicalSegment}${qs ? `?${qs}` : ""}`);
   }
 
   const supabase = await createClient();
@@ -188,7 +203,15 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
   const directors = credits.crew.filter((m) => m.job === "Director");
   const writers = credits.crew.filter((m) => m.job === "Writer" || m.job === "Screenplay");
   const producers = credits.crew.filter((m) => m.job === "Producer");
-  const shareUrl = `${getConfiguredOrigin()}/movie/${tmdbId}`;
+  const shareUrl = `${getConfiguredOrigin()}/movie/${canonicalSegment}`;
+
+  const loginRedirectPath = (() => {
+    const sp = new URLSearchParams();
+    if (reviewedByParam?.trim()) sp.set("reviewedBy", reviewedByParam.trim());
+    if (libraryMovieIdParam?.trim()) sp.set("libraryMovieId", libraryMovieIdParam.trim());
+    const qs = sp.toString();
+    return `/movie/${canonicalSegment}${qs ? `?${qs}` : ""}`;
+  })();
 
   const tabHref = (tab: MovieTab) => {
     const sp = new URLSearchParams();
@@ -197,7 +220,7 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
     const lm = libraryMovieIdParam?.trim();
     if (rb) sp.set("reviewedBy", rb);
     if (lm) sp.set("libraryMovieId", lm);
-    return `/movie/${tmdbId}?${sp.toString()}`;
+    return `/movie/${canonicalSegment}?${sp.toString()}`;
   };
   const links = {
     tmdb: `https://www.themoviedb.org/movie/${tmdbId}`,
@@ -288,6 +311,7 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
           <div className="lg:sticky lg:top-20">
             <MovieActions
               tmdbId={tmdbId}
+              loginRedirectPath={loginRedirectPath}
               isLoggedIn={!!user}
               existing={existing}
               inWatchlist={inWatchlist}
@@ -297,7 +321,13 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
             />
             {!user ? (
               <p className="mt-3 text-center text-xs text-zinc-500 lg:text-left">
-                <Link href="/login" className="underline-offset-2 hover:underline">Sign in</Link> to log, rate, and save this film.
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(loginRedirectPath)}`}
+                  className="underline-offset-2 hover:underline"
+                >
+                  Sign in
+                </Link>{" "}
+                to log, rate, and save this film.
               </p>
             ) : null}
           </div>

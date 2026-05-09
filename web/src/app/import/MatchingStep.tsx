@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { CheckCircle2, XCircle, HelpCircle, ChevronRight, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import type { ParsedImport, LetterboxdWatchedEntry, LetterboxdWatchlistEntry } from "@/lib/letterboxd/parser";
-import type { MatchResult, MatchCandidate } from "@/app/api/import/match/route";
+import type { MatchResult } from "@/app/api/import/match/route";
 
 export interface MatchedWatchedItem {
   tmdbId: number;
@@ -29,18 +28,10 @@ interface MatchingStepProps {
   onMatched: (data: MatchedData) => void;
 }
 
-type Phase = "pending" | "matching" | "confirming" | "done";
-
-interface PendingConfirmation {
-  entry: LetterboxdWatchedEntry | LetterboxdWatchlistEntry;
-  type: "watched" | "watchlist";
-  originalResult: MatchResult;
-}
+type Phase = "pending" | "matching" | "done";
 
 const BATCH_SIZE = 45;
 const BATCH_DELAY_MS = 80;
-
-const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w92";
 
 function ImportRefreshWarning() {
   return (
@@ -67,13 +58,6 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
   const [phase, setPhase] = useState<Phase>("pending");
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
-  const [autoMatchedWatched, setAutoMatchedWatched] = useState<MatchedWatchedItem[]>([]);
-  const [autoMatchedWatchlist, setAutoMatchedWatchlist] = useState<MatchedWatchlistItem[]>([]);
-  const [pendingConfirmations, setPendingConfirmations] = useState<PendingConfirmation[]>([]);
-  const [confirmIndex, setConfirmIndex] = useState(0);
-  const [confirmedWatched, setConfirmedWatched] = useState<MatchedWatchedItem[]>([]);
-  const [confirmedWatchlist, setConfirmedWatchlist] = useState<MatchedWatchlistItem[]>([]);
-  const [skippedCount, setSkippedCount] = useState(0);
   const [matchError, setMatchError] = useState<string | null>(null);
   const hasStarted = useRef(false);
 
@@ -109,7 +93,8 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
 
     const autoWatched: MatchedWatchedItem[] = [];
     const autoWatchlist: MatchedWatchlistItem[] = [];
-    const needsConfirmation: PendingConfirmation[] = [];
+    /** Rows with low / no TMDB confidence — skip import (unlikely to resolve manually at scale). */
+    let skippedUnmatched = 0;
 
     try {
       for (let i = 0; i < allItems.length; i += BATCH_SIZE) {
@@ -119,7 +104,7 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
         );
 
         for (let j = 0; j < results.length; j++) {
-          const result = results[j];
+          const result = results[j] as MatchResult;
           const item = batch[j];
 
           if (result.confidence === "high" || result.confidence === "medium") {
@@ -137,11 +122,7 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
               }
             }
           } else {
-            needsConfirmation.push({
-              entry: item.entry,
-              type: item.type,
-              originalResult: result,
-            });
+            skippedUnmatched += 1;
           }
         }
 
@@ -151,22 +132,13 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
         }
       }
 
-      setAutoMatchedWatched(autoWatched);
-      setAutoMatchedWatchlist(autoWatchlist);
-      setPendingConfirmations(needsConfirmation);
-
-      if (needsConfirmation.length === 0) {
-        setPhase("done");
-        onMatched({
-          watched: autoWatched,
-          watchlist: autoWatchlist,
-          skippedCount: 0,
-          likedFilmTitles: parsed.likedFilms.map((f) => f.title),
-        });
-      } else {
-        setPhase("confirming");
-        setConfirmIndex(0);
-      }
+      setPhase("done");
+      onMatched({
+        watched: autoWatched,
+        watchlist: autoWatchlist,
+        skippedCount: skippedUnmatched,
+        likedFilmTitles: parsed.likedFilms.map((f) => f.title),
+      });
     } catch (err) {
       setMatchError(err instanceof Error ? err.message : "Matching failed");
       setPhase("pending");
@@ -177,56 +149,6 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
   useEffect(() => {
     runMatching();
   }, [runMatching]);
-
-  const handleConfirm = (candidate: MatchCandidate) => {
-    const item = pendingConfirmations[confirmIndex];
-    if (item.type === "watched") {
-      const w = item.entry as LetterboxdWatchedEntry;
-      setConfirmedWatched((prev) => [
-        ...prev,
-        {
-          tmdbId: candidate.tmdbId,
-          watchedDate: w.watchedDate,
-          rating: w.rating,
-          review: w.review,
-        },
-      ]);
-    } else {
-      setConfirmedWatchlist((prev) => [...prev, { tmdbId: candidate.tmdbId }]);
-    }
-    advance();
-  };
-
-  const handleSkip = () => {
-    setSkippedCount((c) => c + 1);
-    advance();
-  };
-
-  const advance = () => {
-    const next = confirmIndex + 1;
-    if (next >= pendingConfirmations.length) {
-      setPhase("done");
-      onMatched({
-        watched: [...autoMatchedWatched, ...confirmedWatched],
-        watchlist: [...autoMatchedWatchlist, ...confirmedWatchlist],
-        skippedCount: skippedCount + 1,
-        likedFilmTitles: parsed.likedFilms.map((f) => f.title),
-      });
-    } else {
-      setConfirmIndex(next);
-    }
-  };
-
-  const skipAll = () => {
-    setSkippedCount((c) => c + pendingConfirmations.length - confirmIndex);
-    setPhase("done");
-    onMatched({
-      watched: [...autoMatchedWatched, ...confirmedWatched],
-      watchlist: [...autoMatchedWatchlist, ...confirmedWatchlist],
-      skippedCount: skippedCount + pendingConfirmations.length - confirmIndex,
-      likedFilmTitles: parsed.likedFilms.map((f) => f.title),
-    });
-  };
 
   // ── Matching progress UI ───────────────────────────────────────────────────
   if (phase === "matching") {
@@ -277,104 +199,6 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
         >
           Retry
         </button>
-      </div>
-    );
-  }
-
-  // ── Confirmation UI ────────────────────────────────────────────────────────
-  if (phase === "confirming") {
-    const item = pendingConfirmations[confirmIndex];
-    const { originalResult } = item;
-    const remaining = pendingConfirmations.length - confirmIndex;
-
-    return (
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-        <ImportRefreshWarning />
-        <div className="text-center">
-          <div className="mb-1 text-xs font-medium uppercase tracking-wider text-zinc-600">
-            {confirmIndex + 1} of {pendingConfirmations.length} uncertain matches
-          </div>
-          <h2 className="text-xl font-semibold text-white">Help us find this film</h2>
-          <p className="mt-1 text-sm text-zinc-400">
-            We couldn&apos;t automatically match{" "}
-            <strong className="text-zinc-300">{originalResult.title}</strong>
-            {originalResult.year ? ` (${originalResult.year})` : ""}
-          </p>
-        </div>
-
-        {/* Confidence badge */}
-        <div className="flex justify-center">
-          {originalResult.confidence === "low" ? (
-            <span className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-indigo-400">
-              <HelpCircle className="h-3.5 w-3.5" />
-              Possible match found — please verify
-            </span>
-          ) : (
-            <span className="flex items-center gap-1.5 rounded-full bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300">
-              <XCircle className="h-3.5 w-3.5" />
-              No automatic match
-            </span>
-          )}
-        </div>
-
-        {/* Candidate cards */}
-        {originalResult.candidates.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs text-zinc-600 mb-1">Select the correct film:</p>
-            {originalResult.candidates.map((c) => (
-              <button
-                key={c.tmdbId}
-                onClick={() => handleConfirm(c)}
-                className="flex w-full items-center gap-4 rounded-xl bg-white/5 p-3 text-left transition hover:bg-white/10 hover:ring-1 hover:ring-amber-300/30"
-              >
-                <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">
-                  {c.posterPath ? (
-                    <Image
-                      src={`${TMDB_IMAGE_BASE}${c.posterPath}`}
-                      alt={c.title}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <span className="text-zinc-600 text-xs">?</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white truncate">{c.title}</p>
-                  <p className="text-xs text-zinc-500">
-                    {c.year ?? "Unknown year"} · ★ {c.voteAverage.toFixed(1)}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-zinc-600 shrink-0" />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl bg-white/5 p-6 text-center text-sm text-zinc-500">
-            No candidates found in TMDB for this title.
-          </div>
-        )}
-
-        {/* Skip actions */}
-        <div className="flex items-center justify-between gap-3">
-          <button
-            onClick={handleSkip}
-            className="rounded-full px-4 py-2 text-sm text-zinc-500 hover:text-zinc-300 transition"
-          >
-            Skip this film
-          </button>
-          {remaining > 1 && (
-            <button
-              onClick={skipAll}
-              className="rounded-full px-4 py-2 text-sm text-zinc-600 hover:text-zinc-400 transition"
-            >
-              Skip all {remaining} unmatched
-            </button>
-          )}
-        </div>
       </div>
     );
   }

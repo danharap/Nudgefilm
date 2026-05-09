@@ -1,4 +1,5 @@
 import { getPersonCombinedCredits, getPersonDetails, type PersonCredit } from "@/lib/tmdb/client";
+import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,7 +19,8 @@ const SORT_OPTIONS = ["popularity", "release_date", "rating"] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
 
 function mediaHref(credit: PersonCredit): string {
-  return credit.media_type === "tv" ? `/show/${credit.id}` : `/movie/${credit.id}`;
+  const label = credit.title ?? credit.name ?? "Unknown";
+  return browseMediaPath(label, credit.id, credit.media_type);
 }
 
 function releaseLabel(credit: PersonCredit): string {

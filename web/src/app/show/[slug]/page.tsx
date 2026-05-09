@@ -14,12 +14,16 @@ import { getConfiguredOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
+import {
+  parseTrailingTmdbIdFromSlugParam,
+  tvDetailSegment,
+} from "@/lib/media-slug";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
-  params: Promise<{ tmdbId: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ tab?: string; reviewedBy?: string; libraryMovieId?: string }>;
 };
 
@@ -41,11 +45,12 @@ function pickTrailer(videos: Array<{ key: string; site: string; type: string; of
 }
 
 export default async function ShowDetailPage({ params, searchParams }: Props) {
-  const { tmdbId: raw } = await params;
+  const { slug: rawSlug } = await params;
+  const raw = decodeURIComponent(rawSlug);
   const { tab: tabParam, reviewedBy: reviewedByParam, libraryMovieId: libraryMovieIdParam } =
     await searchParams;
-  const tmdbId = Number(raw);
-  if (!Number.isFinite(tmdbId)) notFound();
+  const tmdbId = parseTrailingTmdbIdFromSlugParam(raw);
+  if (tmdbId === null) notFound();
   const activeTab: ShowTab = isShowTab(tabParam) ? tabParam : "cast";
 
   let show;
@@ -63,6 +68,16 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
     ]);
   } catch {
     notFound();
+  }
+
+  const canonicalSegment = tvDetailSegment(show.name, tmdbId);
+  if (raw !== canonicalSegment) {
+    const sp = new URLSearchParams();
+    if (tabParam) sp.set("tab", tabParam);
+    if (reviewedByParam?.trim()) sp.set("reviewedBy", reviewedByParam.trim());
+    if (libraryMovieIdParam?.trim()) sp.set("libraryMovieId", libraryMovieIdParam.trim());
+    const qs = sp.toString();
+    permanentRedirect(`/show/${canonicalSegment}${qs ? `?${qs}` : ""}`);
   }
 
   const supabase = await createClient();
@@ -155,7 +170,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
   const poster = posterUrl(show.poster_path, "w500");
   const providerRegion = watchProviders.results?.CA ?? null;
   const trailerUrl = pickTrailer(videos.results ?? []);
-  const shareUrl = `${getConfiguredOrigin()}/show/${tmdbId}`;
+  const shareUrl = `${getConfiguredOrigin()}/show/${canonicalSegment}`;
   const directors = credits.crew.filter((m) => m.job === "Director");
   const creators = credits.crew.filter((m) => m.job === "Executive Producer" || m.job === "Producer");
   const writers = credits.crew.filter((m) => m.job === "Writer" || m.job === "Screenplay");
@@ -168,6 +183,14 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
 
   // Filter out "Specials" (season 0) from the main list
   const seasons = (show.seasons ?? []).filter((s) => s.season_number > 0);
+  const loginRedirectPath = (() => {
+    const sp = new URLSearchParams();
+    if (reviewedByParam?.trim()) sp.set("reviewedBy", reviewedByParam.trim());
+    if (libraryMovieIdParam?.trim()) sp.set("libraryMovieId", libraryMovieIdParam.trim());
+    const qs = sp.toString();
+    return `/show/${canonicalSegment}${qs ? `?${qs}` : ""}`;
+  })();
+
   const tabHref = (tab: ShowTab) => {
     const sp = new URLSearchParams();
     sp.set("tab", tab);
@@ -175,7 +198,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
     const lm = libraryMovieIdParam?.trim();
     if (rb) sp.set("reviewedBy", rb);
     if (lm) sp.set("libraryMovieId", lm);
-    return `/show/${tmdbId}?${sp.toString()}`;
+    return `/show/${canonicalSegment}?${sp.toString()}`;
   };
 
   const links = {
@@ -299,6 +322,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
           <div className="lg:sticky lg:top-20">
             <ShowActions
               tmdbId={tmdbId}
+              loginRedirectPath={loginRedirectPath}
               isLoggedIn={!!user}
               existing={existing}
               inWatchlist={inWatchlist}
@@ -308,7 +332,13 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
             />
             {!user ? (
               <p className="mt-3 text-center text-xs text-zinc-500 lg:text-left">
-                <Link href={`/login?redirect=/show/${tmdbId}`} className="underline-offset-2 hover:underline">Sign in</Link> to log, rate, and save this show.
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(loginRedirectPath)}`}
+                  className="underline-offset-2 hover:underline"
+                >
+                  Sign in
+                </Link>{" "}
+                to log, rate, and save this show.
               </p>
             ) : null}
           </div>

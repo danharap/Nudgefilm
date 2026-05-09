@@ -6,6 +6,7 @@ import {
   markWatched,
 } from "@/app/actions/library";
 import { movieToast } from "@/components/ui/movieToast";
+import { movieDetailPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import type { RecommendedMovie } from "@/types/movie";
 import Image from "next/image";
@@ -34,7 +35,7 @@ export function MovieResultCard({ movie }: Props) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-900/60 shadow-xl shadow-black/40 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:shadow-indigo-900/30 md:flex-row">
       <Link
-        href={`/movie/${movie.id}`}
+        href={movieDetailPath(movie.title, movie.id)}
         className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-zinc-800 md:w-44 lg:w-52"
       >
         {poster ? (
@@ -58,7 +59,7 @@ export function MovieResultCard({ movie }: Props) {
         <div>
           <div className="flex flex-wrap items-baseline gap-2">
             <h2 className="text-xl font-semibold tracking-tight text-white">
-              <Link href={`/movie/${movie.id}`} className="transition hover:text-indigo-200">
+              <Link href={movieDetailPath(movie.title, movie.id)} className="transition hover:text-indigo-200">
                 {movie.title}
               </Link>
             </h2>

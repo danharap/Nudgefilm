@@ -9,6 +9,7 @@ import {
   removeTVFromWatchlist,
 } from "@/app/actions/library";
 import { movieToast } from "@/components/ui/movieToast";
+import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,7 +42,7 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
 
   const year = movie.release_date?.slice(0, 4) ?? "—";
   const poster = posterUrl(movie.poster_path, "w342");
-  const href = movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
+  const href = browseMediaPath(movie.title, movie.id, movie.mediaType);
   const isTV = movie.mediaType === "tv";
 
   function run(action: () => Promise<void>, onSuccess: () => void, msg: string) {

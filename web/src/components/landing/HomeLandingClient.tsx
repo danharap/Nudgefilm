@@ -1,6 +1,7 @@
 "use client";
 
 import { APP_NAME } from "@/config/brand";
+import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
@@ -368,8 +369,11 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
                     {demoShortlist.map((movie, i) => {
                       const image = posterUrl(movie.poster_path, "w342");
-                      const href =
-                        movie.mediaType === "tv" ? `/show/${movie.id}` : `/movie/${movie.id}`;
+                      const href = browseMediaPath(
+                        movie.title,
+                        movie.id,
+                        movie.mediaType,
+                      );
                       const isSelected = selectedDemoMovie?.id === movie.id;
                       return (
                         <motion.div
