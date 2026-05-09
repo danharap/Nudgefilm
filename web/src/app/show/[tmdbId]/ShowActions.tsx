@@ -6,12 +6,16 @@ import {
   removeTVFromWatchlist,
   removeTVFromWatched,
 } from "@/app/actions/library";
+import { Bookmark, Check, Eye, Play, Share2, Sparkles, Star } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-type ExistingEntry = { user_rating: number | null; notes: string | null } | null;
+type ExistingEntry = {
+  user_rating: number | null;
+  notes: string | null;
+} | null;
 
 type Props = {
   tmdbId: number;
@@ -36,18 +40,23 @@ export function ShowActions({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [showForm, setShowForm] = useState(false);
+  const [showRateForm, setShowRateForm] = useState(false);
   const [rating, setRating] = useState<number>(existing?.user_rating ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [queued, setQueued] = useState(inWatchlist);
+  const [logged, setLogged] = useState(() => !!existing);
 
   useEffect(() => {
     setQueued(inWatchlist);
   }, [inWatchlist]);
 
+  useEffect(() => {
+    setLogged(!!existing);
+  }, [existing]);
+
   function run(
     action: () => Promise<void>,
-    successMsg: string,
+    successMsg = "Saved.",
     onSuccess?: () => void,
     onError?: () => void,
   ) {
@@ -73,26 +82,48 @@ export function ShowActions({
         >
           Sign in to log / rate
         </Link>
+        <Link
+          href={similarHref}
+          className="rounded-full px-5 py-2.5 text-sm text-zinc-500 transition hover:text-zinc-300"
+        >
+          Find similar
+        </Link>
+        {trailerUrl ? (
+          <a
+            href={trailerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-white/10 px-5 py-2.5 text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          >
+            Watch trailer
+          </a>
+        ) : null}
       </div>
     );
   }
 
+  const rateLabelValue = rating > 0 ? rating : Number(existing?.user_rating ?? 0);
+
   return (
-    <div className="mt-10 space-y-4 rounded-2xl border border-white/10 bg-[var(--surface-1)]/70 p-4 backdrop-blur-sm sm:p-5">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="mt-10 space-y-3 rounded-2xl border border-white/10 bg-[linear-gradient(145deg,rgba(16,20,40,0.88),rgba(8,11,25,0.78))] p-3 shadow-[0_16px_40px_-24px_rgba(92,90,255,0.45)] backdrop-blur-md sm:p-4">
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           disabled={isPending}
-          onClick={() => setShowForm((p) => !p)}
-          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
-            existing
-              ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
-              : "bg-indigo-500/15 text-indigo-200 hover:bg-indigo-500/25"
+          onClick={() => setShowRateForm((p) => !p)}
+          aria-label={showRateForm ? "Close rating form" : "Open rating and log form"}
+          className={`group flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 disabled:opacity-50 ${
+            showRateForm || logged
+              ? "border-indigo-400/35 bg-indigo-500/15 text-indigo-100 shadow-[0_0_0_1px_rgba(99,102,241,0.25)]"
+              : "border-white/10 bg-white/[0.02] text-zinc-200 hover:border-indigo-400/30 hover:bg-indigo-500/10"
           }`}
         >
-          {existing
-            ? `Logged · ${existing.user_rating ? `${existing.user_rating}/10` : "no rating"}`
-            : "Log / Rate this show"}
+          <Star
+            className={`size-4 transition ${showRateForm || logged ? "fill-indigo-300 text-indigo-300" : "text-zinc-300 group-hover:text-indigo-300"}`}
+          />
+          <span>
+            {!logged ? "Rate" : rateLabelValue > 0 ? `Rate ${rateLabelValue}` : "Rate"}
+          </span>
         </button>
 
         <button
@@ -119,32 +150,91 @@ export function ShowActions({
           }}
           aria-label={queued ? "Remove from watchlist" : "Add to watchlist"}
           title={queued ? "Click to remove from watchlist" : "Add to watchlist"}
-          className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
+          className={`group flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 disabled:opacity-50 ${
             queued
-              ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
-              : "border border-white/10 text-zinc-300 hover:border-indigo-400/30 hover:text-white"
+              ? "border-indigo-400/35 bg-indigo-500/15 text-indigo-100 shadow-[0_0_0_1px_rgba(99,102,241,0.25)]"
+              : "border-white/10 bg-white/[0.02] text-zinc-200 hover:border-indigo-400/30 hover:bg-indigo-500/10"
           }`}
         >
-          {queued ? "✓ In watchlist · tap to remove" : "Watchlist"}
+          <span className="relative inline-flex items-center justify-center">
+            <Bookmark
+              className={`size-4 transition-all duration-200 ${queued ? "fill-indigo-300 text-indigo-300" : "text-zinc-300 group-hover:text-indigo-300"}`}
+            />
+            {queued ? <Check className="absolute -right-1.5 -top-1.5 size-3 rounded-full bg-indigo-500 text-white p-0.5" /> : null}
+          </span>
+          <span>{queued ? "Saved" : "Watchlist"}</span>
         </button>
+
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => {
+            if (logged) {
+              setLogged(false);
+              run(
+                () => removeTVFromWatched(tmdbId),
+                "Removed from diary.",
+                () => {
+                  setRating(0);
+                  setNotes("");
+                  setShowRateForm(false);
+                },
+                () => setLogged(true),
+              );
+            } else {
+              setLogged(true);
+              run(
+                () => markTVWatched(tmdbId, rating > 0 ? rating : null, notes.trim() || null),
+                "Added to diary.",
+                undefined,
+                () => setLogged(false),
+              );
+            }
+          }}
+          aria-label={logged ? "Remove from diary" : "Mark show as watched"}
+          title={logged ? "Click again to remove from your diary" : "Add to your diary"}
+          className={`group flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition duration-200 hover:-translate-y-0.5 disabled:opacity-50 ${
+            logged
+              ? "border-indigo-400/35 bg-indigo-500/15 text-indigo-100 shadow-[0_0_0_1px_rgba(99,102,241,0.25)] hover:border-indigo-400/45"
+              : "border-white/10 bg-white/[0.02] text-zinc-200 hover:border-indigo-400/30 hover:bg-indigo-500/10"
+          }`}
+        >
+          <Eye
+            className={`size-4 transition ${logged ? "text-indigo-300" : "text-zinc-300 group-hover:text-indigo-300"}`}
+          />
+          <span>{logged ? "Logged" : "Watched"}</span>
+        </button>
+
         <Link
           href={similarHref}
-          className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          aria-label="Find similar TV shows"
+          className="group flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2.5 text-sm font-medium text-zinc-200 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-indigo-500/10"
         >
-          Find similar
+          <Sparkles className="size-4 text-zinc-300 transition group-hover:text-indigo-300" />
+          <span>Similar</span>
         </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
         {trailerUrl ? (
           <a
             href={trailerUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl border border-white/10 px-4 py-2.5 text-center text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+            aria-label="Watch trailer"
+            className="group flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.02] px-2 py-2 text-xs font-medium text-zinc-200 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-indigo-500/10 sm:text-sm"
           >
-            Watch trailer
+            <Play className="size-3.5 text-zinc-300 transition group-hover:text-indigo-300 sm:size-4" />
+            <span>Trailer</span>
           </a>
         ) : (
-          <button type="button" disabled className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-500">
-            No trailer
+          <button
+            type="button"
+            disabled
+            className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.02] px-2 py-2 text-xs font-medium text-zinc-500 sm:text-sm"
+          >
+            <Play className="size-3.5 sm:size-4" />
+            <span>Trailer</span>
           </button>
         )}
         <button
@@ -157,16 +247,18 @@ export function ShowActions({
               toast.error("Could not copy link.");
             }
           }}
-          className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-zinc-300 transition hover:border-indigo-400/30 hover:text-white"
+          aria-label="Copy share link"
+          className="group flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.02] px-2 py-2 text-xs font-medium text-zinc-200 transition duration-200 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-indigo-500/10 sm:text-sm"
         >
-          Share
+          <Share2 className="size-3.5 text-zinc-300 transition group-hover:text-indigo-300 sm:size-4" />
+          <span>Share</span>
         </button>
       </div>
 
-      {showForm && (
-        <div className="rounded-2xl border border-white/[0.08] bg-zinc-900/70 p-5 space-y-4 backdrop-blur-sm">
+      {showRateForm ? (
+        <div className="space-y-4 rounded-2xl border border-indigo-400/25 bg-[linear-gradient(180deg,rgba(18,22,46,0.88),rgba(8,10,24,0.9))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm">
           <p className="text-sm font-medium text-zinc-300">
-            {existing ? "Update your log" : "Log this show"}
+            {logged ? "Update your log" : "Log this show"}
           </p>
 
           <div className="space-y-2">
@@ -177,7 +269,8 @@ export function ShowActions({
                   key={n}
                   type="button"
                   onClick={() => setRating((prev) => (prev === n ? 0 : n))}
-                  className={`h-9 w-9 rounded-lg border text-sm font-semibold transition ${
+                  aria-label={`Set rating to ${n}`}
+                  className={`h-8 w-8 rounded-lg border text-xs font-semibold transition sm:h-9 sm:w-9 sm:text-sm ${
                     rating === n
                       ? "border-indigo-400/40 bg-indigo-400/15 text-indigo-200"
                       : "border-white/[0.08] text-zinc-500 hover:border-white/20 hover:text-zinc-300"
@@ -188,7 +281,9 @@ export function ShowActions({
               ))}
             </div>
             {rating > 0 && (
-              <p className="text-xs text-indigo-300/70">{rating}/10 selected</p>
+              <p className="text-xs text-indigo-300/70">
+                {rating}/10 selected
+              </p>
             )}
           </div>
 
@@ -212,45 +307,30 @@ export function ShowActions({
               disabled={isPending}
               onClick={() =>
                 run(
-                  () => markTVWatched(tmdbId, rating > 0 ? rating : null, notes.trim() || null),
-                  existing ? "Log updated." : "Show logged to your diary.",
-                  () => setShowForm(false),
+                  () =>
+                    markTVWatched(
+                      tmdbId,
+                      rating > 0 ? rating : null,
+                      notes.trim() || null,
+                    ),
+                  logged ? "Log updated." : "Show logged to your diary.",
+                  () => setShowRateForm(false),
                 )
               }
-              className="rounded-full bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-400 disabled:opacity-60"
+              className="rounded-full bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-indigo-400 disabled:opacity-60"
             >
-              {isPending ? "Saving…" : existing ? "Update" : "Save"}
+              {isPending ? "Saving…" : logged ? "Update" : "Save"}
             </button>
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => setShowRateForm(false)}
               className="rounded-full border border-white/10 px-4 py-2.5 text-sm text-zinc-400 transition hover:text-zinc-200"
             >
               Cancel
             </button>
-            {existing ? (
-              <button
-                type="button"
-                disabled={isPending}
-                onClick={() =>
-                  run(
-                    () => removeTVFromWatched(tmdbId),
-                    "Removed from diary.",
-                    () => {
-                      setRating(0);
-                      setNotes("");
-                      setShowForm(false);
-                    },
-                  )
-                }
-                className="rounded-full border border-red-400/25 px-4 py-2.5 text-sm text-red-300/90 transition hover:border-red-400/40 hover:bg-red-500/10 disabled:opacity-50"
-              >
-                Remove from diary
-              </button>
-            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

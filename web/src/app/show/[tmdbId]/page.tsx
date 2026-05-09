@@ -178,10 +178,15 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
     return `/show/${tmdbId}?${sp.toString()}`;
   };
 
+  const links = {
+    tmdb: `https://www.themoviedb.org/tv/${tmdbId}`,
+    imdb: externalIds.imdb_id ? `https://www.imdb.com/title/${externalIds.imdb_id}` : null,
+    homepage: show.homepage || null,
+  };
+
   return (
     <article className="pb-16">
-      {/* Backdrop */}
-      <div className="relative h-[42vh] min-h-[260px] w-full overflow-hidden sm:h-[50vh] sm:min-h-[320px] md:h-96">
+      <div className="relative h-[48vh] min-h-[280px] w-full overflow-hidden sm:h-[56vh] sm:min-h-[360px]">
         {backdrop ? (
           <Image
             src={backdrop}
@@ -195,20 +200,20 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
         ) : (
           <div className="h-full bg-zinc-900" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#070708] via-[#070708]/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#070708]/88 to-[#070708]/30" />
+        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-[#070708]" />
       </div>
 
-      <div className="relative mx-auto -mt-24 max-w-6xl px-4 pb-20 sm:-mt-28 sm:px-6 md:-mt-24">
-        {/* Poster + meta */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-end">
-          <div className="relative mx-auto aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-2xl md:mx-0 md:w-52">
+      <div className="relative z-10 mx-auto -mt-24 max-w-6xl px-4 sm:-mt-32 sm:px-6 lg:-mt-40">
+        <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)_340px] lg:items-start">
+          <div className="relative mx-auto aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl sm:w-52 lg:mx-0">
             {poster ? (
               <Image src={poster} alt={show.name} fill className="object-cover" sizes="208px" />
             ) : null}
           </div>
 
-          <div className="flex-1 space-y-3 text-center md:pb-2 md:text-left">
-            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+          <div className="space-y-4 text-center lg:text-left">
+            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
               <span className="rounded-full bg-violet-600/20 px-2.5 py-0.5 text-xs font-semibold text-violet-300 ring-1 ring-violet-500/20">
                 TV Series
               </span>
@@ -223,17 +228,21 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
               )}
             </div>
 
-            <h1 className="text-2xl font-semibold text-white sm:text-3xl md:text-4xl">{show.name}</h1>
+            <h1 className="text-2xl font-semibold text-white sm:text-3xl md:text-4xl lg:text-5xl">{show.name}</h1>
 
             {show.tagline && (
               <p className="text-sm italic text-zinc-500">&ldquo;{show.tagline}&rdquo;</p>
             )}
 
-            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-zinc-400 md:justify-start">
+            <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-zinc-300/90 lg:justify-start">
               {year && <span>{year}</span>}
               {year && <span>·</span>}
-              <span>★ {show.vote_average?.toFixed(1)}</span>
-              <span className="text-zinc-600">({show.vote_count?.toLocaleString()} votes)</span>
+              <span>
+                ★ {show.vote_average?.toFixed(1)}{" "}
+                <span className="text-zinc-500">
+                  ({show.vote_count?.toLocaleString()} votes)
+                </span>
+              </span>
               <span>·</span>
               <span>{show.number_of_seasons} season{show.number_of_seasons !== 1 ? "s" : ""}</span>
               <span>·</span>
@@ -246,46 +255,66 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
               )}
             </div>
 
-            {/* Genres */}
+            {existing?.user_rating ? (
+              <p className="text-sm text-indigo-200/80">
+                Your rating:{" "}
+                <span className="font-semibold">{existing.user_rating}/10</span>
+              </p>
+            ) : null}
+
             <div className="flex flex-wrap justify-center gap-2 md:justify-start">
               {(show.genres ?? []).map((g) => (
-                <span
+                <Link
                   key={g.id}
+                  href={`/recommend?source=tv&genres=${g.id}`}
                   className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-zinc-300"
                 >
                   {g.name}
-                </span>
+                </Link>
               ))}
             </div>
 
-            {/* Networks */}
-            {show.networks?.length > 0 && (
+            {show.networks && show.networks.length > 0 ? (
               <p className="text-xs text-zinc-500">
                 {show.networks.map((n) => n.name).join(", ")}
               </p>
-            )}
+            ) : null}
+
+            <p className="max-w-3xl text-sm leading-relaxed text-zinc-300">
+              {show.overview || "No synopsis available."}
+            </p>
+
+            {showMemberDiaryHighlight && memberDiaryHighlight ? (
+              <MemberDiaryHighlightCard highlight={memberDiaryHighlight} />
+            ) : null}
+
+            <div className="flex flex-wrap justify-center gap-2 text-xs text-zinc-400 lg:justify-start">
+              <a href={links.tmdb} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">TMDb</a>
+              {links.imdb ? <a href={links.imdb} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">IMDb</a> : null}
+              {links.homepage ? <a href={links.homepage} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">Official Site</a> : null}
+              {trailerUrl ? <a href={trailerUrl} target="_blank" rel="noopener noreferrer" className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-indigo-200">Trailer</a> : null}
+            </div>
           </div>
-        </div>
 
-        {/* Overview */}
-        <p className="mx-auto mt-8 max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
-          {show.overview || "No synopsis available."}
-        </p>
-
-        {showMemberDiaryHighlight && memberDiaryHighlight ? (
-          <div className="mx-auto max-w-4xl">
-            <MemberDiaryHighlightCard highlight={memberDiaryHighlight} />
+          <div className="lg:sticky lg:top-20">
+            <ShowActions
+              tmdbId={tmdbId}
+              isLoggedIn={!!user}
+              existing={existing}
+              inWatchlist={inWatchlist}
+              similarHref={similarHref}
+              trailerUrl={trailerUrl}
+              shareUrl={shareUrl}
+            />
+            {!user ? (
+              <p className="mt-3 text-center text-xs text-zinc-500 lg:text-left">
+                <Link href={`/login?redirect=/show/${tmdbId}`} className="underline-offset-2 hover:underline">Sign in</Link> to log, rate, and save this show.
+              </p>
+            ) : null}
           </div>
-        ) : null}
+        </section>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-2 text-xs text-zinc-400 md:justify-start">
-          <a href={`https://www.themoviedb.org/tv/${tmdbId}`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">TMDb</a>
-          {externalIds.imdb_id ? <a href={`https://www.imdb.com/title/${externalIds.imdb_id}`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">IMDb</a> : null}
-          {show.homepage ? <a href={show.homepage} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">Official Site</a> : null}
-          {trailerUrl ? <a href={trailerUrl} target="_blank" rel="noopener noreferrer" className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-indigo-200">Trailer</a> : null}
-        </div>
-
-        <section className="mt-8">
+        <section className="mt-8 sm:mt-10">
           <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto border-b border-white/10 px-1 pt-1 pb-3">
             {SHOW_TABS.map((tab) => (
               <Link
@@ -445,26 +474,6 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
               })}
             </div>
           </section>
-        )}
-
-        {/* Log / Rate */}
-        <ShowActions
-          tmdbId={tmdbId}
-          isLoggedIn={!!user}
-          existing={existing}
-          inWatchlist={inWatchlist}
-          similarHref={similarHref}
-          trailerUrl={trailerUrl}
-          shareUrl={shareUrl}
-        />
-
-        {!user && (
-          <p className="mt-4 text-center text-xs text-zinc-600 md:text-left">
-            <Link href={`/login?redirect=/show/${tmdbId}`} className="text-zinc-500 underline-offset-2 hover:underline">
-              Sign in
-            </Link>{" "}
-            to log this show, rate it, and add it to your watchlist.
-          </p>
         )}
 
         {/* Browse back */}

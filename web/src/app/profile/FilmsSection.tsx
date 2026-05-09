@@ -272,7 +272,7 @@ export function FilmsSection({
                       </span>
                     ) : null}
                     {user_rating != null && (
-                      <span className="absolute bottom-1.5 right-1.5 min-h-[1.375rem] min-w-[1.75rem] rounded-md bg-black/85 px-2 py-1 text-center text-xs font-bold tabular-nums text-indigo-100 ring-1 ring-white/15 sm:bottom-2 sm:right-2 sm:min-h-[1.5rem] sm:min-w-[2rem] sm:px-2.5 sm:text-sm">
+                      <span className="absolute bottom-1.5 right-1.5 rounded-md bg-black/80 px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums text-indigo-200 ring-1 ring-white/10 backdrop-blur-sm sm:bottom-2 sm:right-2 sm:px-2 sm:text-xs">
                         {user_rating}
                       </span>
                     )}
