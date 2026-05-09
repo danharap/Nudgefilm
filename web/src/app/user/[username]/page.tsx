@@ -6,8 +6,12 @@ import {
   fetchWatchedDiarySlice,
   PUBLIC_DIARY_PAGE_SIZE,
 } from "@/features/profile/publicWatched";
-import { getFollowStatus, getProfileByUsername } from "@/features/users/service";
-import { posterUrl } from "@/lib/tmdb/constants";
+import {
+  countMutualFriendsForProfile,
+  getFollowStatus,
+  getProfileByUsername,
+} from "@/features/users/service";
+import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,7 +29,15 @@ type MovieRow = {
 
 type FavRow = {
   position: number;
-  movies: { id: number; tmdb_id: number; title: string; poster_path: string | null } | null;
+  custom_poster_url?: string | null;
+  movies: {
+    id: number;
+    tmdb_id: number;
+    title: string;
+    poster_path: string | null;
+    vote_count: number | null;
+    parent_show_tmdb_id?: number | null;
+  } | null;
 };
 
 type ListMovieRow = {
@@ -78,7 +90,7 @@ export default async function PublicProfilePage({
   const [
     followStatus,
     isFollowingResult,
-    initialDiaryFilms,
+    diaryInitial,
     { count: watchedTotal },
     ratingStatsResult,
     { data: favouriteRows },
@@ -98,12 +110,7 @@ export default async function PublicProfilePage({
           .eq("follower_id", currentUser.id)
           .eq("following_id", target.id)
       : Promise.resolve({ count: 0 }),
-    fetchWatchedDiarySlice(
-      supabase,
-      target.id,
-      0,
-      PUBLIC_DIARY_PAGE_SIZE,
-    ),
+    fetchWatchedDiarySlice(supabase, target.id, 0, PUBLIC_DIARY_PAGE_SIZE),
     supabase
       .from("watched_movies")
       .select("*", { count: "exact", head: true })
@@ -113,7 +120,9 @@ export default async function PublicProfilePage({
     }),
     supabase
       .from("favourite_movies")
-      .select("position, movies ( id, tmdb_id, title, poster_path )")
+      .select(
+        "position, custom_poster_url, movies ( id, tmdb_id, title, poster_path, vote_count, parent_show_tmdb_id )",
+      )
       .eq("user_id", target.id)
       .order("position"),
     target.watchlist_public
@@ -144,9 +153,18 @@ export default async function PublicProfilePage({
 
   const isFollowing = (isFollowingResult as { count: number | null }).count === 1;
 
+  const mutualFriendsCount = await countMutualFriendsForProfile(supabase, target.id);
+
+  const initialDiaryFilms = diaryInitial.films;
+  const initialDiaryRawRowCount = diaryInitial.rawRowCount;
+
   const favourites = [1, 2, 3, 4].map((pos) => {
     const row = (favouriteRows as FavRow[] | null)?.find((r) => r.position === pos);
-    return { position: pos, movie: row?.movies ?? null };
+    return {
+      position: pos,
+      movie: row?.movies ?? null,
+      custom_poster_url: row?.custom_poster_url ?? null,
+    };
   });
 
   const watchlist = target.watchlist_public
@@ -169,7 +187,7 @@ export default async function PublicProfilePage({
       ? Number(ratingRow.avg_rating)
       : null;
 
-  const filmsLoggedTotal = watchedTotal ?? initialDiaryFilms.length;
+  const filmsLoggedTotal = watchedTotal ?? initialDiaryRawRowCount;
 
   const profileLists = (listsRows as ListRaw[] ?? []).map((l) => ({
     id: l.id,
@@ -261,7 +279,7 @@ export default async function PublicProfilePage({
               <span className="font-semibold text-white">{followersCount ?? 0}</span> followers
             </Link>
             <span>
-              <span className="font-semibold text-white">{filmsLoggedTotal}</span> films
+              <span className="font-semibold text-white">{mutualFriendsCount}</span> friends
             </span>
           </div>
 
@@ -304,13 +322,16 @@ export default async function PublicProfilePage({
         <section className="mb-12">
           <h2 className="mb-4 text-lg font-semibold text-white">Top 4 Favourites</h2>
           <div className="grid grid-cols-4 gap-3">
-            {favourites.map(({ position, movie }) => {
-              const poster = movie ? posterUrl(movie.poster_path, "w342") : null;
+            {favourites.map(({ position, movie, custom_poster_url }) => {
+              const poster =
+                custom_poster_url?.trim() ||
+                (movie ? posterUrl(movie.poster_path, "w342") : null);
+              const href = movie ? detailHrefFromStoredMovie(movie) : "#";
               return (
                 <div key={position}>
                   {movie ? (
                     <Link
-                      href={`/movie/${movie.tmdb_id}`}
+                      href={href}
                       className="group relative block aspect-[2/3] overflow-hidden rounded-xl bg-zinc-800"
                     >
                       {poster ? (
@@ -320,6 +341,11 @@ export default async function PublicProfilePage({
                           fill
                           className="object-cover transition group-hover:scale-[1.03]"
                           sizes="(max-width:640px) 25vw, 120px"
+                          unoptimized={
+                            typeof poster === "string" &&
+                            poster.startsWith("http") &&
+                            !poster.includes("image.tmdb.org")
+                          }
                         />
                       ) : null}
                     </Link>
@@ -393,6 +419,7 @@ export default async function PublicProfilePage({
           userId={target.id}
           profileUsername={target.username}
           initialFilms={initialDiaryFilms}
+          initialRawRowCount={initialDiaryRawRowCount}
           totalLogged={filmsLoggedTotal}
         />
       ) : (

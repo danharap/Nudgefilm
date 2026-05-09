@@ -1,19 +1,40 @@
 "use client";
 
-import { markWatched } from "@/app/actions/library";
+import { markTVWatched, markWatched } from "@/app/actions/library";
+import { TV_SEASON_OFFSET, TV_TMDB_OFFSET } from "@/lib/tmdb/constants";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+type MovieRow = {
+  tmdb_id: number;
+};
+
 type Props = {
-  tmdbId: number;
+  movie: MovieRow;
   initialRating: number | null;
   initialNotes: string | null;
 };
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
-export function WatchedEntryActions({ tmdbId, initialRating, initialNotes }: Props) {
+async function saveDiaryEntry(
+  movie: MovieRow,
+  rating: number | null,
+  notes: string | null,
+) {
+  const id = movie.tmdb_id;
+  if (id >= TV_SEASON_OFFSET) {
+    throw new Error("Edit season logs from the show page for that season.");
+  }
+  if (id >= TV_TMDB_OFFSET) {
+    await markTVWatched(id - TV_TMDB_OFFSET, rating, notes);
+    return;
+  }
+  await markWatched(id, rating, notes);
+}
+
+export function WatchedEntryActions({ movie, initialRating, initialNotes }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
@@ -23,7 +44,7 @@ export function WatchedEntryActions({ tmdbId, initialRating, initialNotes }: Pro
   function onSave() {
     startTransition(async () => {
       try {
-        await markWatched(tmdbId, rating > 0 ? rating : null, notes.trim() || null);
+        await saveDiaryEntry(movie, rating > 0 ? rating : null, notes.trim() || null);
         setEditing(false);
         toast.success("Rating saved.");
         router.refresh();

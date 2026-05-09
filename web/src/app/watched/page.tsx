@@ -1,8 +1,6 @@
 import { WatchedAddSearch } from "./WatchedAddSearch";
-import { WatchedEntryActions } from "./WatchedEntryActions";
-import { posterUrl } from "@/lib/tmdb/constants";
+import { WatchedRowClient } from "./WatchedRowClient";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -15,23 +13,27 @@ type MovieRow = {
   poster_path: string | null;
   vote_average: number | null;
   vote_count: number | null;
+  parent_show_tmdb_id?: number | null;
 };
 
 type WatchedRow = {
+  id: number;
   watched_at: string;
   user_rating: number | null;
   notes: string | null;
+  custom_poster_url: string | null;
   movies: MovieRow | MovieRow[] | null;
 };
 
-async function loadWatched(): Promise<WatchedRow[]> {
+async function loadWatched(userId: string): Promise<WatchedRow[]> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("watched_movies")
       .select(
-        "watched_at, user_rating, notes, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count )",
+        "id, watched_at, user_rating, notes, custom_poster_url, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, parent_show_tmdb_id )",
       )
+      .eq("user_id", userId)
       .order("watched_at", { ascending: false });
 
     if (error) {
@@ -46,14 +48,28 @@ async function loadWatched(): Promise<WatchedRow[]> {
 }
 
 export default async function WatchedPage() {
-  const rows = await loadWatched();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const rows = user ? await loadWatched(user.id) : [];
 
   const items = rows.flatMap((r) => {
     const m = r.movies;
     if (!m) return [];
     const movie = Array.isArray(m) ? m[0] : m;
     return movie
-      ? [{ watched_at: r.watched_at, user_rating: r.user_rating, notes: r.notes, movie }]
+      ? [
+          {
+            watchedRowId: r.id,
+            watched_at: r.watched_at,
+            user_rating: r.user_rating,
+            notes: r.notes,
+            custom_poster_url: r.custom_poster_url,
+            movie,
+          },
+        ]
       : [];
   });
 
@@ -66,9 +82,20 @@ export default async function WatchedPage() {
         </p>
       </header>
 
-      <WatchedAddSearch
-        alreadyWatchedTmdbIds={items.map(({ movie }) => movie.tmdb_id)}
-      />
+      {!user ? (
+        <p className="mb-6 text-sm text-zinc-500">
+          <Link href="/login" className="text-indigo-300 hover:text-indigo-200">
+            Sign in
+          </Link>{" "}
+          to view your diary.
+        </p>
+      ) : null}
+
+      {user ? (
+        <WatchedAddSearch
+          alreadyWatchedTmdbIds={items.map(({ movie }) => movie.tmdb_id)}
+        />
+      ) : null}
 
       {items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/15 bg-zinc-900/30 px-6 py-16 text-center">
@@ -82,60 +109,27 @@ export default async function WatchedPage() {
         </div>
       ) : (
         <ul className="flex flex-col gap-4">
-          {items.map(({ watched_at, user_rating, notes, movie }) => {
-            const p = posterUrl(movie.poster_path, "w342");
-            return (
-              <li
-                key={`${movie.id}-${watched_at}`}
-                className="flex gap-4 rounded-2xl border border-white/10 bg-zinc-900/40 p-4"
-              >
-                <Link
-                  href={`/movie/${movie.tmdb_id}`}
-                  className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-800"
-                >
-                  {p ? (
-                    <Image
-                      src={p}
-                      alt={movie.title}
-                      fill
-                      className="object-cover"
-                      sizes="80px"
-                    />
-                  ) : null}
-                </Link>
-                <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/movie/${movie.tmdb_id}`}
-                    className="font-medium text-white hover:text-indigo-200"
-                  >
-                    {movie.title}
-                  </Link>
-                  <p className="text-xs text-zinc-500">
-                    Watched{" "}
-                    {watched_at ? new Date(watched_at).toLocaleDateString() : "—"}
-                  </p>
-                  {movie.vote_average != null ? (
-                    <p className="text-xs text-zinc-500">
-                      TMDb ★ {Number(movie.vote_average).toFixed(1)}
-                      {movie.vote_count
-                        ? ` · ${movie.vote_count.toLocaleString()} votes`
-                        : ""}
-                    </p>
-                  ) : null}
-                  {notes ? (
-                    <p className="mt-1 line-clamp-2 text-xs italic text-zinc-400">
-                      &ldquo;{notes}&rdquo;
-                    </p>
-                  ) : null}
-                  <WatchedEntryActions
-                    tmdbId={movie.tmdb_id}
-                    initialRating={user_rating ?? null}
-                    initialNotes={notes ?? null}
-                  />
-                </div>
-              </li>
-            );
-          })}
+          {items.map(
+            ({
+              watchedRowId,
+              watched_at,
+              user_rating,
+              notes,
+              custom_poster_url,
+              movie,
+            }) => (
+              <WatchedRowClient
+                key={`${watchedRowId}-${watched_at}`}
+                userId={user?.id ?? ""}
+                watchedRowId={watchedRowId}
+                watched_at={watched_at}
+                user_rating={user_rating}
+                notes={notes}
+                custom_poster_url={custom_poster_url}
+                movie={movie}
+              />
+            ),
+          )}
         </ul>
       )}
     </div>

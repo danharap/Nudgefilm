@@ -1,5 +1,6 @@
 "use server";
 
+import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
 import { createClient } from "@/lib/supabase/server";
 import { getAppOriginAsync } from "@/lib/site-url";
 import { redirect } from "next/navigation";
@@ -13,6 +14,12 @@ export async function signInWithEmail(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    await syncProfileFromAuthUser(supabase, user);
   }
   redirect(next);
 }

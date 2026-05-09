@@ -5,11 +5,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const PUBLIC_DIARY_PAGE_SIZE = 50;
 
 const DIARY_MOVIE_SELECT =
-  "watched_at, user_rating, movies ( id, tmdb_id, title, poster_path, vote_average, vote_count, genres )";
+  "id, watched_at, user_rating, custom_poster_url, movies ( id, tmdb_id, title, poster_path, vote_average, vote_count, genres, parent_show_tmdb_id )";
 
 type RawRow = {
+  id: number;
   watched_at: string | null;
   user_rating: number | null;
+  custom_poster_url?: string | null;
   movies: unknown;
 };
 
@@ -19,10 +21,24 @@ export function mapRowsToWatchedFilms(rows: RawRow[]): WatchedFilm[] {
     if (!m) return [];
     const movie = Array.isArray(m) ? m[0] : m;
     return movie
-      ? [{ movie, watched_at: r.watched_at, user_rating: r.user_rating }]
+      ? [
+          {
+            watched_row_id: r.id,
+            custom_poster_url: r.custom_poster_url ?? null,
+            movie,
+            watched_at: r.watched_at,
+            user_rating: r.user_rating,
+          },
+        ]
       : [];
   });
 }
+
+export type WatchedDiarySlice = {
+  films: WatchedFilm[];
+  /** Rows returned from `watched_movies` before flattening the movie join (drives pagination offset). */
+  rawRowCount: number;
+};
 
 /** One page of diary rows (newest first). */
 export async function fetchWatchedDiarySlice(
@@ -30,7 +46,7 @@ export async function fetchWatchedDiarySlice(
   userId: string,
   offset: number,
   limit: number,
-): Promise<WatchedFilm[]> {
+): Promise<WatchedDiarySlice> {
   const { data, error } = await supabase
     .from("watched_movies")
     .select(DIARY_MOVIE_SELECT)
@@ -41,10 +57,14 @@ export async function fetchWatchedDiarySlice(
 
   if (error) {
     console.error("[publicWatched]", error.message);
-    return [];
+    return { films: [], rawRowCount: 0 };
   }
 
-  return mapRowsToWatchedFilms((data ?? []) as RawRow[]);
+  const rows = (data ?? []) as RawRow[];
+  return {
+    films: mapRowsToWatchedFilms(rows),
+    rawRowCount: rows.length,
+  };
 }
 
 /** Full diary (e.g. migrations/tools). Prefer paginated slices for UI. */
@@ -54,10 +74,15 @@ export async function fetchAllWatchedFilmsForProfileView(
 ): Promise<WatchedFilm[]> {
   const out: WatchedFilm[] = [];
   for (let offset = 0; ; offset += 1000) {
-    const chunk = await fetchWatchedDiarySlice(supabase, userId, offset, 1000);
-    if (chunk.length === 0) break;
-    out.push(...chunk);
-    if (chunk.length < 1000) break;
+    const { films, rawRowCount } = await fetchWatchedDiarySlice(
+      supabase,
+      userId,
+      offset,
+      1000,
+    );
+    if (rawRowCount === 0) break;
+    out.push(...films);
+    if (rawRowCount < 1000) break;
   }
   return out;
 }

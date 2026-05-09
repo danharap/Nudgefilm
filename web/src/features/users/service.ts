@@ -103,6 +103,37 @@ export async function getProfileByUsername(
   }
 }
 
+/**
+ * Users who mutually follow this profile: they follow `profileUserId` and `profileUserId` follows them back.
+ */
+export async function countMutualFriendsForProfile(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileUserId: string,
+): Promise<number> {
+  const { data: followingRows, error: errFollowing } = await supabase
+    .from("follows")
+    .select("following_id")
+    .eq("follower_id", profileUserId);
+  if (errFollowing) {
+    console.error("[users] countMutualFriendsForProfile following:", errFollowing.message);
+    return 0;
+  }
+  const ids = (followingRows ?? [])
+    .map((r) => r.following_id as string)
+    .filter(Boolean);
+  if (ids.length === 0) return 0;
+  const { count, error: errMutual } = await supabase
+    .from("follows")
+    .select("*", { count: "exact", head: true })
+    .eq("following_id", profileUserId)
+    .in("follower_id", ids);
+  if (errMutual) {
+    console.error("[users] countMutualFriendsForProfile mutual:", errMutual.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 /** Is current user following target profile */
 export async function getFollowStatus(
   currentUserId: string,

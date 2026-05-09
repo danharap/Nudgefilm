@@ -9,38 +9,48 @@ export function PublicDiarySection({
   userId,
   profileUsername,
   initialFilms,
+  initialRawRowCount,
   totalLogged,
 }: {
   userId: string;
   /** Adds review context to poster links (movies/shows open with their diary snippet). */
   profileUsername: string | null;
   initialFilms: WatchedFilm[];
+  /** Raw `watched_movies` rows consumed for the first slice (pagination offset, not poster count). */
+  initialRawRowCount: number;
   totalLogged: number;
 }) {
   const [films, setFilms] = useState(initialFilms);
-  const filmsRef = useRef(films);
-  filmsRef.current = films;
+
+  const dbOffsetRef = useRef(initialRawRowCount);
+  const [dbOffset, setDbOffset] = useState(initialRawRowCount);
 
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [loadEnded, setLoadEnded] = useState(false);
 
-  const hasMore = films.length < totalLogged && !loadEnded;
+  const hasMore = dbOffset < totalLogged && !loadEnded;
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current || loadEnded) return;
-    const offset = filmsRef.current.length;
+    const offset = dbOffsetRef.current;
     if (offset >= totalLogged) return;
 
     loadingRef.current = true;
     setLoading(true);
     try {
-      const next = await loadMorePublicDiary(userId, offset);
-      if (next.length === 0) {
+      const { films: next, rawRowCount } = await loadMorePublicDiary(userId, offset);
+      if (rawRowCount === 0) {
         setLoadEnded(true);
         return;
       }
+      const nextOffset = offset + rawRowCount;
+      dbOffsetRef.current = nextOffset;
+      setDbOffset(nextOffset);
       setFilms((prev) => [...prev, ...next]);
+      if (nextOffset >= totalLogged) {
+        setLoadEnded(true);
+      }
     } finally {
       loadingRef.current = false;
       setLoading(false);
@@ -72,8 +82,9 @@ export function PublicDiarySection({
         films={films}
         showEditDiaryLink={false}
         profileUsernameForReviewLinks={profileUsername}
+        publicDiaryServerTotal={totalLogged}
         diaryScopeNote={
-          films.length < totalLogged
+          hasMore
             ? "Sort and genre filters apply to titles loaded so far. Scroll down to load more."
             : null
         }

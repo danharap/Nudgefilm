@@ -1,6 +1,7 @@
 "use client";
 
 import { setFavouriteAction, removeFavouriteAction } from "./actions";
+import { LibraryPosterEditor } from "@/components/library/LibraryPosterEditor";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -10,6 +11,7 @@ type Slot = {
   tmdb_id: number | null;
   title: string | null;
   poster_path: string | null;
+  custom_poster_url?: string | null;
 };
 
 type SearchHit = {
@@ -19,7 +21,7 @@ type SearchHit = {
   poster_path: string | null;
 };
 
-export function FavouritesPicker({ slots }: { slots: Slot[] }) {
+export function FavouritesPicker({ slots, userId }: { slots: Slot[]; userId: string }) {
   const [activeSlot, setActiveSlot] = useState<1 | 2 | 3 | 4 | null>(null);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -98,11 +100,22 @@ export function FavouritesPicker({ slots }: { slots: Slot[] }) {
       <div className="grid grid-cols-4 gap-3">
         {([1, 2, 3, 4] as const).map((pos) => {
           const slot = slots.find((s) => s.position === pos);
-          const poster = slot?.poster_path ? posterUrl(slot.poster_path, "w342") : null;
+          const poster =
+            slot?.custom_poster_url?.trim() ||
+            (slot?.poster_path ? posterUrl(slot.poster_path, "w342") : null);
           const filled = !!slot?.tmdb_id;
 
           return (
             <div key={pos} className="group relative">
+              {filled ? (
+                <LibraryPosterEditor
+                  variant="favourite"
+                  userId={userId}
+                  position={pos}
+                  hasCustom={!!slot?.custom_poster_url?.trim()}
+                  slotFilled
+                />
+              ) : null}
               <button
                 type="button"
                 onClick={() => openSlot(pos)}
@@ -116,6 +129,11 @@ export function FavouritesPicker({ slots }: { slots: Slot[] }) {
                     fill
                     className="object-cover"
                     sizes="(max-width:640px) 25vw, 120px"
+                    unoptimized={
+                      typeof poster === "string" &&
+                      poster.startsWith("http") &&
+                      !poster.includes("image.tmdb.org")
+                    }
                   />
                 ) : (
                   <span className="flex h-full items-center justify-center text-2xl text-zinc-700">

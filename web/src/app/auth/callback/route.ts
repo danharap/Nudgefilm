@@ -1,126 +1,13 @@
+import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
 import { resolveAppOriginFromHeaders } from "@/lib/site-url";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-const USERNAME_RE = /^[a-z0-9_]{3,24}$/;
-
 function loginWithMessage(origin: string, message: string) {
   return NextResponse.redirect(
     `${origin}/login?error=${encodeURIComponent(message)}`,
   );
-}
-
-function usernameSeedFromText(value: string | null | undefined): string {
-  const input = (value ?? "").trim().toLowerCase();
-  if (!input) return "";
-  const cleaned = input
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .replace(/_+/g, "_");
-  return cleaned.slice(0, 24);
-}
-
-function ensureUsernameFormat(seed: string, email: string | null): string {
-  let base = usernameSeedFromText(seed);
-  if (!base && email) base = usernameSeedFromText(email.split("@")[0]);
-  if (!base) base = "filmfan";
-  if (base.length < 3) base = `${base}${"fan".slice(0, 3 - base.length)}`;
-  return base.slice(0, 24);
-}
-
-async function pickAvailableUsername(
-  supabase: ReturnType<typeof createServerClient>,
-  userId: string,
-  preferredSeed: string,
-  email: string | null,
-): Promise<string> {
-  const base = ensureUsernameFormat(preferredSeed, email);
-
-  const { data: rows } = await supabase
-    .from("profiles")
-    .select("id, username")
-    .ilike("username", `${base}%`)
-    .neq("id", userId)
-    .limit(200);
-
-  const taken = new Set(
-    (rows ?? [])
-      .map((r: { username: string | null }) =>
-        String(r.username ?? "").toLowerCase(),
-      )
-      .filter((u: string) => u.length > 0),
-  );
-
-  if (!taken.has(base)) return base;
-
-  for (let i = 2; i < 1000; i += 1) {
-    const suffix = `_${i}`;
-    const head = base.slice(0, Math.max(3, 24 - suffix.length));
-    const candidate = `${head}${suffix}`;
-    if (USERNAME_RE.test(candidate) && !taken.has(candidate)) {
-      return candidate;
-    }
-  }
-
-  return `${base.slice(0, 18)}_${Date.now().toString().slice(-5)}`;
-}
-
-async function hydrateProfileFromOAuth(
-  supabase: ReturnType<typeof createServerClient>,
-) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
-
-  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
-  const email = user.email ?? null;
-  const displayName =
-    (typeof metadata.full_name === "string" && metadata.full_name.trim()) ||
-    (typeof metadata.name === "string" && metadata.name.trim()) ||
-    (email ? email.split("@")[0] : "Film fan");
-  const avatarUrl =
-    typeof metadata.avatar_url === "string"
-      ? metadata.avatar_url
-      : typeof metadata.picture === "string"
-        ? metadata.picture
-        : null;
-  const preferredUsername =
-    (typeof metadata.preferred_username === "string" &&
-      metadata.preferred_username) ||
-    (typeof metadata.user_name === "string" && metadata.user_name) ||
-    displayName ||
-    email;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, display_name, avatar_url")
-    .eq("id", user.id)
-    .maybeSingle();
-
-  const payload: Record<string, string> = {};
-
-  if (!profile?.display_name && displayName) {
-    payload.display_name = displayName;
-  }
-
-  if (!profile?.avatar_url && avatarUrl) {
-    payload.avatar_url = avatarUrl;
-  }
-
-  if (!profile?.username) {
-    payload.username = await pickAvailableUsername(
-      supabase,
-      user.id,
-      preferredUsername,
-      email,
-    );
-  }
-
-  if (Object.keys(payload).length === 0) return;
-
-  await supabase.from("profiles").upsert({ id: user.id, ...payload });
 }
 
 export async function GET(request: Request) {
@@ -193,7 +80,12 @@ export async function GET(request: Request) {
   if (postVerifyLogin) {
     await supabase.auth.signOut();
   } else {
-    await hydrateProfileFromOAuth(supabase);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await syncProfileFromAuthUser(supabase, user);
+    }
   }
 
   return response;

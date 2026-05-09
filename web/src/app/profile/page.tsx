@@ -5,7 +5,12 @@ import { FilmsSection } from "./FilmsSection";
 import { ProfileListsSection } from "./ProfileListsSection";
 import { FeedbackForm } from "@/app/feedback/FeedbackForm";
 import { getOwnFeedback } from "@/features/feedback/service";
-import { posterUrl, TV_TMDB_OFFSET, TV_SEASON_OFFSET } from "@/lib/tmdb/constants";
+import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
+import {
+  detailHrefFromStoredMovie,
+  posterUrl,
+  TV_TMDB_OFFSET,
+} from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +27,7 @@ type MovieRow = {
   poster_path: string | null;
   vote_average: number | null;
   vote_count: number | null;
+  parent_show_tmdb_id?: number | null;
   genres: Genre[] | null;
 };
 
@@ -39,6 +45,8 @@ async function loadProfile() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
+
+  await syncProfileFromAuthUser(supabase, user);
 
   const [
     { data: profile },
@@ -61,20 +69,22 @@ async function loadProfile() {
     supabase
       .from("watched_movies")
       .select(
-        "watched_at, user_rating, notes, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, genres )",
+        "id, watched_at, user_rating, notes, custom_poster_url, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, genres, parent_show_tmdb_id )",
       )
       .eq("user_id", user.id)
       .order("watched_at", { ascending: false }),
     supabase
       .from("watchlist")
       .select(
-        "created_at, movies ( id, tmdb_id, title, release_year, poster_path, vote_average )",
+        "created_at, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, parent_show_tmdb_id )",
       )
       .eq("user_id", user.id)
       .order("created_at", { ascending: false }),
     supabase
       .from("favourite_movies")
-      .select("position, movies ( id, tmdb_id, title, poster_path )")
+      .select(
+        "position, custom_poster_url, movies ( id, tmdb_id, title, poster_path, vote_count, parent_show_tmdb_id )",
+      )
       .eq("user_id", user.id)
       .order("position", { ascending: true }),
     supabase
@@ -106,6 +116,8 @@ async function loadProfile() {
     const movie = Array.isArray(m) ? m[0] : m;
     return movie
       ? [{
+          watched_row_id: Number(r.id),
+          custom_poster_url: (r.custom_poster_url as string | null) ?? null,
           movie,
           watched_at: r.watched_at as string | null,
           user_rating: r.user_rating as number | null,
@@ -133,7 +145,15 @@ async function loadProfile() {
 
   type FavRow = {
     position: number;
-    movies: { id: number; tmdb_id: number; title: string; poster_path: string | null } | null;
+    custom_poster_url?: string | null;
+    movies: {
+      id: number;
+      tmdb_id: number;
+      title: string;
+      poster_path: string | null;
+      vote_count: number | null;
+      parent_show_tmdb_id?: number | null;
+    } | null;
   };
   const favouriteSlots = [1, 2, 3, 4].map((pos) => {
     const row = (favouriteRows as FavRow[] | null)?.find((r) => r.position === pos);
@@ -143,6 +163,7 @@ async function loadProfile() {
       tmdb_id: m?.tmdb_id ?? null,
       title: m?.title ?? null,
       poster_path: m?.poster_path ?? null,
+      custom_poster_url: row?.custom_poster_url ?? null,
     };
   });
 
@@ -338,7 +359,7 @@ export default async function ProfilePage({
       <section className="mb-12">
         <h2 className="mb-1 text-lg font-semibold text-white">Top 4 Favourites</h2>
         <p className="mb-4 text-xs text-zinc-500">Click a slot to pick or change a favourite film.</p>
-        <FavouritesPicker slots={favouriteSlots} />
+        <FavouritesPicker slots={favouriteSlots} userId={user.id} />
       </section>
 
       {/* ── Recently Watched (quick 6-poster row) ── */}
@@ -353,16 +374,11 @@ export default async function ProfilePage({
             ) : null}
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {recent.map(({ movie, user_rating }) => {
-              const poster = posterUrl(movie.poster_path, "w342");
-              const href =
-                movie.tmdb_id >= TV_SEASON_OFFSET
-                  ? movie.vote_count != null
-                    ? `/show/${movie.vote_count}`
-                    : "/browse?type=tv"
-                  : movie.tmdb_id >= TV_TMDB_OFFSET
-                    ? `/show/${movie.tmdb_id - TV_TMDB_OFFSET}`
-                    : `/movie/${movie.tmdb_id}`;
+            {recent.map(({ movie, user_rating, custom_poster_url }) => {
+              const poster =
+                custom_poster_url?.trim() ||
+                posterUrl(movie.poster_path, "w342");
+              const href = detailHrefFromStoredMovie(movie);
               return (
                 <div key={movie.id} className="group relative">
                   <Link
@@ -376,6 +392,11 @@ export default async function ProfilePage({
                         fill
                         className="object-cover transition duration-300 group-hover:scale-[1.04]"
                         sizes="(max-width:640px) 33vw, 120px"
+                        unoptimized={
+                          typeof poster === "string" &&
+                          poster.startsWith("http") &&
+                          !poster.includes("image.tmdb.org")
+                        }
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-1">
@@ -396,7 +417,7 @@ export default async function ProfilePage({
       ) : null}
 
       {/* ── Films (sortable + genre-filterable grid) ── */}
-      <FilmsSection films={watched} />
+      <FilmsSection films={watched} diaryOwnerUserId={user.id} />
 
       {/* ── My Lists ── */}
       <ProfileListsSection
@@ -428,9 +449,7 @@ export default async function ProfilePage({
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {watchlist.slice(0, 12).map(({ movie }) => {
               const poster = posterUrl(movie.poster_path, "w342");
-              const wHref = movie.tmdb_id >= TV_TMDB_OFFSET
-                ? `/show/${movie.tmdb_id - TV_TMDB_OFFSET}`
-                : `/movie/${movie.tmdb_id}`;
+              const wHref = detailHrefFromStoredMovie(movie);
               return (
                 <Link
                   key={movie.id}

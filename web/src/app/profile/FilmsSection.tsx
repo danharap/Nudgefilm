@@ -1,6 +1,12 @@
 "use client";
 
-import { posterUrl, TV_TMDB_OFFSET, TV_SEASON_OFFSET } from "@/lib/tmdb/constants";
+import { LibraryPosterEditor } from "@/components/library/LibraryPosterEditor";
+import {
+  detailHrefFromStoredMovie,
+  posterUrl,
+  TV_SEASON_OFFSET,
+  TV_TMDB_OFFSET,
+} from "@/lib/tmdb/constants";
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
@@ -8,12 +14,15 @@ import { useMemo, useState } from "react";
 type Genre = { id: number; name: string };
 
 export type WatchedFilm = {
+  watched_row_id?: number;
+  custom_poster_url?: string | null;
   movie: {
     id: number;
     tmdb_id: number;
     title: string;
     poster_path: string | null;
     vote_count: number | null;
+    parent_show_tmdb_id?: number | null;
     genres: Genre[] | null;
   };
   watched_at: string | null;
@@ -36,6 +45,8 @@ export function FilmsSection({
   showEditDiaryLink = true,
   diaryScopeNote,
   profileUsernameForReviewLinks,
+  publicDiaryServerTotal,
+  diaryOwnerUserId,
 }: {
   films: WatchedFilm[];
   /** Hide on another member's public profile */
@@ -44,6 +55,10 @@ export function FilmsSection({
   diaryScopeNote?: string | null;
   /** When set, poster links include ?reviewedBy=&libraryMovieId= so the title page can show their diary. */
   profileUsernameForReviewLinks?: string | null;
+  /** Server diary count on public profiles (avoids "No films" while paginated slices are still loading). */
+  publicDiaryServerTotal?: number | null;
+  /** Logged-in profile owner — enables custom cover uploads on own diary. */
+  diaryOwnerUserId?: string | null;
 }) {
   const [sort, setSort] = useState<Sort>("date-desc");
   const [contentType, setContentType] = useState<ContentType>("all");
@@ -118,15 +133,27 @@ export function FilmsSection({
       ) : null}
 
       {films.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 px-6 py-12 text-center">
-          <p className="text-sm text-zinc-400">No films logged yet.</p>
-          <Link
-            href="/browse"
-            className="mt-4 inline-block text-sm font-medium text-indigo-300 transition hover:text-indigo-200"
-          >
-            Browse films to add →
-          </Link>
-        </div>
+        !showEditDiaryLink &&
+        publicDiaryServerTotal != null &&
+        publicDiaryServerTotal > 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 px-6 py-12 text-center">
+            <p className="text-sm text-zinc-400">
+              Diary loads in chunks while you scroll. This profile has{" "}
+              <span className="font-medium text-zinc-300">{publicDiaryServerTotal}</span> titles
+              logged.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 px-6 py-12 text-center">
+            <p className="text-sm text-zinc-400">No films logged yet.</p>
+            <Link
+              href="/browse"
+              className="mt-4 inline-block text-sm font-medium text-indigo-300 transition hover:text-indigo-200"
+            >
+              Browse films to add →
+            </Link>
+          </div>
+        )
       ) : (
         <>
           {/* Controls */}
@@ -222,25 +249,37 @@ export function FilmsSection({
             <p className="text-sm text-zinc-500">No films match this filter.</p>
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
-              {sorted.map(({ movie, user_rating }) => {
-                const poster = posterUrl(movie.poster_path, "w342");
-                // Seasons: use vote_count (parent show tmdb_id stored there) for the link
-                const baseHref =
-                  movie.tmdb_id >= TV_SEASON_OFFSET
-                    ? movie.vote_count != null
-                      ? `/show/${movie.vote_count}`
-                      : "/browse?type=tv"
-                    : movie.tmdb_id >= TV_TMDB_OFFSET
-                      ? `/show/${movie.tmdb_id - TV_TMDB_OFFSET}`
-                      : `/movie/${movie.tmdb_id}`;
+              {sorted.map(({ movie, user_rating, watched_row_id, custom_poster_url }) => {
+                const tmdbPoster = posterUrl(movie.poster_path, "w342");
+                const poster =
+                  custom_poster_url?.trim() && custom_poster_url.trim().length > 0
+                    ? custom_poster_url.trim()
+                    : tmdbPoster;
+                const baseHref = detailHrefFromStoredMovie(movie);
                 const reviewQs =
                   profileUsernameForReviewLinks &&
                   profileUsernameForReviewLinks.trim().length > 0
                     ? `${baseHref.includes("?") ? "&" : "?"}reviewedBy=${encodeURIComponent(profileUsernameForReviewLinks.trim())}&libraryMovieId=${encodeURIComponent(String(movie.id))}`
                     : "";
                 const href = `${baseHref}${reviewQs}`;
+                const canEditPoster =
+                  !!diaryOwnerUserId &&
+                  showEditDiaryLink &&
+                  watched_row_id != null &&
+                  Number.isFinite(watched_row_id);
+                const isTvSeason = movie.tmdb_id >= TV_SEASON_OFFSET;
+                const isTvShow =
+                  movie.tmdb_id >= TV_TMDB_OFFSET && movie.tmdb_id < TV_SEASON_OFFSET;
                 return (
                   <div key={movie.id} className="group relative">
+                    {canEditPoster ? (
+                      <LibraryPosterEditor
+                        variant="watched"
+                        userId={diaryOwnerUserId}
+                        watchedRowId={watched_row_id}
+                        hasCustom={!!custom_poster_url?.trim()}
+                      />
+                    ) : null}
                     <Link
                       href={href}
                       title={movie.title}
@@ -253,6 +292,7 @@ export function FilmsSection({
                           fill
                           className="object-cover transition duration-300 group-hover:scale-[1.04]"
                           sizes="(max-width:640px) 25vw, (max-width:1024px) 16vw, 12vw"
+                          unoptimized={poster.startsWith("http") && !poster.includes("image.tmdb.org")}
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center p-1">
@@ -262,11 +302,11 @@ export function FilmsSection({
                         </div>
                       )}
                     </Link>
-                    {movie.tmdb_id >= TV_SEASON_OFFSET ? (
+                    {isTvSeason ? (
                       <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                         S
                       </span>
-                    ) : movie.tmdb_id >= TV_TMDB_OFFSET ? (
+                    ) : isTvShow ? (
                       <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                         TV
                       </span>

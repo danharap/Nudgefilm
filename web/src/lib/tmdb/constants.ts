@@ -36,12 +36,21 @@ export function browseCanonicalTmdbId(movieTmdbId: number): number | null {
 export function detailHrefFromStoredMovie(movie: {
   tmdb_id: number;
   vote_count?: number | null;
+  /** Populated for TV season rows — preferred over vote_count for parent show id. */
+  parent_show_tmdb_id?: number | null;
 }): string {
   const id = Number(movie.tmdb_id);
   if (!Number.isFinite(id)) return "/browse";
   if (id >= TV_SEASON_OFFSET) {
-    const parent = movie.vote_count != null ? Number(movie.vote_count) : NaN;
-    return Number.isFinite(parent) ? `/show/${parent}` : "/browse?type=tv";
+    const fromCol =
+      movie.parent_show_tmdb_id != null ? Number(movie.parent_show_tmdb_id) : NaN;
+    const fromLegacy =
+      movie.vote_count != null ? Number(movie.vote_count) : NaN;
+    const parent = Number.isFinite(fromCol) ? fromCol : fromLegacy;
+    if (Number.isFinite(parent) && parent > 0 && parent < TV_TMDB_OFFSET) {
+      return `/show/${parent}`;
+    }
+    return "/browse?type=tv";
   }
   if (id >= TV_TMDB_OFFSET) return `/show/${id - TV_TMDB_OFFSET}`;
   return `/movie/${id}`;

@@ -1,3 +1,4 @@
+import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -12,6 +13,8 @@ export async function GET() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  await syncProfileFromAuthUser(supabase, user);
 
   const { data: profile } = await supabase
     .from("profiles")

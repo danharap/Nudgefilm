@@ -1,6 +1,10 @@
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { getFollowStatus, type PublicProfile } from "@/features/users/service";
+import {
+  countMutualFriendsForProfile,
+  getFollowStatus,
+  type PublicProfile,
+} from "@/features/users/service";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 
@@ -37,6 +41,7 @@ export async function PrivateProfileView({
   ]);
 
   const isFollowing = (isFollowingResult as { count: number | null }).count === 1;
+  const mutualFriendsCount = await countMutualFriendsForProfile(supabase, target.id);
   const displayName = target.display_name?.trim() || target.username || "Film fan";
   const slug = target.username ?? "";
   const profileBackgroundUrl = target.profile_background_url ?? null;
@@ -97,6 +102,9 @@ export async function PrivateProfileView({
                       <span className="font-semibold text-white">{followersCount ?? 0}</span>{" "}
                       followers
                     </Link>
+                    <span>
+                      <span className="font-semibold text-white">{mutualFriendsCount}</span> friends
+                    </span>
                   </>
                 ) : (
                   <>
@@ -107,6 +115,9 @@ export async function PrivateProfileView({
                     <span>
                       <span className="font-semibold text-white">{followersCount ?? 0}</span>{" "}
                       followers
+                    </span>
+                    <span>
+                      <span className="font-semibold text-white">{mutualFriendsCount}</span> friends
                     </span>
                   </>
                 )}

@@ -443,6 +443,7 @@ async function ensureTVSeasonRow(
     runtime: episodeRunTime,
     vote_average: null,
     vote_count: showTmdbId ?? null,
+    parent_show_tmdb_id: showTmdbId ?? null,
     genres: [],
   };
 
@@ -491,6 +492,51 @@ export async function markTVSeasonWatched(
   }
   void trackServerEvent("tv_watched", { tmdbId: seasonTmdbId, rating: rating ?? null }, user.id);
   revalidatePath("/watched");
+  revalidatePath("/profile");
+}
+
+export async function setWatchedEntryCustomPoster(
+  watchedRowId: number,
+  publicUrl: string | null,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in to edit your diary.");
+
+  const { error } = await supabase
+    .from("watched_movies")
+    .update({ custom_poster_url: publicUrl })
+    .eq("id", watchedRowId)
+    .eq("user_id", user.id);
+  if (error) {
+    console.error("[library] setWatchedEntryCustomPoster:", error.code, error.message);
+    throw new Error("Could not update cover.");
+  }
+  revalidatePath("/profile");
+  revalidatePath("/watched");
+}
+
+export async function setFavouriteEntryCustomPoster(
+  position: 1 | 2 | 3 | 4,
+  publicUrl: string | null,
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in to edit favourites.");
+
+  const { error } = await supabase
+    .from("favourite_movies")
+    .update({ custom_poster_url: publicUrl })
+    .eq("user_id", user.id)
+    .eq("position", position);
+  if (error) {
+    console.error("[library] setFavouriteEntryCustomPoster:", error.code, error.message);
+    throw new Error("Could not update cover.");
+  }
   revalidatePath("/profile");
 }
 

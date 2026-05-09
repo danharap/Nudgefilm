@@ -1,5 +1,6 @@
-import { redirect } from "next/navigation";
+import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { OnboardingWizard } from "./OnboardingWizard";
 
 export const metadata = {
@@ -13,6 +14,8 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  await syncProfileFromAuthUser(supabase, user);
 
   const { data: profile } = await supabase
     .from("profiles")

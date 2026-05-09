@@ -10,7 +10,7 @@ import {
 export async function loadMorePublicDiary(
   userId: string,
   offset: number,
-): Promise<WatchedFilm[]> {
+) {
   const supabase = await createClient();
   return fetchWatchedDiarySlice(supabase, userId, offset, PUBLIC_DIARY_PAGE_SIZE);
 }
