@@ -36,7 +36,7 @@ export type SocialActivityItem = {
   } | null;
 };
 
-/** Search public profiles by username prefix */
+/** Search profiles by username prefix (includes private accounts so users are discoverable; full profile visibility stays gated on the profile page). */
 export async function searchUsers(
   query: string,
   currentUserId?: string,
@@ -52,7 +52,6 @@ export async function searchUsers(
         "id, username, display_name, bio, avatar_url, banner_url, profile_background_url, is_public, watchlist_public",
       )
       .ilike("username", `${q}%`)
-      .eq("is_public", true)
       .neq("id", currentUserId ?? "00000000-0000-0000-0000-000000000000")
       .limit(20);
 

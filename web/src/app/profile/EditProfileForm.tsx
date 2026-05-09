@@ -16,6 +16,7 @@ type Props = {
   watchlistPublic: boolean;
   bannerUrl: string | null;
   profileBackgroundUrl: string | null;
+  openInitially?: boolean;
 };
 
 export function EditProfileForm({
@@ -27,8 +28,9 @@ export function EditProfileForm({
   watchlistPublic,
   bannerUrl,
   profileBackgroundUrl,
+  openInitially = false,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openInitially);
   const [usernameVal, setUsernameVal] = useState(username ?? "");
   const [displayNameVal, setDisplayNameVal] = useState(displayName ?? "");
   const [bioVal, setBioVal] = useState(bio ?? "");

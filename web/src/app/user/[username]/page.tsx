@@ -1,3 +1,4 @@
+import { PrivateProfileView } from "./PrivateProfileView";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { getFollowStatus, getProfileByUsername } from "@/features/users/service";
@@ -5,7 +6,7 @@ import { posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,7 @@ export default async function PublicProfilePage({
   const { username } = await params;
   const target = await getProfileByUsername(username);
 
-  if (!target || !target.is_public) notFound();
+  if (!target) notFound();
 
   const supabase = await createClient();
   const {
@@ -60,8 +61,13 @@ export default async function PublicProfilePage({
   const isSelf = currentUser?.id === target.id;
 
   if (isSelf) {
-    const { redirect } = await import("next/navigation");
     redirect("/profile");
+  }
+
+  if (!target.is_public) {
+    return (
+      <PrivateProfileView target={target} currentUserId={currentUser?.id ?? null} />
+    );
   }
 
   const [
@@ -228,12 +234,18 @@ export default async function PublicProfilePage({
 
           {/* Inline stats */}
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-zinc-500 sm:justify-start">
-            <span>
+            <Link
+              href={`/user/${encodeURIComponent(target.username ?? username)}/following`}
+              className="hover:text-zinc-300"
+            >
               <span className="font-semibold text-white">{followingCount ?? 0}</span> following
-            </span>
-            <span>
+            </Link>
+            <Link
+              href={`/user/${encodeURIComponent(target.username ?? username)}/followers`}
+              className="hover:text-zinc-300"
+            >
               <span className="font-semibold text-white">{followersCount ?? 0}</span> followers
-            </span>
+            </Link>
             <span>
               <span className="font-semibold text-white">{watched.length}</span> films
             </span>

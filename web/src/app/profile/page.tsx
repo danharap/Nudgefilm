@@ -2,7 +2,6 @@ import { AvatarUpload } from "./AvatarUpload";
 import { EditProfileForm } from "./EditProfileForm";
 import { FavouritesPicker } from "./FavouritesPicker";
 import { FilmsSection } from "./FilmsSection";
-import { ProfileConnections } from "./ProfileConnections";
 import { ProfileListsSection } from "./ProfileListsSection";
 import { FeedbackForm } from "@/app/feedback/FeedbackForm";
 import { getOwnFeedback } from "@/features/feedback/service";
@@ -34,14 +33,6 @@ type ListMovieRow = {
   vote_count: number | null;
 };
 
-type ConnectionProfile = {
-  id: string;
-  username: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-};
-
 async function loadProfile() {
   const supabase = await createClient();
   const {
@@ -58,8 +49,6 @@ async function loadProfile() {
     { count: followingCount },
     { count: followersCount },
     { data: listsRows },
-    { data: followingRows },
-    { data: followersRows },
     ownReview,
   ] = await Promise.all([
     supabase
@@ -108,14 +97,6 @@ async function loadProfile() {
       )
       .eq("user_id", user.id)
       .order("position", { ascending: true }),
-    supabase
-      .from("follows")
-      .select("following_id, profiles!follows_following_id_fkey(id, username, display_name, avatar_url, bio)")
-      .eq("follower_id", user.id),
-    supabase
-      .from("follows")
-      .select("follower_id, profiles!follows_follower_id_fkey(id, username, display_name, avatar_url, bio)")
-      .eq("following_id", user.id),
     getOwnFeedback(user.id),
   ]);
 
@@ -194,17 +175,6 @@ async function loadProfile() {
     }),
   }));
 
-  const followingProfiles = (followingRows ?? []).flatMap((r) => {
-    const p = r.profiles as ConnectionProfile | ConnectionProfile[] | null;
-    if (!p) return [];
-    return [Array.isArray(p) ? p[0] : p];
-  });
-  const followerProfiles = (followersRows ?? []).flatMap((r) => {
-    const p = r.profiles as ConnectionProfile | ConnectionProfile[] | null;
-    if (!p) return [];
-    return [Array.isArray(p) ? p[0] : p];
-  });
-
   return {
     user,
     profile: profile ?? null,
@@ -221,10 +191,6 @@ async function loadProfile() {
       following: followingCount ?? 0,
       followers: followersCount ?? 0,
     },
-    connections: {
-      followers: followerProfiles,
-      following: followingProfiles,
-    },
     friendCount: friendCount?.length ?? 0,
   };
 }
@@ -232,7 +198,7 @@ async function loadProfile() {
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ connections?: string }>;
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const q = await searchParams;
   const data = await loadProfile();
@@ -252,8 +218,7 @@ export default async function ProfilePage({
   }
 
   const { user, profile, watched, watchlist, favouriteSlots, profileLists, ownReview, stats } = data;
-  const initialConnectionsTab =
-    q.connections === "following" ? "following" : "followers";
+  const openEditProfile = q.edit === "1" || q.edit === "true";
 
   const displayName =
     (profile?.display_name as string | null)?.trim() ||
@@ -324,10 +289,10 @@ export default async function ProfilePage({
             <p className="max-w-md text-sm leading-relaxed text-zinc-400">{bio}</p>
           ) : null}
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-zinc-500 sm:justify-start">
-            <Link href="/profile?connections=following#connections" className="hover:text-zinc-300">
+            <Link href="/profile/following" className="hover:text-zinc-300">
               <span className="font-semibold text-white">{stats.following}</span> following
             </Link>
-            <Link href="/profile?connections=followers#connections" className="hover:text-zinc-300">
+            <Link href="/profile/followers" className="hover:text-zinc-300">
               <span className="font-semibold text-white">{stats.followers}</span> followers
             </Link>
             <Link href="/friends" className="hover:text-zinc-300">
@@ -339,16 +304,19 @@ export default async function ProfilePage({
               </span>
             ) : null}
           </div>
-          <EditProfileForm
-            userId={user.id}
-            username={username}
-            displayName={displayName}
-            bio={bio}
-            isPublic={isPublic}
-            watchlistPublic={watchlistPublic}
-            bannerUrl={bannerUrl}
-            profileBackgroundUrl={profileBackgroundUrl}
-          />
+          <div id="profile-edit">
+            <EditProfileForm
+              userId={user.id}
+              username={username}
+              displayName={displayName}
+              bio={bio}
+              isPublic={isPublic}
+              watchlistPublic={watchlistPublic}
+              bannerUrl={bannerUrl}
+              profileBackgroundUrl={profileBackgroundUrl}
+              openInitially={openEditProfile}
+            />
+          </div>
         </div>
       </div>
 
@@ -365,13 +333,6 @@ export default async function ProfilePage({
           </div>
         ))}
       </div>
-
-      {/* ── Followers / Following ── */}
-      <ProfileConnections
-        followers={data.connections.followers}
-        following={data.connections.following}
-        initialTab={initialConnectionsTab}
-      />
 
       {/* ── Top 4 Favourites ── */}
       <section className="mb-12">
