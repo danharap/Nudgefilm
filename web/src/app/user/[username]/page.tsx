@@ -391,6 +391,7 @@ export default async function PublicProfilePage({
       {filmsLoggedTotal > 0 ? (
         <PublicDiarySection
           userId={target.id}
+          profileUsername={target.username}
           initialFilms={initialDiaryFilms}
           totalLogged={filmsLoggedTotal}
         />

@@ -7,10 +7,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function PublicDiarySection({
   userId,
+  profileUsername,
   initialFilms,
   totalLogged,
 }: {
   userId: string;
+  /** Adds review context to poster links (movies/shows open with their diary snippet). */
+  profileUsername: string | null;
   initialFilms: WatchedFilm[];
   totalLogged: number;
 }) {
@@ -68,6 +71,7 @@ export function PublicDiarySection({
       <FilmsSection
         films={films}
         showEditDiaryLink={false}
+        profileUsernameForReviewLinks={profileUsername}
         diaryScopeNote={
           films.length < totalLogged
             ? "Sort and genre filters apply to titles loaded so far. Scroll down to load more."

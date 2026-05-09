@@ -1,5 +1,7 @@
 import { MovieActions } from "./MovieActions";
+import { MemberDiaryHighlightCard } from "@/components/social/MemberDiaryHighlightCard";
 import { Avatar } from "@/components/ui/Avatar";
+import { loadMemberDiaryHighlight } from "@/features/profile/memberDiaryHighlight";
 import {
   getMovieCredits,
   getMovieDetails,
@@ -18,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ tmdbId: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; reviewedBy?: string; libraryMovieId?: string }>;
 };
 
 const MOVIE_TABS = ["cast", "crew", "details", "genres", "availability"] as const;
@@ -40,7 +42,8 @@ function pickTrailer(videos: Array<{ key: string; site: string; type: string; of
 
 export default async function MovieDetailPage({ params, searchParams }: Props) {
   const { tmdbId: raw } = await params;
-  const { tab: tabParam } = await searchParams;
+  const { tab: tabParam, reviewedBy: reviewedByParam, libraryMovieId: libraryMovieIdParam } =
+    await searchParams;
   const tmdbId = Number(raw);
   if (!Number.isFinite(tmdbId)) notFound();
   const activeTab: MovieTab = isMovieTab(tabParam) ? tabParam : "cast";
@@ -86,6 +89,16 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
     .select("id")
     .eq("tmdb_id", tmdbId)
     .maybeSingle();
+
+  const memberDiaryHighlight = await loadMemberDiaryHighlight(
+    supabase,
+    reviewedByParam,
+    libraryMovieIdParam,
+    movieRow?.id ?? null,
+  );
+  const showMemberDiaryHighlight =
+    memberDiaryHighlight != null &&
+    (!user || memberDiaryHighlight.memberId !== user.id);
 
   if (movieRow?.id) {
     const { data: publicRows } = await supabase
@@ -177,7 +190,15 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
   const producers = credits.crew.filter((m) => m.job === "Producer");
   const shareUrl = `${getConfiguredOrigin()}/movie/${tmdbId}`;
 
-  const tabHref = (tab: MovieTab) => `/movie/${tmdbId}?tab=${tab}`;
+  const tabHref = (tab: MovieTab) => {
+    const sp = new URLSearchParams();
+    sp.set("tab", tab);
+    const rb = reviewedByParam?.trim();
+    const lm = libraryMovieIdParam?.trim();
+    if (rb) sp.set("reviewedBy", rb);
+    if (lm) sp.set("libraryMovieId", lm);
+    return `/movie/${tmdbId}?${sp.toString()}`;
+  };
   const links = {
     tmdb: `https://www.themoviedb.org/movie/${tmdbId}`,
     imdb: externalIds.imdb_id ? `https://www.imdb.com/title/${externalIds.imdb_id}` : null,
@@ -253,6 +274,9 @@ export default async function MovieDetailPage({ params, searchParams }: Props) {
             <p className="max-w-3xl text-sm leading-relaxed text-zinc-300">
               {movie.overview || "No synopsis available."}
             </p>
+            {showMemberDiaryHighlight && memberDiaryHighlight ? (
+              <MemberDiaryHighlightCard highlight={memberDiaryHighlight} />
+            ) : null}
             <div className="flex flex-wrap justify-center gap-2 text-xs text-zinc-400 lg:justify-start">
               <a href={links.tmdb} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">TMDb</a>
               {links.imdb ? <a href={links.imdb} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">IMDb</a> : null}

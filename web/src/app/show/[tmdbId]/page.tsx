@@ -1,5 +1,7 @@
 import { ShowActions } from "./ShowActions";
 import { SeasonRater } from "./SeasonRater";
+import { MemberDiaryHighlightCard } from "@/components/social/MemberDiaryHighlightCard";
+import { loadMemberDiaryHighlight } from "@/features/profile/memberDiaryHighlight";
 import {
   getTVCredits,
   getTVDetails,
@@ -16,7 +18,10 @@ import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ tmdbId: string }>; searchParams: Promise<{ tab?: string }> };
+type Props = {
+  params: Promise<{ tmdbId: string }>;
+  searchParams: Promise<{ tab?: string; reviewedBy?: string; libraryMovieId?: string }>;
+};
 
 const SHOW_TABS = ["cast", "crew", "details", "genres", "availability"] as const;
 type ShowTab = (typeof SHOW_TABS)[number];
@@ -37,7 +42,8 @@ function pickTrailer(videos: Array<{ key: string; site: string; type: string; of
 
 export default async function ShowDetailPage({ params, searchParams }: Props) {
   const { tmdbId: raw } = await params;
-  const { tab: tabParam } = await searchParams;
+  const { tab: tabParam, reviewedBy: reviewedByParam, libraryMovieId: libraryMovieIdParam } =
+    await searchParams;
   const tmdbId = Number(raw);
   if (!Number.isFinite(tmdbId)) notFound();
   const activeTab: ShowTab = isShowTab(tabParam) ? tabParam : "cast";
@@ -61,6 +67,23 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  const showStoredIdForHighlight = toTVStoredId(tmdbId);
+  const { data: showMovieRowForHighlight } = await supabase
+    .from("movies")
+    .select("id")
+    .eq("tmdb_id", showStoredIdForHighlight)
+    .maybeSingle();
+
+  const memberDiaryHighlight = await loadMemberDiaryHighlight(
+    supabase,
+    reviewedByParam,
+    libraryMovieIdParam,
+    showMovieRowForHighlight?.id ?? null,
+  );
+  const showMemberDiaryHighlight =
+    memberDiaryHighlight != null &&
+    (!user || memberDiaryHighlight.memberId !== user.id);
 
   type DiaryEntry = { user_rating: number | null; notes: string | null };
 
@@ -145,7 +168,15 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
 
   // Filter out "Specials" (season 0) from the main list
   const seasons = (show.seasons ?? []).filter((s) => s.season_number > 0);
-  const tabHref = (tab: ShowTab) => `/show/${tmdbId}?tab=${tab}`;
+  const tabHref = (tab: ShowTab) => {
+    const sp = new URLSearchParams();
+    sp.set("tab", tab);
+    const rb = reviewedByParam?.trim();
+    const lm = libraryMovieIdParam?.trim();
+    if (rb) sp.set("reviewedBy", rb);
+    if (lm) sp.set("libraryMovieId", lm);
+    return `/show/${tmdbId}?${sp.toString()}`;
+  };
 
   return (
     <article className="pb-16">
@@ -240,6 +271,12 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
         <p className="mx-auto mt-8 max-w-4xl text-sm leading-relaxed text-zinc-300 md:text-base">
           {show.overview || "No synopsis available."}
         </p>
+
+        {showMemberDiaryHighlight && memberDiaryHighlight ? (
+          <div className="mx-auto max-w-4xl">
+            <MemberDiaryHighlightCard highlight={memberDiaryHighlight} />
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap justify-center gap-2 text-xs text-zinc-400 md:justify-start">
           <a href={`https://www.themoviedb.org/tv/${tmdbId}`} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 px-3 py-1 hover:text-white">TMDb</a>

@@ -1,9 +1,14 @@
 "use client";
 
-import { addTVToWatchlist, markTVWatched, removeTVFromWatchlist } from "@/app/actions/library";
+import {
+  addTVToWatchlist,
+  markTVWatched,
+  removeTVFromWatchlist,
+  removeTVFromWatched,
+} from "@/app/actions/library";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 type ExistingEntry = { user_rating: number | null; notes: string | null } | null;
@@ -35,6 +40,10 @@ export function ShowActions({
   const [rating, setRating] = useState<number>(existing?.user_rating ?? 0);
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [queued, setQueued] = useState(inWatchlist);
+
+  useEffect(() => {
+    setQueued(inWatchlist);
+  }, [inWatchlist]);
 
   function run(
     action: () => Promise<void>,
@@ -108,13 +117,15 @@ export function ShowActions({
               );
             }
           }}
+          aria-label={queued ? "Remove from watchlist" : "Add to watchlist"}
+          title={queued ? "Click to remove from watchlist" : "Add to watchlist"}
           className={`rounded-xl px-4 py-2.5 text-sm font-medium transition disabled:opacity-50 ${
             queued
               ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-200 hover:bg-indigo-400/20"
               : "border border-white/10 text-zinc-300 hover:border-indigo-400/30 hover:text-white"
           }`}
         >
-          {queued ? "✓ In watchlist · Remove" : "Watchlist"}
+          {queued ? "✓ In watchlist · tap to remove" : "Watchlist"}
         </button>
         <Link
           href={similarHref}
@@ -217,6 +228,26 @@ export function ShowActions({
             >
               Cancel
             </button>
+            {existing ? (
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() =>
+                  run(
+                    () => removeTVFromWatched(tmdbId),
+                    "Removed from diary.",
+                    () => {
+                      setRating(0);
+                      setNotes("");
+                      setShowForm(false);
+                    },
+                  )
+                }
+                className="rounded-full border border-red-400/25 px-4 py-2.5 text-sm text-red-300/90 transition hover:border-red-400/40 hover:bg-red-500/10 disabled:opacity-50"
+              >
+                Remove from diary
+              </button>
+            ) : null}
           </div>
         </div>
       )}

@@ -35,12 +35,15 @@ export function FilmsSection({
   films,
   showEditDiaryLink = true,
   diaryScopeNote,
+  profileUsernameForReviewLinks,
 }: {
   films: WatchedFilm[];
   /** Hide on another member's public profile */
   showEditDiaryLink?: boolean;
   /** Shown under the section title (e.g. paginated public diary). */
   diaryScopeNote?: string | null;
+  /** When set, poster links include ?reviewedBy=&libraryMovieId= so the title page can show their diary. */
+  profileUsernameForReviewLinks?: string | null;
 }) {
   const [sort, setSort] = useState<Sort>("date-desc");
   const [contentType, setContentType] = useState<ContentType>("all");
@@ -222,14 +225,20 @@ export function FilmsSection({
               {sorted.map(({ movie, user_rating }) => {
                 const poster = posterUrl(movie.poster_path, "w342");
                 // Seasons: use vote_count (parent show tmdb_id stored there) for the link
-                const href =
+                const baseHref =
                   movie.tmdb_id >= TV_SEASON_OFFSET
                     ? movie.vote_count != null
                       ? `/show/${movie.vote_count}`
                       : "/browse?type=tv"
                     : movie.tmdb_id >= TV_TMDB_OFFSET
-                    ? `/show/${movie.tmdb_id - TV_TMDB_OFFSET}`
-                    : `/movie/${movie.tmdb_id}`;
+                      ? `/show/${movie.tmdb_id - TV_TMDB_OFFSET}`
+                      : `/movie/${movie.tmdb_id}`;
+                const reviewQs =
+                  profileUsernameForReviewLinks &&
+                  profileUsernameForReviewLinks.trim().length > 0
+                    ? `${baseHref.includes("?") ? "&" : "?"}reviewedBy=${encodeURIComponent(profileUsernameForReviewLinks.trim())}&libraryMovieId=${encodeURIComponent(String(movie.id))}`
+                    : "";
+                const href = `${baseHref}${reviewQs}`;
                 return (
                   <div key={movie.id} className="group relative">
                     <Link
@@ -254,16 +263,16 @@ export function FilmsSection({
                       )}
                     </Link>
                     {movie.tmdb_id >= TV_SEASON_OFFSET ? (
-                      <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1 py-0.5 text-[8px] font-bold text-white">
+                      <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                         S
                       </span>
                     ) : movie.tmdb_id >= TV_TMDB_OFFSET ? (
-                      <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1 py-0.5 text-[8px] font-bold text-white">
+                      <span className="absolute left-1 top-1 rounded bg-violet-600/80 px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">
                         TV
                       </span>
                     ) : null}
                     {user_rating != null && (
-                      <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[9px] font-semibold text-indigo-200 ring-1 ring-white/10">
+                      <span className="absolute bottom-1.5 right-1.5 min-h-[1.375rem] min-w-[1.75rem] rounded-md bg-black/85 px-2 py-1 text-center text-xs font-bold tabular-nums text-indigo-100 ring-1 ring-white/15 sm:bottom-2 sm:right-2 sm:min-h-[1.5rem] sm:min-w-[2rem] sm:px-2.5 sm:text-sm">
                         {user_rating}
                       </span>
                     )}

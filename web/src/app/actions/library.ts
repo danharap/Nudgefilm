@@ -108,6 +108,36 @@ export async function removeFromWatched(tmdbId: number) {
   revalidatePath("/profile");
 }
 
+/** Remove show-level diary row (stored `tmdb_id` uses TV offset). */
+export async function removeTVFromWatched(tmdbId: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const storedId = toTVStoredId(tmdbId);
+  const { data: movie } = await supabase
+    .from("movies")
+    .select("id")
+    .eq("tmdb_id", storedId)
+    .maybeSingle();
+  if (!movie?.id) return;
+
+  const { error } = await supabase
+    .from("watched_movies")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("movie_id", movie.id);
+  if (error) {
+    console.error("[library] removeTVFromWatched error:", error.code, error.message);
+    throw new Error("Failed to remove from diary.");
+  }
+  revalidatePath("/watched");
+  revalidatePath("/profile");
+  revalidatePath("/browse");
+}
+
 export async function addToWatchlist(tmdbId: number) {
   const supabase = await createClient();
   const {
