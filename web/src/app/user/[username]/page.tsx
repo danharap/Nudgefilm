@@ -1,6 +1,11 @@
 import { PrivateProfileView } from "./PrivateProfileView";
+import { PublicDiarySection } from "./PublicDiarySection";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
+import {
+  fetchWatchedDiarySlice,
+  PUBLIC_DIARY_PAGE_SIZE,
+} from "@/features/profile/publicWatched";
 import { getFollowStatus, getProfileByUsername } from "@/features/users/service";
 import { posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
@@ -73,7 +78,9 @@ export default async function PublicProfilePage({
   const [
     followStatus,
     isFollowingResult,
-    { data: watchedRows },
+    initialDiaryFilms,
+    { count: watchedTotal },
+    ratingStatsResult,
     { data: favouriteRows },
     { data: watchlistRows },
     { data: listsRows },
@@ -91,12 +98,19 @@ export default async function PublicProfilePage({
           .eq("follower_id", currentUser.id)
           .eq("following_id", target.id)
       : Promise.resolve({ count: 0 }),
+    fetchWatchedDiarySlice(
+      supabase,
+      target.id,
+      0,
+      PUBLIC_DIARY_PAGE_SIZE,
+    ),
     supabase
       .from("watched_movies")
-      .select("user_rating, movies ( id, tmdb_id, title, poster_path, vote_average )")
-      .eq("user_id", target.id)
-      .order("watched_at", { ascending: false })
-      .limit(48),
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", target.id),
+    supabase.rpc("public_profile_watched_rating_stats", {
+      p_user_id: target.id,
+    }),
     supabase
       .from("favourite_movies")
       .select("position, movies ( id, tmdb_id, title, poster_path )")
@@ -108,7 +122,7 @@ export default async function PublicProfilePage({
           .select("movies ( id, tmdb_id, title, poster_path )")
           .eq("user_id", target.id)
           .order("created_at", { ascending: false })
-          .limit(12)
+          .limit(48)
       : Promise.resolve({ data: null }),
     supabase
       .from("profile_lists")
@@ -130,13 +144,6 @@ export default async function PublicProfilePage({
 
   const isFollowing = (isFollowingResult as { count: number | null }).count === 1;
 
-  const watched = (watchedRows ?? []).flatMap((r) => {
-    const m = r.movies as MovieRow | MovieRow[] | null;
-    if (!m) return [];
-    const movie = Array.isArray(m) ? m[0] : m;
-    return movie ? [{ movie, user_rating: r.user_rating as number | null }] : [];
-  });
-
   const favourites = [1, 2, 3, 4].map((pos) => {
     const row = (favouriteRows as FavRow[] | null)?.find((r) => r.position === pos);
     return { position: pos, movie: row?.movies ?? null };
@@ -151,11 +158,18 @@ export default async function PublicProfilePage({
       })
     : [];
 
-  const rated = watched.filter((w) => w.user_rating != null);
+  const ratingRow = Array.isArray(ratingStatsResult.data)
+    ? (ratingStatsResult.data[0] as
+        | { avg_rating: number | string | null; rated_count: number | string | null }
+        | undefined)
+    : undefined;
+  const ratedCount = ratingRow?.rated_count != null ? Number(ratingRow.rated_count) : 0;
   const avgRating =
-    rated.length > 0
-      ? rated.reduce((sum, w) => sum + (w.user_rating ?? 0), 0) / rated.length
+    ratedCount > 0 && ratingRow?.avg_rating != null
+      ? Number(ratingRow.avg_rating)
       : null;
+
+  const filmsLoggedTotal = watchedTotal ?? initialDiaryFilms.length;
 
   const profileLists = (listsRows as ListRaw[] ?? []).map((l) => ({
     id: l.id,
@@ -247,7 +261,7 @@ export default async function PublicProfilePage({
               <span className="font-semibold text-white">{followersCount ?? 0}</span> followers
             </Link>
             <span>
-              <span className="font-semibold text-white">{watched.length}</span> films
+              <span className="font-semibold text-white">{filmsLoggedTotal}</span> films
             </span>
           </div>
 
@@ -268,10 +282,12 @@ export default async function PublicProfilePage({
       </div>
 
       {/* ── Stats ── */}
-      {(watched.length > 0 || profileLists.length > 0) && (
+      {(filmsLoggedTotal > 0 ||
+        initialDiaryFilms.length > 0 ||
+        profileLists.length > 0) && (
         <div className="mb-10 grid grid-cols-3 gap-3">
           {[
-            { label: "Films", value: watched.length },
+            { label: "Films", value: filmsLoggedTotal },
             { label: "Lists", value: profileLists.length },
             { label: "Avg Rating", value: avgRating != null ? avgRating.toFixed(1) : "—" },
           ].map(({ label, value }) => (
@@ -371,42 +387,13 @@ export default async function PublicProfilePage({
         </section>
       )}
 
-      {/* ── Recent Watched ── */}
-      {watched.length > 0 ? (
-        <section className="mb-12">
-          <h2 className="mb-4 text-lg font-semibold text-white">
-            Films <span className="text-sm font-normal text-zinc-500">({watched.length})</span>
-          </h2>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
-            {watched.map(({ movie, user_rating }) => {
-              const poster = posterUrl(movie.poster_path, "w342");
-              return (
-                <div key={movie.id} className="group relative">
-                  <Link
-                    href={`/movie/${movie.tmdb_id}`}
-                    title={movie.title}
-                    className="relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
-                  >
-                    {poster ? (
-                      <Image
-                        src={poster}
-                        alt={movie.title}
-                        fill
-                        className="object-cover transition group-hover:scale-[1.03]"
-                        sizes="(max-width:640px) 25vw, 12vw"
-                      />
-                    ) : null}
-                  </Link>
-                  {user_rating != null ? (
-                    <span className="absolute bottom-1 right-1 rounded bg-black/80 px-1 py-0.5 text-[9px] font-semibold text-indigo-300 ring-1 ring-white/10">
-                      {user_rating}
-                    </span>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </section>
+      {/* ── Full diary (sort / type / genre — same as own profile) ── */}
+      {filmsLoggedTotal > 0 ? (
+        <PublicDiarySection
+          userId={target.id}
+          initialFilms={initialDiaryFilms}
+          totalLogged={filmsLoggedTotal}
+        />
       ) : (
         <section className="mb-12">
           <h2 className="mb-4 text-lg font-semibold text-white">Films</h2>

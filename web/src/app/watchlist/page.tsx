@@ -23,12 +23,15 @@ export default async function WatchlistPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: rows } = await supabase
-    .from("watchlist")
-    .select(
-      "id, created_at, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, overview, vote_count )",
-    )
-    .order("created_at", { ascending: false });
+  const { data: rows } = user
+    ? await supabase
+        .from("watchlist")
+        .select(
+          "id, created_at, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, overview, vote_count )",
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   const items =
     rows?.flatMap((r) => {

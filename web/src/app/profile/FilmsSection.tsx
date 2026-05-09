@@ -33,8 +33,14 @@ const SORT_LABELS: Record<Sort, string> = {
 
 export function FilmsSection({
   films,
+  showEditDiaryLink = true,
+  diaryScopeNote,
 }: {
   films: WatchedFilm[];
+  /** Hide on another member's public profile */
+  showEditDiaryLink?: boolean;
+  /** Shown under the section title (e.g. paginated public diary). */
+  diaryScopeNote?: string | null;
 }) {
   const [sort, setSort] = useState<Sort>("date-desc");
   const [contentType, setContentType] = useState<ContentType>("all");
@@ -94,13 +100,19 @@ export function FilmsSection({
           {contentType === "tv" ? "Series" : contentType === "movies" ? "Films" : "All Watched"}{" "}
           <span className="text-sm font-normal text-zinc-500">({sorted.length})</span>
         </h2>
-        <Link
-          href="/watched"
-          className="text-xs text-indigo-300/70 transition hover:text-indigo-200"
-        >
-          Edit diary →
-        </Link>
+        {showEditDiaryLink ? (
+          <Link
+            href="/watched"
+            className="text-xs text-indigo-300/70 transition hover:text-indigo-200"
+          >
+            Edit diary →
+          </Link>
+        ) : null}
       </div>
+
+      {diaryScopeNote ? (
+        <p className="mb-4 text-xs leading-relaxed text-zinc-500">{diaryScopeNote}</p>
+      ) : null}
 
       {films.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/10 bg-zinc-900/30 px-6 py-12 text-center">
