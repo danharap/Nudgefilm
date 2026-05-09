@@ -55,10 +55,11 @@ export function LibraryPosterEditor(props: Props) {
 
   async function uploadBlob(blob: Blob) {
     const supabase = createClient();
+    // First path segment must be auth.uid() — matches avatars bucket RLS (see AvatarUpload).
     const path =
       props.variant === "watched"
-        ? `custom-posters/${props.userId}/watched-${props.watchedRowId}.jpg`
-        : `custom-posters/${props.userId}/favourite-${props.position}.jpg`;
+        ? `${props.userId}/custom-posters/watched-${props.watchedRowId}.jpg`
+        : `${props.userId}/custom-posters/favourite-${props.position}.jpg`;
 
     const { error: upErr } = await supabase.storage
       .from("avatars")
