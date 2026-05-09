@@ -5,6 +5,31 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireSuperAdmin, type Role } from "@/lib/admin/rbac";
 import { revalidatePath } from "next/cache";
 
+type AdminClient = ReturnType<typeof createAdminClient>;
+
+/** Delete rows that use ON DELETE SET NULL, optional tables, and storage before removing auth.users. */
+async function purgeUserRelatedData(admin: AdminClient, targetId: string) {
+  await admin.from("analytics_events").delete().eq("user_id", targetId);
+  await admin.from("recommendation_sessions").delete().eq("user_id", targetId);
+  await admin.from("letterboxd_imports").delete().eq("user_id", targetId);
+
+  const { error: friendsErr } = await admin
+    .from("friendships")
+    .delete()
+    .or(`requester_id.eq.${targetId},addressee_id.eq.${targetId}`);
+  if (friendsErr) {
+    console.warn("[admin] friendships purge:", friendsErr.message);
+  }
+
+  await admin.from("role_audit_logs").delete().or(`actor_id.eq.${targetId},target_id.eq.${targetId}`);
+
+  const paths = [`${targetId}/avatar.jpg`, `${targetId}/banner.jpg`, `${targetId}/profile-bg.jpg`];
+  const { error: storageErr } = await admin.storage.from("avatars").remove(paths);
+  if (storageErr) {
+    console.warn("[admin] storage purge:", storageErr.message);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: regular client for read-only admin queries (relies on super_admin RLS)
 // ---------------------------------------------------------------------------
@@ -112,7 +137,9 @@ export async function deleteUserAccount(targetId: string) {
 
   const oldRole = String(target.role);
 
-  // Remove the auth user; public.profiles cascades on delete (FK to auth.users).
+  await purgeUserRelatedData(admin, targetId);
+
+  // Remove the auth user — cascades public.profiles and dependent rows (watched_movies, follows, etc.).
   const { error: deleteErr } = await admin.auth.admin.deleteUser(targetId);
   if (deleteErr) throw new Error("Failed to delete account: " + deleteErr.message);
 

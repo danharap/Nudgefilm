@@ -129,6 +129,7 @@ export async function addToWatchlist(tmdbId: number) {
   revalidatePath("/browse");
 }
 
+/** Remove by `movies.tmdb_id` (movie/show browse cards, detail pages). */
 export async function removeFromWatchlist(tmdbId: number) {
   const supabase = await createClient();
   const {
@@ -141,13 +142,46 @@ export async function removeFromWatchlist(tmdbId: number) {
     .select("id")
     .eq("tmdb_id", tmdbId)
     .maybeSingle();
-  if (!movie?.id) return;
+  if (!movie?.id) {
+    console.warn("[library] removeFromWatchlist: no movie row for tmdb_id", tmdbId);
+    throw new Error("Could not find that title — try refreshing the page.");
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("watchlist")
     .delete()
     .eq("user_id", user.id)
     .eq("movie_id", movie.id);
+  if (error) {
+    console.error("[library] removeFromWatchlist:", error.code, error.message);
+    throw new Error("Failed to remove from watchlist.");
+  }
+
+  void trackServerEvent("watchlist_remove", { tmdbId }, user.id);
+  revalidatePath("/watchlist");
+  revalidatePath("/browse");
+}
+
+/** Remove by watchlist row id — preferred on /watchlist (no movie lookup mismatch). */
+export async function removeWatchlistEntry(watchlistRowId: number) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in to manage your watchlist.");
+
+  const { error } = await supabase
+    .from("watchlist")
+    .delete()
+    .eq("id", watchlistRowId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[library] removeWatchlistEntry:", error.code, error.message);
+    throw new Error("Failed to remove from watchlist.");
+  }
+
+  void trackServerEvent("watchlist_remove", { watchlistRowId }, user.id);
   revalidatePath("/watchlist");
   revalidatePath("/browse");
 }

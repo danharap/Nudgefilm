@@ -37,10 +37,18 @@ interface PendingConfirmation {
   originalResult: MatchResult;
 }
 
-const BATCH_SIZE = 20;
-const BATCH_DELAY_MS = 300;
+const BATCH_SIZE = 45;
+const BATCH_DELAY_MS = 80;
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w92";
+
+function ImportRefreshWarning() {
+  return (
+    <div className="w-full rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-center text-sm text-amber-100">
+      Don&apos;t refresh or close this tab until the import finishes — you could lose progress.
+    </div>
+  );
+}
 
 async function fetchMatchBatch(
   movies: Array<{ title: string; year: number | null; index: number }>,
@@ -225,6 +233,7 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
     const pct = total > 0 ? Math.round((progress / total) * 100) : 0;
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-8 py-8">
+        <ImportRefreshWarning />
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
           <div className="text-center">
@@ -280,6 +289,7 @@ export function MatchingStep({ parsed, onMatched }: MatchingStepProps) {
 
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+        <ImportRefreshWarning />
         <div className="text-center">
           <div className="mb-1 text-xs font-medium uppercase tracking-wider text-zinc-600">
             {confirmIndex + 1} of {pendingConfirmations.length} uncertain matches

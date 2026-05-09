@@ -31,15 +31,14 @@ export default async function ImportPage() {
             Letterboxd Import
           </div>
           <h1 className="mt-2 text-2xl font-bold text-primary sm:text-3xl">
-            Move your movie life here
+            Letterboxd import
           </h1>
           <p className="mt-2 text-sm text-secondary">
-            Import your entire Letterboxd history — watched films, ratings, reviews, and watchlist
-            — in just a few steps.
+            Upload your export zip and we&apos;ll match films to your library.
           </p>
         </div>
       </div>
-      <ImportWizard />
+      <ImportWizard userId={user.id} signedInEmail={user.email ?? null} />
     </main>
   );
 }

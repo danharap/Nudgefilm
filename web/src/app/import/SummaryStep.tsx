@@ -18,6 +18,30 @@ type Phase =
   | "done"           // complete
   | "error";
 
+const SAVE_CHUNK = 80;
+
+function emptySaveStats(): SaveResponseBody {
+  return {
+    watchedImported: 0,
+    watchedSkipped: 0,
+    watchedDuplicates: 0,
+    watchlistImported: 0,
+    watchlistSkipped: 0,
+    errors: [],
+  };
+}
+
+function mergeSaveStats(a: SaveResponseBody, b: SaveResponseBody): SaveResponseBody {
+  return {
+    watchedImported: a.watchedImported + b.watchedImported,
+    watchedSkipped: a.watchedSkipped + b.watchedSkipped,
+    watchedDuplicates: a.watchedDuplicates + b.watchedDuplicates,
+    watchlistImported: a.watchlistImported + b.watchlistImported,
+    watchlistSkipped: a.watchlistSkipped + b.watchlistSkipped,
+    errors: [...a.errors, ...b.errors],
+  };
+}
+
 export function SummaryStep({ matchedData, onStartOver }: SummaryStepProps) {
   const [phase, setPhase] = useState<Phase>("checking");
   const [duplicateCount, setDuplicateCount] = useState(0);
@@ -66,31 +90,50 @@ export function SummaryStep({ matchedData, onStartOver }: SummaryStepProps) {
     const total = matchedData.watched.length + matchedData.watchlist.length;
     setSaveProgress(0);
 
-    const progressInterval = setInterval(() => {
-      setSaveProgress((p) => Math.min(p + Math.ceil(total / 20), total - 1));
-    }, 200);
-
     try {
-      const res = await fetch("/api/import/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          watched: matchedData.watched,
-          watchlist: matchedData.watchlist,
-          mode,
-        }),
-      });
+      let aggregated = emptySaveStats();
+      let done = 0;
 
-      clearInterval(progressInterval);
+      for (let i = 0; i < matchedData.watched.length; i += SAVE_CHUNK) {
+        const chunk = matchedData.watched.slice(i, i + SAVE_CHUNK);
+        const res = await fetch("/api/import/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            watched: chunk,
+            watchlist: [],
+            mode,
+          }),
+        });
+        if (!res.ok) throw new Error(`Save failed: ${res.statusText}`);
+        const part: SaveResponseBody = await res.json();
+        aggregated = mergeSaveStats(aggregated, part);
+        done += chunk.length;
+        setSaveProgress(Math.min(done, total));
+      }
 
-      if (!res.ok) throw new Error(`Save failed: ${res.statusText}`);
+      for (let i = 0; i < matchedData.watchlist.length; i += SAVE_CHUNK) {
+        const chunk = matchedData.watchlist.slice(i, i + SAVE_CHUNK);
+        const res = await fetch("/api/import/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            watched: [],
+            watchlist: chunk,
+            mode,
+          }),
+        });
+        if (!res.ok) throw new Error(`Save failed: ${res.statusText}`);
+        const part: SaveResponseBody = await res.json();
+        aggregated = mergeSaveStats(aggregated, part);
+        done += chunk.length;
+        setSaveProgress(Math.min(done, total));
+      }
 
-      const result: SaveResponseBody = await res.json();
       setSaveProgress(total);
-      setSaveResult(result);
+      setSaveResult(aggregated);
       setPhase("done");
     } catch (err) {
-      clearInterval(progressInterval);
       setError(err instanceof Error ? err.message : "Import failed");
       setPhase("error");
     }
@@ -162,6 +205,9 @@ export function SummaryStep({ matchedData, onStartOver }: SummaryStepProps) {
 
     return (
       <div className="mx-auto flex w-full max-w-xl flex-col items-center gap-8 py-8">
+        <div className="w-full rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-center text-sm text-amber-100">
+          Don&apos;t refresh or close this tab while saving — the import may stop partway.
+        </div>
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-indigo-400" />
           <div className="text-center">

@@ -33,49 +33,77 @@ export interface SaveResponseBody {
   errors: string[];
 }
 
-async function ensureMovieRow(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  tmdbId: number,
-): Promise<number | null> {
-  const { data: existing } = await supabase
-    .from("movies")
-    .select("id")
-    .eq("tmdb_id", tmdbId)
-    .maybeSingle();
-  if (existing?.id) return Number(existing.id);
+type SupabaseServer = Awaited<ReturnType<typeof createClient>>;
 
-  try {
-    const d = await getMovieDetails(tmdbId);
-    const year =
-      d.release_date && d.release_date.length >= 4
-        ? Number(d.release_date.slice(0, 4))
-        : null;
+const ENSURE_CONCURRENCY = 10;
+const UPSERT_CHUNK = 100;
 
-    const { data, error } = await supabase
-      .from("movies")
-      .upsert(
-        {
-          tmdb_id: tmdbId,
-          title: d.title,
-          release_year: Number.isFinite(year) ? year : null,
-          poster_path: d.poster_path,
-          backdrop_path: d.backdrop_path,
-          overview: d.overview,
-          runtime: d.runtime,
-          vote_average: d.vote_average,
-          vote_count: d.vote_count,
-          genres: d.genres,
-        },
-        { onConflict: "tmdb_id" },
-      )
-      .select("id")
-      .single();
+/** Resolve TMDB id → movies.id for all ids (batch select + parallel fetch missing). */
+async function ensureMovieRowsBulk(
+  supabase: SupabaseServer,
+  tmdbIds: number[],
+): Promise<Map<number, number>> {
+  const unique = [...new Set(tmdbIds.filter((id) => Number.isFinite(id)))];
+  const map = new Map<number, number>();
+  if (unique.length === 0) return map;
 
-    if (error || !data) return null;
-    return Number(data.id);
-  } catch {
-    return null;
+  const { data: existingRows } = await supabase.from("movies").select("id, tmdb_id").in("tmdb_id", unique);
+
+  for (const row of existingRows ?? []) {
+    map.set(Number(row.tmdb_id), Number(row.id));
   }
+
+  const missing = unique.filter((id) => !map.has(id));
+  if (missing.length === 0) return map;
+
+  let mi = 0;
+  async function ensureOne(tmdbId: number): Promise<void> {
+    try {
+      const d = await getMovieDetails(tmdbId);
+      const year =
+        d.release_date && d.release_date.length >= 4 ? Number(d.release_date.slice(0, 4)) : null;
+
+      const { data, error } = await supabase
+        .from("movies")
+        .upsert(
+          {
+            tmdb_id: tmdbId,
+            title: d.title,
+            release_year: Number.isFinite(year) ? year : null,
+            poster_path: d.poster_path,
+            backdrop_path: d.backdrop_path,
+            overview: d.overview,
+            runtime: d.runtime,
+            vote_average: d.vote_average,
+            vote_count: d.vote_count,
+            genres: d.genres,
+          },
+          { onConflict: "tmdb_id" },
+        )
+        .select("id")
+        .single();
+
+      if (!error && data?.id) {
+        map.set(tmdbId, Number(data.id));
+      }
+    } catch {
+      /* skip */
+    }
+  }
+
+  async function worker() {
+    while (true) {
+      const i = mi++;
+      if (i >= missing.length) break;
+      await ensureOne(missing[i]);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(ENSURE_CONCURRENCY, missing.length) }, () => worker()),
+  );
+
+  return map;
 }
 
 export async function POST(request: NextRequest) {
@@ -110,7 +138,6 @@ export async function POST(request: NextRequest) {
       } satisfies SaveResponseBody);
     }
 
-    // Find which tmdbIds already have a movies row the user has watched
     const { data: existingMovies } = await supabase
       .from("movies")
       .select("id, tmdb_id")
@@ -148,15 +175,60 @@ export async function POST(request: NextRequest) {
     errors: [],
   };
 
-  for (const item of body.watched ?? []) {
-    const movieId = await ensureMovieRow(supabase, item.tmdbId);
-    if (!movieId) {
-      stats.watchedSkipped++;
-      continue;
+  const watched = body.watched ?? [];
+  const watchlist = body.watchlist ?? [];
+
+  const allTmdbIds = [
+    ...watched.map((w) => w.tmdbId),
+    ...watchlist.map((w) => w.tmdbId),
+  ];
+
+  const tmdbToMovieId = await ensureMovieRowsBulk(supabase, allTmdbIds);
+
+  // ── Watched ─────────────────────────────────────────────────────────────────
+  if (mode === "overwrite") {
+    const rows = watched
+      .map((item) => {
+        const movieId = tmdbToMovieId.get(item.tmdbId);
+        if (!movieId) return null;
+        return {
+          user_id: user.id,
+          movie_id: movieId,
+          watched_at: item.watchedDate
+            ? new Date(item.watchedDate).toISOString()
+            : new Date().toISOString(),
+          user_rating: item.rating ?? null,
+          notes: item.review ?? null,
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r != null);
+
+    for (let i = 0; i < rows.length; i += UPSERT_CHUNK) {
+      const chunk = rows.slice(i, i + UPSERT_CHUNK);
+      const { error } = await supabase.from("watched_movies").upsert(chunk, {
+        onConflict: "user_id,movie_id",
+      });
+      if (error) {
+        stats.errors.push(`Watched batch: ${error.message}`);
+        stats.watchedSkipped += chunk.length;
+      } else {
+        stats.watchedImported += chunk.length;
+      }
     }
 
-    if (mode === "skip") {
-      // Insert only — ignore if already exists
+    const unresolvedWatched = watched.length - rows.length;
+    if (unresolvedWatched > 0) {
+      stats.watchedSkipped += unresolvedWatched;
+    }
+  } else {
+    // skip: insert only when not duplicate
+    for (const item of watched) {
+      const movieId = tmdbToMovieId.get(item.tmdbId);
+      if (!movieId) {
+        stats.watchedSkipped++;
+        continue;
+      }
+
       const { error } = await supabase.from("watched_movies").insert({
         user_id: user.id,
         movie_id: movieId,
@@ -169,7 +241,6 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         if (error.code === "23505") {
-          // Unique constraint — already exists, intentionally skipped
           stats.watchedDuplicates++;
         } else {
           stats.watchedSkipped++;
@@ -178,47 +249,34 @@ export async function POST(request: NextRequest) {
       } else {
         stats.watchedImported++;
       }
-    } else {
-      // Overwrite (upsert)
-      const { error } = await supabase.from("watched_movies").upsert(
-        {
-          user_id: user.id,
-          movie_id: movieId,
-          watched_at: item.watchedDate
-            ? new Date(item.watchedDate).toISOString()
-            : new Date().toISOString(),
-          user_rating: item.rating ?? null,
-          notes: item.review ?? null,
-        },
-        { onConflict: "user_id,movie_id" },
-      );
-
-      if (error) {
-        stats.watchedSkipped++;
-        stats.errors.push(`Upsert error: ${error.message}`);
-      } else {
-        stats.watchedImported++;
-      }
     }
   }
 
-  for (const item of body.watchlist ?? []) {
-    const movieId = await ensureMovieRow(supabase, item.tmdbId);
-    if (!movieId) {
-      stats.watchlistSkipped++;
-      continue;
-    }
+  // ── Watchlist ───────────────────────────────────────────────────────────────
+  const wlRows = watchlist
+    .map((item) => {
+      const movieId = tmdbToMovieId.get(item.tmdbId);
+      if (!movieId) return null;
+      return { user_id: user.id, movie_id: movieId };
+    })
+    .filter((r): r is NonNullable<typeof r> => r != null);
 
-    const { error } = await supabase.from("watchlist").upsert(
-      { user_id: user.id, movie_id: movieId },
-      { onConflict: "user_id,movie_id" },
-    );
-
+  for (let i = 0; i < wlRows.length; i += UPSERT_CHUNK) {
+    const chunk = wlRows.slice(i, i + UPSERT_CHUNK);
+    const { error } = await supabase.from("watchlist").upsert(chunk, {
+      onConflict: "user_id,movie_id",
+    });
     if (error) {
-      stats.watchlistSkipped++;
+      stats.errors.push(`Watchlist batch: ${error.message}`);
+      stats.watchlistSkipped += chunk.length;
     } else {
-      stats.watchlistImported++;
+      stats.watchlistImported += chunk.length;
     }
+  }
+
+  const unresolvedWl = watchlist.length - wlRows.length;
+  if (unresolvedWl > 0) {
+    stats.watchlistSkipped += unresolvedWl;
   }
 
   return NextResponse.json(stats satisfies SaveResponseBody);

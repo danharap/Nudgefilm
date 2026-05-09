@@ -9,37 +9,59 @@ import type { ParsedImport } from "@/lib/letterboxd/parser";
 
 type WizardStep = "welcome" | "upload" | "preview" | "matching" | "summary";
 
-const DRAFT_KEY = "lbd_import_draft";
+const LEGACY_DRAFT_KEY = "lbd_import_draft";
+
+function draftKey(userId: string) {
+  return `lbd_import_draft:${userId}`;
+}
 
 interface DraftState {
   parsed: ParsedImport;
   savedAt: string;
+  userId?: string;
 }
 
-function loadDraft(): DraftState | null {
+function loadDraftForUser(userId: string): DraftState | null {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as DraftState;
+    const namespaced = localStorage.getItem(draftKey(userId));
+    if (namespaced) {
+      const parsed = JSON.parse(namespaced) as DraftState;
+      return parsed?.parsed ? parsed : null;
+    }
+    const legacyRaw = localStorage.getItem(LEGACY_DRAFT_KEY);
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw) as DraftState;
+      if (legacy?.parsed) {
+        saveDraftForUser(userId, legacy.parsed);
+        localStorage.removeItem(LEGACY_DRAFT_KEY);
+        return legacy;
+      }
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
-function saveDraft(parsed: ParsedImport) {
+function saveDraftForUser(userId: string, parsed: ParsedImport) {
   try {
     localStorage.setItem(
-      DRAFT_KEY,
-      JSON.stringify({ parsed, savedAt: new Date().toISOString() } satisfies DraftState),
+      draftKey(userId),
+      JSON.stringify({
+        parsed,
+        savedAt: new Date().toISOString(),
+        userId,
+      } satisfies DraftState),
     );
   } catch {
     // localStorage unavailable — continue silently
   }
 }
 
-function clearDraft() {
+function clearDraftForUser(userId: string) {
   try {
-    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(draftKey(userId));
+    localStorage.removeItem(LEGACY_DRAFT_KEY);
   } catch {
     // ignore
   }
@@ -53,21 +75,27 @@ const STEPS: { key: WizardStep; label: string }[] = [
   { key: "summary", label: "Done" },
 ];
 
-export function ImportWizard() {
+export function ImportWizard({
+  userId,
+  signedInEmail,
+}: {
+  userId: string;
+  signedInEmail?: string | null;
+}) {
   const [step, setStep] = useState<WizardStep>("welcome");
   const [parsed, setParsed] = useState<ParsedImport | null>(null);
   const [matchedData, setMatchedData] = useState<MatchedData | null>(null);
   const [resumeBanner, setResumeBanner] = useState(false);
 
   useEffect(() => {
-    const draft = loadDraft();
+    const draft = loadDraftForUser(userId);
     if (draft && draft.parsed) {
       setResumeBanner(true);
     }
-  }, []);
+  }, [userId]);
 
   const handleResume = () => {
-    const draft = loadDraft();
+    const draft = loadDraftForUser(userId);
     if (draft?.parsed) {
       setParsed(draft.parsed);
       setStep("matching");
@@ -76,15 +104,18 @@ export function ImportWizard() {
   };
 
   const handleDismissResume = () => {
-    clearDraft();
+    clearDraftForUser(userId);
     setResumeBanner(false);
   };
 
-  const handleParsed = useCallback((data: ParsedImport) => {
-    setParsed(data);
-    saveDraft(data);
-    setStep("matching");
-  }, []);
+  const handleParsed = useCallback(
+    (data: ParsedImport) => {
+      setParsed(data);
+      saveDraftForUser(userId, data);
+      setStep("matching");
+    },
+    [userId],
+  );
 
   const handleMatched = useCallback((data: MatchedData) => {
     setMatchedData(data);
@@ -92,20 +123,25 @@ export function ImportWizard() {
   }, []);
 
   const handleStartOver = useCallback(() => {
-    clearDraft();
+    clearDraftForUser(userId);
     setParsed(null);
     setMatchedData(null);
     setStep("welcome");
-  }, []);
+  }, [userId]);
 
   // Breadcrumb step (collapse preview into matching)
-  const displayStep: WizardStep =
-    step === "preview" ? "matching" : step;
+  const displayStep: WizardStep = step === "preview" ? "matching" : step;
 
   const crumbIndex = STEPS.findIndex((s) => s.key === displayStep);
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] flex-col">
+      {signedInEmail ? (
+        <p className="border-b border-white/5 bg-zinc-900/40 px-4 py-2 text-center text-xs text-zinc-500">
+          Signed in as <span className="text-zinc-300">{signedInEmail}</span>
+        </p>
+      ) : null}
+
       {/* Resume banner */}
       {resumeBanner && (
         <div className="sticky top-0 z-10 border-b border-indigo-400/20 bg-indigo-500/10 px-4 py-3 backdrop-blur-sm">
@@ -115,14 +151,16 @@ export function ImportWizard() {
             </p>
             <div className="flex shrink-0 gap-2">
               <button
+                type="button"
                 onClick={handleResume}
-                className="rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-medium text-indigo-300 hover:bg-indigo-400/30 transition"
+                className="rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-medium text-indigo-300 transition hover:bg-indigo-400/30"
               >
                 Resume
               </button>
               <button
+                type="button"
                 onClick={handleDismissResume}
-                className="rounded-full px-3 py-1 text-xs text-tertiary hover:text-primary transition"
+                className="rounded-full px-3 py-1 text-xs text-tertiary transition hover:text-primary"
               >
                 Dismiss
               </button>
@@ -176,17 +214,12 @@ export function ImportWizard() {
 
       {/* Step content */}
       <div className="flex flex-1 flex-col items-center justify-start px-4 py-10">
-        {step === "welcome" && (
-          <WelcomeStep onContinue={() => setStep("upload")} />
-        )}
+        {step === "welcome" && <WelcomeStep onContinue={() => setStep("upload")} />}
 
-        {step === "upload" && (
-          <UploadStep onParsed={handleParsed} />
-        )}
+        {step === "upload" && <UploadStep onParsed={handleParsed} />}
 
         {step === "matching" && parsed && (
           <>
-            {/* Preview summary before matching starts */}
             <ParsedPreview parsed={parsed} />
             <MatchingStep parsed={parsed} onMatched={handleMatched} />
           </>

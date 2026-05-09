@@ -1,4 +1,4 @@
-import { removeWatchlistItem } from "./actions";
+import { WatchlistRemoveButton } from "./WatchlistRemoveButton";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
@@ -35,7 +35,7 @@ export default async function WatchlistPage() {
       const m = r.movies as MovieRow | MovieRow[] | null;
       if (!m) return [];
       const movie = Array.isArray(m) ? m[0] : m;
-      return movie ? [{ rowId: r.id, movie }] : [];
+      return movie ? [{ rowId: Number(r.id), movie }] : [];
     }) ?? [];
 
   return (
@@ -119,15 +119,9 @@ export default async function WatchlistPage() {
                       ★ {Number(movie.vote_average).toFixed(1)}
                     </p>
                   ) : null}
-                  <form action={removeWatchlistItem} className="mt-3">
-                    <input type="hidden" name="tmdbId" value={movie.tmdb_id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-tertiary underline-offset-2 hover:text-primary hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </form>
+                  <div className="mt-3">
+                    <WatchlistRemoveButton watchlistRowId={rowId} />
+                  </div>
                 </div>
               </li>
             );

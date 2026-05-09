@@ -150,6 +150,26 @@ async function matchMovie(input: MatchInput): Promise<MatchResult> {
   return { index, title, year, confidence: "none", matched: null, candidates };
 }
 
+const MATCH_CONCURRENCY = 8;
+
+/** Run async work over items with bounded parallelism; preserves order. */
+async function mapPool<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  async function worker() {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) break;
+      results[i] = await fn(items[i]);
+    }
+  }
+  const workers = Array.from({ length: Math.min(concurrency, Math.max(items.length, 1)) }, () =>
+    worker(),
+  );
+  await Promise.all(workers);
+  return results;
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const {
@@ -173,15 +193,11 @@ export async function POST(request: NextRequest) {
 
   // Cap batch size to 50 per request
   const batch = movies.slice(0, 50);
-
-  // Process sequentially with small delay to be kind to TMDB rate limits
-  const results: MatchResult[] = [];
-  for (const movie of batch) {
-    const result = await matchMovie(movie);
-    results.push(result);
-    // Small delay between TMDB calls
-    await new Promise((r) => setTimeout(r, 50));
+  if (batch.length === 0) {
+    return NextResponse.json({ results: [] } satisfies MatchResponseBody);
   }
+
+  const results = await mapPool(batch, MATCH_CONCURRENCY, (movie) => matchMovie(movie));
 
   return NextResponse.json({ results } satisfies MatchResponseBody);
 }
