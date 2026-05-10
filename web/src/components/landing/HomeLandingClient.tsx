@@ -3,7 +3,15 @@
 import { APP_NAME } from "@/config/brand";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import type { MotionValue } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -113,6 +121,43 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+/** Scroll-scrubbed reveal tied to the product demo section (avoids whileInView + parent transform IO gaps on some browsers). */
+function ProductDemoScrollReveal({
+  progress,
+  reduceMotion,
+  start,
+  end,
+  y: yShift = 12,
+  className,
+  onHoverStart,
+  children,
+}: {
+  progress: MotionValue<number>;
+  reduceMotion: boolean;
+  start: number;
+  end: number;
+  y?: number;
+  className?: string;
+  onHoverStart?: () => void;
+  children: ReactNode;
+}) {
+  const opacity = useTransform(
+    progress,
+    reduceMotion ? [0, 1] : [start, end],
+    reduceMotion ? [1, 1] : [0, 1],
+  );
+  const y = useTransform(
+    progress,
+    reduceMotion ? [0, 1] : [start, end],
+    reduceMotion ? [0, 0] : [yShift, 0],
+  );
+  return (
+    <motion.div style={{ opacity, y }} className={className} onHoverStart={onHoverStart}>
+      {children}
+    </motion.div>
+  );
+}
+
 export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
@@ -164,10 +209,16 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     target: scrollSectionRef,
     offset: ["start center", "end center"],
   });
+  /** Eases steppy wheel / scrollbar input so demo motion stays fluid (esp. Windows). */
+  const demoScrollProgress = useSpring(scrollYProgress, {
+    stiffness: reduceMotion ? 10_000 : 95,
+    damping: reduceMotion ? 500 : 30,
+    mass: reduceMotion ? 0.05 : 0.38,
+  });
   const reduceMotionBg = reduceMotion;
-  const cardScale = useTransform(scrollYProgress, [0, 1], [0.96, 1.02]);
-  const cardY = useTransform(scrollYProgress, [0, 1], [40, -40]);
-  const cardOpacity = useTransform(scrollYProgress, [0, 1], [0.7, 1]);
+  const cardScale = useTransform(demoScrollProgress, [0, 1], [0.96, 1.02]);
+  const cardY = useTransform(demoScrollProgress, [0, 1], [40, -40]);
+  const cardOpacity = useTransform(demoScrollProgress, [0, 1], [0.7, 1]);
 
   return (
     <div className="relative overflow-x-hidden">
@@ -269,11 +320,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-indigo-500/85">
                   Tonight&apos;s setup
                 </p>
-                <motion.div
-                  initial={reduceMotionBg ? false : { opacity: 0, y: 8 }}
-                  whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.35 }}
-                  transition={{ duration: 0.3, delay: 0.02 }}
+                <ProductDemoScrollReveal
+                  progress={demoScrollProgress}
+                  reduceMotion={Boolean(reduceMotionBg)}
+                  start={0.02}
+                  end={0.14}
+                  y={8}
                   className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
@@ -281,24 +333,27 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {["Horror", "Late Night", "Intense", "Weird"].map((label, idx) => (
-                      <motion.span
+                      <ProductDemoScrollReveal
                         key={label}
-                        initial={reduceMotionBg ? false : { opacity: 0, y: 6 }}
-                        whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.2 }}
-                        transition={{ duration: 0.24, delay: 0.08 + idx * 0.05 }}
-                        className="accent-selected inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]"
+                        progress={demoScrollProgress}
+                        reduceMotion={Boolean(reduceMotionBg)}
+                        start={0.06 + idx * 0.045}
+                        end={0.2 + idx * 0.045}
+                        y={6}
+                        className="inline-flex"
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
-                        {label}
-                      </motion.span>
+                        <span className="accent-selected inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
+                          {label}
+                        </span>
+                      </ProductDemoScrollReveal>
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-tertiary">
                     Dread-heavy picks with sharp tension, minimal comedy breaks, and a focused
                     late-night tone.
                   </p>
-                </motion.div>
+                </ProductDemoScrollReveal>
 
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                   <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5">
@@ -376,12 +431,13 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       );
                       const isSelected = selectedDemoMovie?.id === movie.id;
                       return (
-                        <motion.div
+                        <ProductDemoScrollReveal
                           key={`${movie.id}-${i}`}
-                          initial={reduceMotionBg ? false : { opacity: 0, y: 16 }}
-                          whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                          viewport={{ once: true, amount: 0.4 }}
-                          transition={{ duration: 0.38, delay: 0.16 + i * 0.08 }}
+                          progress={demoScrollProgress}
+                          reduceMotion={Boolean(reduceMotionBg)}
+                          start={0.12 + i * 0.065}
+                          end={0.28 + i * 0.065}
+                          y={16}
                           className={`group overflow-hidden rounded-xl border bg-[var(--surface-1)] transition ${
                             isSelected
                               ? "border-indigo-400/65 shadow-[0_0_26px_rgba(99,102,241,0.42)]"
@@ -413,7 +469,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                               </div>
                             </div>
                           </Link>
-                        </motion.div>
+                        </ProductDemoScrollReveal>
                       );
                     })}
                     {demoShortlist.length === 0 &&
@@ -427,11 +483,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-                  <motion.div
-                    initial={reduceMotionBg ? false : { opacity: 0, y: 10 }}
-                    whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.34, delay: 0.5 }}
+                  <ProductDemoScrollReveal
+                    progress={demoScrollProgress}
+                    reduceMotion={Boolean(reduceMotionBg)}
+                    start={0.36}
+                    end={0.52}
+                    y={10}
                     className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -455,7 +512,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                         is highlighted for strongest vibe fit and watch momentum.
                       </li>
                     </ul>
-                  </motion.div>
+                  </ProductDemoScrollReveal>
                   <div className="relative space-y-3">
                     <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -483,11 +540,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       </div>
                     </div>
                     {/* Toast preview */}
-                    <motion.div
-                      initial={reduceMotionBg ? false : { opacity: 0, y: 12 }}
-                      whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.4 }}
-                      transition={{ duration: 0.45, delay: 0.72 }}
+                    <ProductDemoScrollReveal
+                      progress={demoScrollProgress}
+                      reduceMotion={Boolean(reduceMotionBg)}
+                      start={0.5}
+                      end={0.68}
+                      y={12}
                       className="pointer-events-none relative w-full rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
                     >
                       <div className="flex items-start gap-2">
@@ -503,7 +561,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                           </p>
                         </div>
                       </div>
-                    </motion.div>
+                    </ProductDemoScrollReveal>
                   </div>
                 </div>
               </div>
