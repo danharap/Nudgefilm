@@ -7,6 +7,7 @@ import type { MotionValue } from "framer-motion";
 import {
   AnimatePresence,
   motion,
+  useMotionValue,
   useReducedMotion,
   useScroll,
   useSpring,
@@ -15,7 +16,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type HeroMovie = {
   id: number;
@@ -121,6 +122,32 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
+/**
+ * Mirrors Framer's useScroll target offset ["start center","end center"] using native scroll events.
+ * Some Windows browsers report unreliable scroll progress when multiple useScroll targets exist.
+ */
+function useManualSectionScrollProgress(element: HTMLElement | null) {
+  const progress = useMotionValue(0);
+  useLayoutEffect(() => {
+    if (!element) return;
+    function tick() {
+      const rect = element.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const h = Math.max(rect.height, 1);
+      const p = (vh / 2 - rect.top) / h;
+      progress.set(Math.min(1, Math.max(0, p)));
+    }
+    tick();
+    window.addEventListener("scroll", tick, { passive: true });
+    window.addEventListener("resize", tick);
+    return () => {
+      window.removeEventListener("scroll", tick);
+      window.removeEventListener("resize", tick);
+    };
+  }, [element, progress]);
+  return progress;
+}
+
 /** Scroll-scrubbed reveal (avoids whileInView / IntersectionObserver gaps on some Windows browsers). */
 function ProductDemoScrollReveal({
   progress,
@@ -223,12 +250,9 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
   const cardY = useTransform(demoScrollProgress, [0, 1], [40, -40]);
   const cardOpacity = useTransform(demoScrollProgress, [0, 1], [0.7, 1]);
 
-  const communitySectionRef = useRef<HTMLElement | null>(null);
-  const { scrollYProgress: communityScrollYProgress } = useScroll({
-    target: communitySectionRef,
-    offset: ["start center", "end center"],
-  });
-  const communityScrollProgress = useSpring(communityScrollYProgress, {
+  const [communityScrollRoot, setCommunityScrollRoot] = useState<HTMLElement | null>(null);
+  const communityScrollRaw = useManualSectionScrollProgress(communityScrollRoot);
+  const communityScrollProgress = useSpring(communityScrollRaw, {
     stiffness: reduceMotion ? 10_000 : 95,
     damping: reduceMotion ? 500 : 30,
     mass: reduceMotion ? 0.05 : 0.38,
@@ -585,7 +609,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {/* Social proof + community — same width + horizontal rhythm as product demo card */}
-      <section ref={communitySectionRef} className="py-14 sm:py-16">
+      <section ref={setCommunityScrollRoot} className="py-14 sm:py-16">
         <div className="mx-2 max-w-7xl px-4 sm:mx-auto sm:px-5 lg:px-6">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
