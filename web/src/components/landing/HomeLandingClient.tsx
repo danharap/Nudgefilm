@@ -121,7 +121,7 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-/** Scroll-scrubbed reveal tied to the product demo section (avoids whileInView + parent transform IO gaps on some browsers). */
+/** Scroll-scrubbed reveal (avoids whileInView / IntersectionObserver gaps on some Windows browsers). */
 function ProductDemoScrollReveal({
   progress,
   reduceMotion,
@@ -130,6 +130,7 @@ function ProductDemoScrollReveal({
   y: yShift = 12,
   className,
   onHoverStart,
+  as = "div",
   children,
 }: {
   progress: MotionValue<number>;
@@ -139,6 +140,7 @@ function ProductDemoScrollReveal({
   y?: number;
   className?: string;
   onHoverStart?: () => void;
+  as?: "div" | "article";
   children: ReactNode;
 }) {
   const opacity = useTransform(
@@ -151,10 +153,11 @@ function ProductDemoScrollReveal({
     reduceMotion ? [0, 1] : [start, end],
     reduceMotion ? [0, 0] : [yShift, 0],
   );
+  const MotionTag = as === "article" ? motion.article : motion.div;
   return (
-    <motion.div style={{ opacity, y }} className={className} onHoverStart={onHoverStart}>
+    <MotionTag style={{ opacity, y }} className={className} onHoverStart={onHoverStart}>
       {children}
-    </motion.div>
+    </MotionTag>
   );
 }
 
@@ -219,6 +222,17 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
   const cardScale = useTransform(demoScrollProgress, [0, 1], [0.96, 1.02]);
   const cardY = useTransform(demoScrollProgress, [0, 1], [40, -40]);
   const cardOpacity = useTransform(demoScrollProgress, [0, 1], [0.7, 1]);
+
+  const communitySectionRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress: communityScrollYProgress } = useScroll({
+    target: communitySectionRef,
+    offset: ["start center", "end center"],
+  });
+  const communityScrollProgress = useSpring(communityScrollYProgress, {
+    stiffness: reduceMotion ? 10_000 : 95,
+    damping: reduceMotion ? 500 : 30,
+    mass: reduceMotion ? 0.05 : 0.38,
+  });
 
   return (
     <div className="relative overflow-x-hidden">
@@ -571,7 +585,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {/* Social proof + community — same width + horizontal rhythm as product demo card */}
-      <section className="py-14 sm:py-16">
+      <section ref={communitySectionRef} className="py-14 sm:py-16">
         <div className="mx-2 max-w-7xl px-4 sm:mx-auto sm:px-5 lg:px-6">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
@@ -596,12 +610,14 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
             <div className="grid gap-3 sm:grid-cols-2">
               {communityReviews.map((r, i) => (
-                <motion.article
+                <ProductDemoScrollReveal
                   key={`${r.id}-${i}`}
-                  initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.35 }}
-                  transition={{ duration: 0.35, delay: i * 0.05 }}
+                  as="article"
+                  progress={communityScrollProgress}
+                  reduceMotion={Boolean(reduceMotion)}
+                  start={0.06 + i * 0.07}
+                  end={0.22 + i * 0.07}
+                  y={18}
                   className="surface-card-subtle rounded-2xl p-4"
                 >
                   <div className="flex items-center gap-2">
@@ -618,16 +634,18 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     </span>
                   </div>
                   <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-tertiary">{r.body}</p>
-                </motion.article>
+                </ProductDemoScrollReveal>
               ))}
             </div>
 
             <div className="grid gap-3">
-              <motion.article
-                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.35, delay: 0.08 }}
+              <ProductDemoScrollReveal
+                as="article"
+                progress={communityScrollProgress}
+                reduceMotion={Boolean(reduceMotion)}
+                start={0.32}
+                end={0.5}
+                y={20}
                 className="surface-card rounded-2xl p-4"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -643,13 +661,15 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     </div>
                   ))}
                 </div>
-              </motion.article>
+              </ProductDemoScrollReveal>
 
-              <motion.article
-                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.35, delay: 0.12 }}
+              <ProductDemoScrollReveal
+                as="article"
+                progress={communityScrollProgress}
+                reduceMotion={Boolean(reduceMotion)}
+                start={0.42}
+                end={0.62}
+                y={20}
                 className="surface-card rounded-2xl p-4"
               >
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -676,7 +696,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                     <p className="text-[10px] text-tertiary">Friends</p>
                   </div>
                 </div>
-              </motion.article>
+              </ProductDemoScrollReveal>
             </div>
           </div>
         </div>
