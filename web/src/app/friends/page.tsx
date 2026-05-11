@@ -1,6 +1,7 @@
 import { UserSearch } from "./UserSearch";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
+import { markNotificationsSeen } from "@/app/actions/social";
 import { getFollowers, getFollowing, getSocialActivity } from "@/features/users/service";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,9 @@ export default async function FriendsPage({
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login?redirect=/friends");
+
+  // Stamp seen timestamp so the notification badge clears on next render
+  await markNotificationsSeen();
 
   const [following, followers, activity] = await Promise.all([
     getFollowing(user.id),

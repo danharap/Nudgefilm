@@ -26,13 +26,9 @@ export function SiteHeaderClient(props: Props) {
   const pathname = usePathname();
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
-  const [notificationsCleared, setNotificationsCleared] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   useMotionValueEvent(scrollY, "change", (v) => setElevated(v > 8));
-  useEffect(() => {
-    if (pathname.startsWith("/friends")) setNotificationsCleared(true);
-  }, [pathname]);
   useEffect(() => setProfileMenuOpen(false), [pathname]);
   useEffect(() => {
     function onPointerDown(event: MouseEvent) {
@@ -44,9 +40,7 @@ export function SiteHeaderClient(props: Props) {
     if (profileMenuOpen) document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [profileMenuOpen]);
-  const effectiveNotificationCount = notificationsCleared || pathname.startsWith("/friends")
-    ? 0
-    : pendingRequestCount;
+  const effectiveNotificationCount = pendingRequestCount;
 
   return (
     <motion.header
@@ -81,7 +75,6 @@ export function SiteHeaderClient(props: Props) {
             <>
               <Link
                 href="/friends"
-                onClick={() => setNotificationsCleared(true)}
                 className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary transition hover:text-primary"
                 aria-label={`Notifications${effectiveNotificationCount > 0 ? ` (${effectiveNotificationCount})` : ""}`}
               >

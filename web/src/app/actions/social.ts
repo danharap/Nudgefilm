@@ -146,3 +146,17 @@ export async function cancelFriendRequest(addresseeId: string) {
 
   revalidateSocialUi();
 }
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+/** Stamps follows_seen_at so new-follower badge resets to 0. */
+export async function markNotificationsSeen() {
+  const { supabase, user } = await getAuthedUser();
+  await supabase
+    .from("profiles")
+    .update({ follows_seen_at: new Date().toISOString() })
+    .eq("id", user.id);
+  revalidatePath("/", "layout");
+}

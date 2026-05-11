@@ -27,7 +27,7 @@ export async function SiteHeader() {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("display_name, avatar_url, role")
+      .select("display_name, avatar_url, role, follows_seen_at")
       .eq("id", user.id)
       .maybeSingle();
     avatarUrl = (profile?.avatar_url as string | null) ?? null;
@@ -38,10 +38,13 @@ export async function SiteHeader() {
     const role = (profile?.role as string | null) ?? "user";
     isAdmin = role === "admin" || role === "super_admin" || role === "moderator";
 
-    const { count } = await supabase
+    const followsSince = (profile?.follows_seen_at as string | null) ?? null;
+    const followsQuery = supabase
       .from("follows")
       .select("follower_id", { count: "exact", head: true })
       .eq("following_id", user.id);
+    if (followsSince) followsQuery.gt("created_at", followsSince);
+    const { count } = await followsQuery;
     notificationCount = count ?? 0;
   }
 
