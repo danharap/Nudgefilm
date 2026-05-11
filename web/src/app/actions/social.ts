@@ -20,6 +20,7 @@ export type UpdateProfilePayload = {
   bio?: string | null;
   is_public?: boolean;
   watchlist_public?: boolean;
+  show_mature_content?: boolean;
   avatar_url?: string | null;
   banner_url?: string | null;
   profile_background_url?: string | null;
@@ -50,6 +51,7 @@ export async function updateProfile(payload: UpdateProfilePayload): Promise<void
   }
   if (payload.is_public !== undefined) row.is_public = payload.is_public;
   if (payload.watchlist_public !== undefined) row.watchlist_public = payload.watchlist_public;
+  if (payload.show_mature_content !== undefined) row.show_mature_content = payload.show_mature_content;
   if (payload.avatar_url !== undefined) row.avatar_url = payload.avatar_url;
   if (payload.banner_url !== undefined) row.banner_url = payload.banner_url;
   if (payload.profile_background_url !== undefined) {

@@ -1,11 +1,12 @@
 "use client";
 
 import { signOut } from "@/app/actions/auth";
+import { updateProfile } from "@/app/actions/social";
 import { ThemeModeSettings } from "@/components/settings/ThemeModeSettings";
 import { Bell, Bookmark, Film, Globe, Lock, Mail, Play, Shield, Sparkles, UserRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 type ToggleKey =
   | "notifyFriendActivity"
@@ -23,6 +24,8 @@ type Props = {
   bio: string | null;
   isPublic: boolean;
   watchlistPublic: boolean;
+  is18Plus: boolean;
+  showMatureContent: boolean;
   providers: string[];
 };
 
@@ -72,8 +75,20 @@ export function SettingsHub({
   bio,
   isPublic,
   watchlistPublic,
+  is18Plus,
+  showMatureContent,
   providers,
 }: Props) {
+  const [matureEnabled, setMatureEnabled] = useState(showMatureContent);
+  const [, startTransition] = useTransition();
+
+  function handleMatureToggle(v: boolean) {
+    setMatureEnabled(v);
+    startTransition(() => {
+      updateProfile({ show_mature_content: v });
+    });
+  }
+
   const [prefs, setPrefs] = useState<Record<ToggleKey, boolean>>({
     notifyFriendActivity: true,
     notifyRecommendations: true,
@@ -181,6 +196,21 @@ export function SettingsHub({
             <h2 className="text-base font-semibold text-primary">Discovery Preferences</h2>
           </div>
           <div className="space-y-2.5">
+            {is18Plus ? (
+              <SettingsToggle
+                checked={matureEnabled}
+                onChange={handleMatureToggle}
+                label="Show 18+ content"
+                description="Include mature and R-rated films in Browse and recommendations."
+              />
+            ) : (
+              <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                <p className="text-sm font-medium text-primary">Show 18+ content</p>
+                <p className="mt-0.5 text-xs text-tertiary">
+                  Verify your age during onboarding to enable mature content.
+                </p>
+              </div>
+            )}
             <SettingsToggle
               checked={prefs.hideWatchedInBrowse}
               onChange={(v) => setPref("hideWatchedInBrowse", v)}

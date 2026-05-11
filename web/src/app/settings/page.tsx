@@ -12,7 +12,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("display_name, username, bio, avatar_url, banner_url, is_public, watchlist_public")
+    .select("display_name, username, bio, avatar_url, banner_url, is_public, watchlist_public, is_18_plus, show_mature_content")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -39,6 +39,8 @@ export default async function SettingsPage() {
         bio={(profile?.bio as string | null) ?? null}
         isPublic={(profile?.is_public as boolean) ?? true}
         watchlistPublic={(profile?.watchlist_public as boolean) ?? true}
+        is18Plus={(profile?.is_18_plus as boolean) ?? false}
+        showMatureContent={(profile?.show_mature_content as boolean) ?? false}
         providers={providers}
       />
     </div>
