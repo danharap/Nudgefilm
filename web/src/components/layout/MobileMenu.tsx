@@ -48,15 +48,15 @@ export function MobileMenu({
   const bottomLinks = user
     ? [
         { href: "/", label: "Home" },
-        { href: "/recommend", label: "Vibes" },
         { href: "/browse", label: "Browse" },
-        { href: "/watchlist", label: "Watchlist" },
+        { href: "/watchlist", label: "List" },
+        { href: "/friends", label: "Social" },
         { href: "/profile", label: "Profile" },
       ]
     : [
         { href: "/", label: "Home" },
-        { href: "/recommend", label: "Vibes" },
         { href: "/browse", label: "Browse" },
+        { href: "/feedback", label: "Reviews" },
         { href: "/login", label: "Log in" },
         { href: "/signup", label: "Sign up" },
       ];

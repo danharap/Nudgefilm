@@ -38,8 +38,23 @@ export function RecommendClient() {
   }, [searchParams]);
   const prefilledVibes = useMemo(() => inferVibesFromGenres(prefilledGenres), [prefilledGenres]);
 
-  const [step, setStep] = useState(0);
-  const [vibes, setVibes] = useState<string[]>(prefilledVibes);
+  const prefilledVibesFromUrl = useMemo(() => {
+    const raw = searchParams.get("vibes") ?? "";
+    return raw
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean)
+      .slice(0, 8);
+  }, [searchParams]);
+
+  // When a vibe is passed via URL (e.g. from Browse vibe chips), skip straight
+  // to the vibe step so the user lands with their selection pre-active.
+  const [step, setStep] = useState(prefilledVibesFromUrl.length > 0 ? 1 : 0);
+  const [vibes, setVibes] = useState<string[]>(
+    prefilledVibesFromUrl.length > 0
+      ? [...new Set([...prefilledVibesFromUrl, ...prefilledVibes])].slice(0, 8)
+      : prefilledVibes,
+  );
   const [genres, setGenres] = useState<number[]>(prefilledGenres);
   const [runtimeMin, setRuntimeMin] = useState("");
   const [runtimeMax, setRuntimeMax] = useState("");

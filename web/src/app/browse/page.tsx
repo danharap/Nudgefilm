@@ -1,4 +1,5 @@
 import { BrowseMovieCard, type BrowseMovie } from "./BrowseMovieCard";
+import { BrowseDiscoveryHero } from "./BrowseDiscoveryHero";
 import { BrowseSearch } from "./BrowseSearch";
 import { BrowseTypeFilter } from "./BrowseTypeFilter";
 import {
@@ -225,9 +226,11 @@ export default async function BrowsePage({ searchParams }: PageProps) {
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">Discover</p>
         <h1 className="text-3xl font-semibold text-primary">Browse</h1>
         <p className="text-sm text-secondary">
-          Search or explore what&apos;s trending right now.
+          Explore what&apos;s trending, or get a curated pick.
         </p>
       </header>
+
+      <BrowseDiscoveryHero />
 
       <div className="mb-10">
         <BrowseSearch
