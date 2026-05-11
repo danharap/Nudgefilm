@@ -10,8 +10,6 @@ const recommendationInputBaseSchema = z.object({
   eraMinYear: z.number().int().min(1900).max(2035).optional(),
   eraMaxYear: z.number().int().min(1900).max(2035).optional(),
   language: z.string().length(2).optional(),
-  surpriseMe: z.boolean().optional().default(false),
-  hiddenGem: z.boolean().optional().default(false),
   streamingOnly: z.boolean().optional().default(false),
   watchRegion: z.string().length(2).optional(),
 });

@@ -47,9 +47,7 @@ export function RecommendClient() {
       .slice(0, 8);
   }, [searchParams]);
 
-  // When a vibe is passed via URL (e.g. from Browse vibe chips), skip straight
-  // to the vibe step so the user lands with their selection pre-active.
-  const [step, setStep] = useState(prefilledVibesFromUrl.length > 0 ? 1 : 0);
+  const [step, setStep] = useState(0);
   const [vibes, setVibes] = useState<string[]>(
     prefilledVibesFromUrl.length > 0
       ? [...new Set([...prefilledVibesFromUrl, ...prefilledVibes])].slice(0, 8)
@@ -62,8 +60,6 @@ export function RecommendClient() {
   const [eraMin, setEraMin] = useState("");
   const [eraMax, setEraMax] = useState("");
   const [language, setLanguage] = useState("");
-  const [surpriseMe, setSurpriseMe] = useState(false);
-  const [hiddenGem, setHiddenGem] = useState(false);
   const [streamingOnly, setStreamingOnly] = useState(false);
   const [watchRegion, setWatchRegion] = useState("US");
   const [loading, setLoading] = useState(false);
@@ -141,8 +137,6 @@ export function RecommendClient() {
     const body: RecommendationInput = {
       vibes,
       genres,
-      surpriseMe,
-      hiddenGem,
       streamingOnly,
       watchRegion: streamingOnly ? watchRegion : undefined,
       minVoteAverage: Number(minVote) || 6,
@@ -484,20 +478,8 @@ export function RecommendClient() {
           <h2 id="step-finish-title" className="text-sm font-medium text-primary">
             Finish
           </h2>
-          <p className="text-xs text-tertiary">Extras — toggle what you need, then run the search.</p>
+          <p className="text-xs text-tertiary">One last option, then run the search.</p>
           <div className="flex flex-col gap-2">
-            <ToggleOption
-              checked={surpriseMe}
-              onChange={setSurpriseMe}
-              label="Mix it up"
-              description="Randomly shifts the genre weighting so you don't always get the same type of result."
-            />
-            <ToggleOption
-              checked={hiddenGem}
-              onChange={setHiddenGem}
-              label="Hidden gems only"
-              description="Favours well-rated films that flew under the radar — less blockbuster, more discovery."
-            />
             <ToggleOption
               checked={streamingOnly}
               onChange={setStreamingOnly}

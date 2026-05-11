@@ -23,7 +23,7 @@ type Props = {
 };
 
 export function SiteHeaderClient(props: Props) {
-  const { user, isAdmin, publicLinks, authedLinks, pendingRequestCount } = props;
+  const { user, publicLinks, authedLinks, pendingRequestCount } = props;
   const pathname = usePathname();
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
@@ -35,25 +35,31 @@ export function SiteHeaderClient(props: Props) {
   // immediately without a flicker. A client-side fetch then patches in the live
   // profile data, ensuring the header is always up-to-date even when the root
   // layout segment is served from Next.js's client-side router cache.
+  // isAdmin is also refreshed here because client-side navigation replays the
+  // stale server props — without this, the Admin link can disappear after a
+  // role change until the user does a full hard reload.
   const [displayName, setDisplayName] = useState<string | null>(props.displayName);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(props.avatarUrl);
+  const [isAdmin, setIsAdmin] = useState<boolean>(props.isAdmin);
 
   useEffect(() => {
     if (!user) return;
     const supabase = createClient();
     supabase
       .from("profiles")
-      .select("display_name, avatar_url")
+      .select("display_name, avatar_url, role")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (!data) return;
         const name = (data.display_name as string | null)?.trim() || null;
         const avatar = (data.avatar_url as string | null)?.trim() || null;
+        const role = (data.role as string | null) ?? "user";
         if (name) setDisplayName(name);
         // Only override avatar if the profile has one; otherwise keep the
         // server-computed fallback (OAuth picture / Google avatar).
         if (avatar) setAvatarUrl(avatar);
+        setIsAdmin(role === "admin" || role === "super_admin" || role === "moderator");
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);

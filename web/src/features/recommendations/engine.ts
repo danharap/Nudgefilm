@@ -23,14 +23,6 @@ function uniq(ids: number[]) {
   return [...new Set(ids.filter(Boolean))];
 }
 
-function shuffle<T>(arr: T[], seedRandom: () => number) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(seedRandom() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function yearFromDate(release_date: string) {
   if (!release_date || release_date.length < 4) return null;
@@ -63,7 +55,6 @@ function compositeScore(
     pickedGenres: number[];
     vibeGenreIds: number[];
     bridgeIds: number[];
-    hiddenGem: boolean;
     conflictMode: boolean;
   },
 ): number {
@@ -78,17 +69,15 @@ function compositeScore(
         opts.pickedGenres.length
       : 0.5;
 
-  // Vibe fit: fraction of vibe genres present.
+  // Vibe fit: fraction of vibe genres present in this movie.
   const vibeFit =
     opts.vibeGenreIds.length > 0
       ? opts.vibeGenreIds.filter((id) => gids.includes(id)).length /
         Math.max(opts.vibeGenreIds.length, 1)
       : 0.5;
 
-  // Quality signal.
-  const qualityScore = opts.hiddenGem
-    ? vote * 2.2 - Math.log1p(pop) * 0.18
-    : vote * 1.4 + Math.log1p(pop) * 0.22;
+  // Quality: balance rating and popularity equally.
+  const qualityScore = vote * 1.4 + Math.log1p(pop) * 0.22;
 
   // Bridge bonus: movie has both a picked genre AND a bridge genre (dual-tag).
   const hasBridge = opts.bridgeIds.some((id) => gids.includes(id));
@@ -149,9 +138,6 @@ function buildReasons(
     });
   }
 
-  if (input.hiddenGem) {
-    reasons.push({ label: "Weighted toward strong ratings vs. hype", kind: "quality" });
-  }
   if (input.streamingOnly) {
     reasons.push({ label: "Streaming availability filter" });
   }
@@ -220,10 +206,8 @@ export async function runRecommendationEngine(
   let discoverGenreIds: number[];
 
   if (!genreLock) {
-    // Vibe-only: use vibe pool with optional surpriseMe shuffle.
-    discoverGenreIds = input.surpriseMe && vibeGenreIds.length > 0
-      ? shuffle(vibeGenreIds, Math.random).slice(0, Math.max(3, Math.min(vibeGenreIds.length, 6)))
-      : vibeGenreIds;
+    // Vibe-only: use the full vibe pool (OR query).
+    discoverGenreIds = vibeGenreIds;
   } else if (conflictMode) {
     // Conflict: OR of user picks + bridge genres (comedy etc.) so dual-tagged
     // films like horror-comedies can surface.
@@ -234,17 +218,16 @@ export async function runRecommendationEngine(
   }
 
   const params = new URLSearchParams();
-  params.set("vote_count.gte", "60");
+  // 300 vote minimum: filters out statistically unreliable ratings that come
+  // from a handful of votes (e.g. 9.2/10 from 66 people is meaningless).
+  params.set("vote_count.gte", "300");
   params.set("vote_average.gte", String(input.minVoteAverage));
   params.set("include_adult", "false");
 
   if (discoverGenreIds.length) {
     params.set("with_genres", discoverGenreIds.join("|"));
   }
-  params.set(
-    "sort_by",
-    input.hiddenGem ? "vote_average.desc" : "popularity.desc",
-  );
+  params.set("sort_by", "popularity.desc");
 
   if (input.runtimeMin != null) {
     params.set("with_runtime.gte", String(input.runtimeMin));
@@ -271,14 +254,15 @@ export async function runRecommendationEngine(
     params.set("with_watch_monetization_types", "flatrate");
   }
 
-  const maxPages = genreLock ? 6 : 2;
+  // More pages for vibe-only queries: broader pool needed to find good matches.
+  const maxPages = genreLock ? 6 : 5;
   const results = await discoverPages(params, maxPages);
 
   const baseFilter = (m: DiscoverMovie) =>
     m.id &&
     m.title &&
     !excludeTmdbIds.has(m.id) &&
-    (m.vote_count ?? 0) >= 40;
+    (m.vote_count ?? 0) >= 200;
 
   let filtered = results.filter(baseFilter);
 
@@ -315,7 +299,6 @@ export async function runRecommendationEngine(
         pickedGenres: userPicked,
         vibeGenreIds,
         bridgeIds,
-        hiddenGem: input.hiddenGem ?? false,
         conflictMode,
       }),
     }))
