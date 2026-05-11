@@ -132,13 +132,14 @@ export function AvatarUpload({
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        // Bust CDN cache with timestamp so Next.js Image picks up the new file
-        const url = `${data.publicUrl}?t=${Date.now()}`;
-
-        await updateProfile({ avatar_url: url });
+        const cleanUrl = data.publicUrl;
+        // Store the clean URL in the DB so CDN caching is effective across all
+        // page views. Use a cache-busted URL only for the local preview so the
+        // component shows the freshly uploaded image without a page reload.
+        await updateProfile({ avatar_url: cleanUrl });
 
         // Update local preview to the real CDN URL (not the blob)
-        setLiveUrl(url);
+        setLiveUrl(`${cleanUrl}?t=${Date.now()}`);
         setStatus("Avatar saved.");
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Upload failed.");

@@ -13,7 +13,7 @@ import {
   useSpring,
   useTransform,
 } from "framer-motion";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -337,7 +337,7 @@ function FriendsFilmDemoCarousel({ reduceMotion }: { reduceMotion: boolean | nul
             className="flex gap-4"
           >
             <div className="relative h-[132px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-[var(--surface-border)] bg-black/40 shadow-lg sm:h-[140px] sm:w-[94px]">
-              <Image
+              <TmdbImage
                 src={posterUrl(active.poster_path, "w342") ?? ""}
                 alt=""
                 fill
@@ -643,8 +643,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 exit={{ opacity: 0 }}
                 transition={{ opacity: { duration: 1.45 }, scale: { duration: 9.4, ease: "linear" } }}
               >
-                <Image
-                  src={posterUrl(heroImages[activeHeroIdx].backdrop_path, "original") ?? ""}
+                <TmdbImage
+                  src={posterUrl(heroImages[activeHeroIdx].backdrop_path, "w1280") ?? ""}
                   alt=""
                   fill
                   priority={activeHeroIdx === 0}
@@ -875,7 +875,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                           <Link href={href} className="block" onFocus={() => setSelectedDemoMovieId(movie.id)}>
                             <div className="relative aspect-[2/3] overflow-hidden">
                               {image ? (
-                                <Image
+                                <TmdbImage
                                   src={image}
                                   alt={movie.title}
                                   fill

@@ -195,19 +195,23 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        const url = `${data.publicUrl}?t=${Date.now()}`;
+        const cleanUrl = data.publicUrl;
+        // Store the clean URL in the DB for effective CDN caching across all page
+        // views. Use a cache-busted URL for the local preview so the UI refreshes
+        // immediately after upload without requiring a page reload.
+        const previewUrl = `${cleanUrl}?t=${Date.now()}`;
 
         await updateProfile(
           kind === "banner"
-            ? { banner_url: url }
-            : { profile_background_url: url },
+            ? { banner_url: cleanUrl }
+            : { profile_background_url: cleanUrl },
         );
 
         if (kind === "banner") {
-          setBannerUrl(url);
+          setBannerUrl(previewUrl);
           setPendingBannerRemoval(false);
         } else {
-          setBgUrl(url);
+          setBgUrl(previewUrl);
           setPendingBackdropRemoval(false);
         }
 

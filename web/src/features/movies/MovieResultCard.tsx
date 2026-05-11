@@ -9,7 +9,7 @@ import { movieToast } from "@/components/ui/movieToast";
 import { movieDetailPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import type { RecommendedMovie } from "@/types/movie";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { useTransition } from "react";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ export function MovieResultCard({ movie }: Props) {
         className="relative aspect-[2/3] w-full shrink-0 overflow-hidden bg-zinc-800 md:w-44 lg:w-52"
       >
         {poster ? (
-          <Image
+          <TmdbImage
             src={poster}
             alt={movie.title}
             fill

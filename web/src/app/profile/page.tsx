@@ -13,6 +13,7 @@ import {
 } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -72,14 +73,16 @@ async function loadProfile() {
         "id, watched_at, user_rating, notes, custom_poster_url, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, genres, parent_show_tmdb_id )",
       )
       .eq("user_id", user.id)
-      .order("watched_at", { ascending: false }),
+      .order("watched_at", { ascending: false })
+      .limit(500),
     supabase
       .from("watchlist")
       .select(
         "created_at, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, parent_show_tmdb_id )",
       )
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(500),
     supabase
       .from("favourite_movies")
       .select(
@@ -392,11 +395,7 @@ export default async function ProfilePage({
                         fill
                         className="object-cover transition duration-300 group-hover:scale-[1.04]"
                         sizes="(max-width:640px) 33vw, 120px"
-                        unoptimized={
-                          typeof poster === "string" &&
-                          poster.startsWith("http") &&
-                          !poster.includes("image.tmdb.org")
-                        }
+                        unoptimized
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center p-1">
@@ -457,7 +456,7 @@ export default async function ProfilePage({
                   className="group relative block aspect-[2/3] overflow-hidden rounded-xl bg-zinc-800 ring-0 transition hover:ring-1 hover:ring-indigo-400/30"
                 >
                   {poster ? (
-                    <Image
+                    <TmdbImage
                       src={poster}
                       alt={movie.title}
                       fill

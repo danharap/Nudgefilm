@@ -12,7 +12,7 @@ import {
 import { TMDB_IMAGE_BASE, posterUrl, toTVStoredId, toTVSeasonStoredId } from "@/lib/tmdb/constants";
 import { getConfiguredOrigin } from "@/lib/site-url";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
@@ -166,7 +166,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
     }
   }
 
-  const backdrop = posterUrl(show.backdrop_path, "original");
+  const backdrop = posterUrl(show.backdrop_path, "w1280");
   const poster = posterUrl(show.poster_path, "w500");
   const providerRegion = watchProviders.results?.CA ?? null;
   const trailerUrl = pickTrailer(videos.results ?? []);
@@ -211,7 +211,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
     <article className="pb-16">
       <div className="relative h-[48vh] min-h-[280px] w-full overflow-hidden sm:h-[56vh] sm:min-h-[360px]">
         {backdrop ? (
-          <Image
+          <TmdbImage
             src={backdrop}
             alt=""
             fill
@@ -231,7 +231,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
         <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)_340px] lg:items-start">
           <div className="relative mx-auto aspect-[2/3] w-40 shrink-0 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl sm:w-52 lg:mx-0">
             {poster ? (
-              <Image src={poster} alt={show.name} fill className="object-cover" sizes="208px" />
+              <TmdbImage src={poster} alt={show.name} fill className="object-cover" sizes="208px" />
             ) : null}
           </div>
 
@@ -429,7 +429,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
                               rel="noopener noreferrer"
                               className="flex min-h-11 items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2.5 py-2 text-sm text-zinc-200 hover:border-indigo-400/30"
                             >
-                              {p.logo_path ? <Image src={`${TMDB_IMAGE_BASE}/w92${p.logo_path}`} alt="" width={20} height={20} className="rounded" /> : null}
+                              {p.logo_path ? <TmdbImage src={`${TMDB_IMAGE_BASE}/w92${p.logo_path}`} alt="" width={20} height={20} className="rounded" /> : null}
                               {p.provider_name}
                             </a>
                           ))}
@@ -466,7 +466,7 @@ export default async function ShowDetailPage({ params, searchParams }: Props) {
                     <div className="flex gap-3 sm:gap-4">
                       <div className="relative h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-800">
                         {seasonPoster ? (
-                          <Image
+                          <TmdbImage
                             src={seasonPoster}
                             alt={season.name}
                             fill

@@ -5,7 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { getFollowers, getFollowing, getSocialActivity } from "@/features/users/service";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -153,7 +153,7 @@ export default async function FriendsPage({
                     className="group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
                   >
                     {poster ? (
-                      <Image
+                      <TmdbImage
                         src={poster}
                         alt={item.movie.title}
                         fill

@@ -2,7 +2,7 @@
 
 import { LibraryPosterEditor } from "@/components/library/LibraryPosterEditor";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import Image from "next/image"; // kept for custom_poster_url (already unoptimized below)
 import Link from "next/link";
 import { WatchedEntryActions } from "./WatchedEntryActions";
 
@@ -54,11 +54,7 @@ export function WatchedRowClient({
               fill
               className="object-cover"
               sizes="80px"
-              unoptimized={
-                typeof poster === "string" &&
-                poster.startsWith("http") &&
-                !poster.includes("image.tmdb.org")
-              }
+              unoptimized
             />
           ) : null}
         </Link>

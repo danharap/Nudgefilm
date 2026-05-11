@@ -4,7 +4,7 @@ import { addTVToWatchlist, addToWatchlist, markTVWatched, markWatched } from "@/
 import { BrowseMovieCard, type BrowseMovie } from "@/app/browse/BrowseMovieCard";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -241,7 +241,7 @@ export function BrowseSearch({
                         className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
                       >
                         {poster ? (
-                          <Image src={poster} alt="" fill className="object-cover" sizes="40px" />
+                          <TmdbImage src={poster} alt="" fill className="object-cover" sizes="40px" />
                         ) : null}
                       </Link>
                       <div className="min-w-0 flex-1">

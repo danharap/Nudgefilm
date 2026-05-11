@@ -4,6 +4,7 @@ import { setFavouriteAction, removeFavouriteAction } from "./actions";
 import { LibraryPosterEditor } from "@/components/library/LibraryPosterEditor";
 import { posterUrl } from "@/lib/tmdb/constants";
 import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 
 type Slot = {
@@ -120,11 +121,7 @@ export function FavouritesPicker({ slots, userId }: { slots: Slot[]; userId: str
                     fill
                     className="object-cover"
                     sizes="(max-width:640px) 25vw, 120px"
-                    unoptimized={
-                      typeof poster === "string" &&
-                      poster.startsWith("http") &&
-                      !poster.includes("image.tmdb.org")
-                    }
+                    unoptimized
                   />
                 ) : (
                   <span className="flex h-full items-center justify-center text-2xl text-zinc-700">
@@ -210,7 +207,7 @@ export function FavouritesPicker({ slots, userId }: { slots: Slot[]; userId: str
                   >
                     <span className="relative h-10 w-7 shrink-0 overflow-hidden rounded bg-zinc-800">
                       {h.poster_path ? (
-                        <Image
+                        <TmdbImage
                           src={posterUrl(h.poster_path, "w92")!}
                           alt=""
                           fill
