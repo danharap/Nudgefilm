@@ -397,8 +397,7 @@ function FriendsFilmDemoCarousel({ reduceMotion }: { reduceMotion: boolean | nul
 }
 
 /**
- * Editorial “spotlight” carousel for app feedback—no posters, different palette and navigation
- * than the friend-activity demo above.
+ * Editorial spotlight carousel for app feedback—single “card” at a time, indigo accents to match the app.
  */
 function LandingAppReviewsCarousel({
   items,
@@ -443,7 +442,7 @@ function LandingAppReviewsCarousel({
       onMouseLeave={() => setPaused(false)}
     >
       <div
-        className="relative overflow-hidden rounded-[28px] border border-teal-500/20 bg-[var(--surface-1)] shadow-[0_28px_80px_-24px_rgba(20,184,166,0.18)]"
+        className="relative overflow-hidden rounded-[28px] border border-indigo-400/20 bg-[var(--surface-1)] shadow-[0_28px_80px_-24px_rgba(99,102,241,0.2)]"
         onFocusCapture={() => setPaused(true)}
         onBlurCapture={(e) => {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
@@ -451,12 +450,12 @@ function LandingAppReviewsCarousel({
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.55] [background:radial-gradient(ellipse_80%_50%_at_0%_0%,rgba(45,212,191,0.14),transparent_50%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(244,114,182,0.08),transparent_45%)]"
+          className="pointer-events-none absolute inset-0 opacity-[0.55] [background:radial-gradient(ellipse_80%_50%_at_0%_0%,rgba(129,140,248,0.16),transparent_50%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(167,139,250,0.09),transparent_45%)]"
         />
         <div className="relative px-5 pb-6 pt-8 sm:px-10 sm:pb-8 sm:pt-10">
           <p
             aria-hidden
-            className="pointer-events-none absolute left-4 top-2 font-serif text-7xl leading-none text-teal-500/15 sm:left-8 sm:text-8xl"
+            className="pointer-events-none absolute left-4 top-2 font-serif text-7xl leading-none text-indigo-400/18 sm:left-8 sm:text-8xl"
           >
             &ldquo;
           </p>
@@ -486,19 +485,19 @@ function LandingAppReviewsCarousel({
             </AnimatePresence>
           </div>
 
-          <div className="relative mt-8 flex items-center justify-center gap-3 sm:mt-10">
+          <div className="relative mt-8 flex max-w-md items-center justify-between gap-3 sm:mx-auto sm:mt-10">
             <button
               type="button"
               onClick={() => go(-1)}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-500/30 bg-[var(--surface-2)] text-lg text-teal-200 transition hover:border-teal-400/50 hover:bg-teal-500/10"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-400/35 bg-[var(--surface-2)] text-lg text-indigo-200 transition hover:border-indigo-300/55 hover:bg-indigo-500/10"
               aria-label="Previous review"
             >
               ‹
             </button>
             <div
-              className="flex max-w-[min(100%,420px)] flex-wrap justify-center gap-2"
+              className="flex min-h-[2rem] flex-1 flex-wrap items-center justify-center gap-1.5 px-1 sm:gap-2"
               role="tablist"
-              aria-label="Choose a review"
+              aria-label="Reviews"
             >
               {items.map((r, i) => (
                 <button
@@ -506,22 +505,20 @@ function LandingAppReviewsCarousel({
                   type="button"
                   role="tab"
                   aria-selected={safeIdx === i}
-                  aria-label={`Review ${i + 1}: ${r.reviewer_display_name}`}
+                  aria-label={`Review ${i + 1} of ${total}: ${r.reviewer_display_name}`}
                   onClick={() => setIdx(i)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-xs font-bold transition ${
+                  className={`rounded-full transition-all ${
                     safeIdx === i
-                      ? "border-teal-400/60 bg-teal-500/15 text-teal-100 shadow-[0_0_20px_-4px_rgba(45,212,191,0.5)]"
-                      : "border-[var(--surface-border)] bg-[var(--surface-2)] text-tertiary hover:border-teal-500/25 hover:text-secondary"
+                      ? "h-2 w-7 bg-indigo-400 shadow-[0_0_12px_-2px_rgba(129,140,248,0.65)] sm:w-8"
+                      : "h-2 w-2 bg-[var(--surface-border)] hover:bg-indigo-400/35"
                   }`}
-                >
-                  {r.reviewer_display_name.slice(0, 1).toUpperCase()}
-                </button>
+                />
               ))}
             </div>
             <button
               type="button"
               onClick={() => go(1)}
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-500/30 bg-[var(--surface-2)] text-lg text-teal-200 transition hover:border-teal-400/50 hover:bg-teal-500/10"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-400/35 bg-[var(--surface-2)] text-lg text-indigo-200 transition hover:border-indigo-300/55 hover:bg-indigo-500/10"
               aria-label="Next review"
             >
               ›
@@ -530,14 +527,14 @@ function LandingAppReviewsCarousel({
 
           <p className="mt-4 text-center text-[11px] text-tertiary">
             {reduceMotion
-              ? "Use arrows or initials to browse (reduced motion)"
+              ? "Use arrows or dots to browse (reduced motion)"
               : "Advances on its own · Hover to pause"}
           </p>
 
           <div className="mt-6 flex justify-center border-t border-[var(--surface-border)] pt-6">
             <Link
               href={feedbackHref}
-              className="rounded-full border border-teal-500/35 bg-teal-500/10 px-5 py-2.5 text-sm font-semibold text-teal-100 transition hover:bg-teal-500/20"
+              className="rounded-full border border-indigo-400/35 bg-indigo-500/10 px-5 py-2.5 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/20"
             >
               {feedbackCta}
             </Link>
@@ -1118,11 +1115,11 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       <section className="relative overflow-hidden border-t border-[var(--surface-border)] py-14 sm:py-20">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/35 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/35 to-transparent"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-teal-500/[0.07] blur-3xl"
+          className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-indigo-500/[0.09] blur-3xl"
         />
         <div
           aria-hidden
@@ -1131,7 +1128,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-5 lg:px-6">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-500/90">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-400/90">
               Word on {APP_NAME}
             </p>
             <h3 className="mt-3 font-sans text-2xl font-bold tracking-tight text-primary sm:text-3xl">
