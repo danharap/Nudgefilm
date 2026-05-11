@@ -72,7 +72,7 @@ const demoFriendFilmReviews: DemoFriendFilmReview[] = [
     reviewer: "Mika",
     movieTitle: "Past Lives",
     year: "2023",
-    poster_path: "/wg7cvJFAb01swykUMDbxWBErcWA.jpg",
+    poster_path: "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
     rating: 5,
     quote: "Quiet and devastating—the kind of film you talk about all week.",
     kind: "rated",
@@ -92,7 +92,7 @@ const demoFriendFilmReviews: DemoFriendFilmReview[] = [
     reviewer: "Sam",
     movieTitle: "The Batman",
     year: "2022",
-    poster_path: "/74xTEgt7RSkpYKrJbSFMgmNiU9f.jpg",
+    poster_path: "/74xTEgt7R36Fpooo50r9T25onhq.jpg",
     rating: 4,
     quote: "Heavy noir vibes—perfect for a rainy Friday with friends.",
     kind: "logged",
@@ -102,7 +102,7 @@ const demoFriendFilmReviews: DemoFriendFilmReview[] = [
     reviewer: "Ravi",
     movieTitle: "Parasite",
     year: "2019",
-    poster_path: "/7IiTTgIACXtC6PYF45IMmpCQBGq.jpg",
+    poster_path: "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
     rating: 5,
     quote: "Still thinking about that staircase scene. Five stars, no notes.",
     kind: "rated",
@@ -148,15 +148,72 @@ const item = {
   show: { opacity: 1, y: 0, filter: "blur(0px)" },
 };
 
-function Stars({ rating }: { rating: number }) {
+function Stars({ rating, tone = "indigo" }: { rating: number; tone?: "indigo" | "amber" }) {
+  const active = tone === "amber" ? "text-amber-400" : "text-indigo-500";
   return (
     <span className="flex gap-0.5 text-sm" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
-        <span key={s} className={s <= rating ? "text-indigo-500" : "text-tertiary"}>★</span>
+        <span key={s} className={s <= rating ? active : "text-tertiary"}>★</span>
       ))}
     </span>
   );
 }
+
+function formatReviewDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Shown when there are fewer community submissions—real rows are preferred. */
+const seedLandingAppReviews: Review[] = [
+  {
+    id: -201,
+    user_id: "seed-app-1",
+    reviewer_display_name: "Danyeul",
+    rating: 5,
+    body: "Finally a movie app that helps me pick in five minutes instead of forty.",
+    created_at: "2026-05-01T20:00:00.000Z",
+  },
+  {
+    id: -202,
+    user_id: "seed-app-2",
+    reviewer_display_name: "Mika",
+    rating: 4,
+    body: "The shortlist is tight and the friend activity actually makes watchlists useful.",
+    created_at: "2026-04-28T20:00:00.000Z",
+  },
+  {
+    id: -203,
+    user_id: "seed-app-3",
+    reviewer_display_name: "Jules",
+    rating: 5,
+    body: "Mood filters plus runtime is exactly what I wanted for weeknight picks.",
+    created_at: "2026-04-25T20:00:00.000Z",
+  },
+  {
+    id: -204,
+    user_id: "seed-app-4",
+    reviewer_display_name: "Sam",
+    rating: 4,
+    body: "Clean UI, fast decisions, and no pointless scrolling. Super solid.",
+    created_at: "2026-04-21T20:00:00.000Z",
+  },
+  {
+    id: -205,
+    user_id: "seed-app-5",
+    reviewer_display_name: "Priya",
+    rating: 5,
+    body: "Love that I can see overlap with friends before I commit to a three-hour epic.",
+    created_at: "2026-04-18T20:00:00.000Z",
+  },
+  {
+    id: -206,
+    user_id: "seed-app-6",
+    reviewer_display_name: "Chris",
+    rating: 5,
+    body: "The diary + recommendations combo finally replaced my messy notes app.",
+    created_at: "2026-04-12T20:00:00.000Z",
+  },
+];
 
 /**
  * Mirrors Framer's useScroll target offset ["start center","end center"] using native scroll events.
@@ -339,9 +396,171 @@ function FriendsFilmDemoCarousel({ reduceMotion }: { reduceMotion: boolean | nul
   );
 }
 
+/**
+ * Editorial “spotlight” carousel for app feedback—no posters, different palette and navigation
+ * than the friend-activity demo above.
+ */
+function LandingAppReviewsCarousel({
+  items,
+  reduceMotion,
+  feedbackHref,
+  feedbackCta,
+}: {
+  items: Review[];
+  reduceMotion: boolean | null;
+  feedbackHref: string;
+  feedbackCta: string;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = items.length;
+
+  useEffect(() => {
+    if (reduceMotion || total <= 1 || paused) return;
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % total);
+    }, 6400);
+    return () => window.clearInterval(id);
+  }, [reduceMotion, paused, total]);
+
+  useEffect(() => {
+    setIdx((i) => (total ? Math.min(i, total - 1) : 0));
+  }, [total]);
+
+  if (total === 0) return null;
+
+  const safeIdx = Math.min(idx, total - 1);
+  const active = items[safeIdx] ?? items[0];
+
+  const go = (dir: -1 | 1) => {
+    setIdx((i) => (i + dir + total) % total);
+  };
+
+  return (
+    <div
+      className="relative mt-8"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div
+        className="relative overflow-hidden rounded-[28px] border border-teal-500/20 bg-[var(--surface-1)] shadow-[0_28px_80px_-24px_rgba(20,184,166,0.18)]"
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+        }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.55] [background:radial-gradient(ellipse_80%_50%_at_0%_0%,rgba(45,212,191,0.14),transparent_50%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(244,114,182,0.08),transparent_45%)]"
+        />
+        <div className="relative px-5 pb-6 pt-8 sm:px-10 sm:pb-8 sm:pt-10">
+          <p
+            aria-hidden
+            className="pointer-events-none absolute left-4 top-2 font-serif text-7xl leading-none text-teal-500/15 sm:left-8 sm:text-8xl"
+          >
+            &ldquo;
+          </p>
+
+          <div className="relative mx-auto max-w-2xl text-center" aria-live="polite">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={active.id}
+                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -12 }}
+                transition={{ duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
+                className="px-1"
+              >
+                <Stars rating={active.rating} tone="amber" />
+                <blockquote className="mt-4 font-serif text-lg leading-relaxed text-primary sm:text-xl">
+                  {active.body}
+                </blockquote>
+                <footer className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
+                  <cite className="not-italic font-semibold text-secondary">{active.reviewer_display_name}</cite>
+                  <span className="hidden text-tertiary sm:inline" aria-hidden>
+                    ·
+                  </span>
+                  <span className="text-xs text-tertiary sm:text-sm">{formatReviewDate(active.created_at)}</span>
+                </footer>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          <div className="relative mt-8 flex items-center justify-center gap-3 sm:mt-10">
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-500/30 bg-[var(--surface-2)] text-lg text-teal-200 transition hover:border-teal-400/50 hover:bg-teal-500/10"
+              aria-label="Previous review"
+            >
+              ‹
+            </button>
+            <div
+              className="flex max-w-[min(100%,420px)] flex-wrap justify-center gap-2"
+              role="tablist"
+              aria-label="Choose a review"
+            >
+              {items.map((r, i) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={safeIdx === i}
+                  aria-label={`Review ${i + 1}: ${r.reviewer_display_name}`}
+                  onClick={() => setIdx(i)}
+                  className={`flex h-10 w-10 items-center justify-center rounded-2xl border text-xs font-bold transition ${
+                    safeIdx === i
+                      ? "border-teal-400/60 bg-teal-500/15 text-teal-100 shadow-[0_0_20px_-4px_rgba(45,212,191,0.5)]"
+                      : "border-[var(--surface-border)] bg-[var(--surface-2)] text-tertiary hover:border-teal-500/25 hover:text-secondary"
+                  }`}
+                >
+                  {r.reviewer_display_name.slice(0, 1).toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-teal-500/30 bg-[var(--surface-2)] text-lg text-teal-200 transition hover:border-teal-400/50 hover:bg-teal-500/10"
+              aria-label="Next review"
+            >
+              ›
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-[11px] text-tertiary">
+            {reduceMotion
+              ? "Use arrows or initials to browse (reduced motion)"
+              : "Advances on its own · Hover to pause"}
+          </p>
+
+          <div className="mt-6 flex justify-center border-t border-[var(--surface-border)] pt-6">
+            <Link
+              href={feedbackHref}
+              className="rounded-full border border-teal-500/35 bg-teal-500/10 px-5 py-2.5 text-sm font-semibold text-teal-100 transition hover:bg-teal-500/20"
+            >
+              {feedbackCta}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
+  const appReviewsForCarousel = useMemo(() => {
+    const real = reviews.filter((r) => (r.body ?? "").trim().length > 0);
+    const byId = new Map<number, Review>();
+    for (const r of real) byId.set(r.id, r);
+    for (const s of seedLandingAppReviews) {
+      if (byId.size >= 10) break;
+      if (!byId.has(s.id)) byId.set(s.id, s);
+    }
+    return Array.from(byId.values()).slice(0, 10);
+  }, [reviews]);
   const [heroLineIdx, setHeroLineIdx] = useState(0);
   const [activeVibe, setActiveVibe] = useState<LandingVibe>("Cozy");
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
@@ -893,6 +1112,43 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
               </div>
             </ProductDemoScrollReveal>
           </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden border-t border-[var(--surface-border)] py-14 sm:py-20">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/35 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-teal-500/[0.07] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-rose-500/[0.06] blur-3xl"
+        />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-5 lg:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-500/90">
+              Word on {APP_NAME}
+            </p>
+            <h3 className="mt-3 font-sans text-2xl font-bold tracking-tight text-primary sm:text-3xl">
+              Reviews from people who use it every week
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary sm:text-base">
+              Real notes about the app itself—what clicked, what saved time, and why they stuck around.
+              Mixed with a few stand-ins when we&apos;re still gathering fresh quotes.
+            </p>
+          </div>
+
+          <LandingAppReviewsCarousel
+            items={appReviewsForCarousel}
+            reduceMotion={reduceMotion}
+            feedbackHref={user ? "/feedback" : "/login?redirect=/feedback"}
+            feedbackCta={hasReviewed ? "Edit your review" : "Add your review"}
+          />
         </div>
       </section>
 

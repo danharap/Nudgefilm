@@ -31,6 +31,13 @@ function StatCard({
   );
 }
 
+const HEARD_FROM_SHORT: Record<string, string> = {
+  friend: "Friend",
+  social: "Social",
+  search: "Online",
+  other: "Other",
+};
+
 const EVENT_LABELS: Record<string, string> = {
   movie_watched: "Logged film",
   watchlist_add: "Added to watchlist",
@@ -109,6 +116,8 @@ export default async function AdminOverviewPage() {
                         day: "numeric",
                         year: "numeric",
                       })}
+                      {(u.heard_from as string | null) &&
+                        ` · Heard: ${HEARD_FROM_SHORT[u.heard_from as string] ?? u.heard_from}`}
                     </p>
                   </div>
                   <span

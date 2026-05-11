@@ -306,8 +306,9 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
   const cropModal =
     cropSrc && cropKind && mounted ? (
       <div
-        className="fixed inset-0 z-[9999] flex flex-col bg-[#09090b]"
+        className="fixed inset-0 z-[9999] flex max-h-dvh flex-col overflow-hidden overscroll-none bg-[#09090b]"
         style={{
+          height: "100dvh",
           paddingTop: "env(safe-area-inset-top)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
@@ -322,7 +323,7 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
             <X className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" />
             <span className="hidden text-sm sm:inline">Cancel</span>
           </button>
-          <h2 className="min-w-0 truncate text-center text-xs font-semibold text-white sm:text-sm">
+          <h2 className="min-w-0 flex-1 truncate text-center text-xs font-semibold text-white sm:text-sm">
             {cropKind === "banner" ? "Crop banner (21∶9)" : "Crop backdrop (16∶9)"}
           </h2>
           <button

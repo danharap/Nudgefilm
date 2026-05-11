@@ -18,6 +18,14 @@ type User = {
   created_at: string;
   last_active_at: string | null;
   avatar_url: string | null;
+  heard_from: string | null;
+};
+
+const HEARD_FROM_LABELS: Record<string, string> = {
+  friend: "Friend",
+  social: "Social",
+  search: "Online",
+  other: "Other",
 };
 
 const ROLE_OPTIONS: Role[] = ["user", "moderator", "admin", "super_admin"];
@@ -129,6 +137,9 @@ function UserRow({
         <td className="px-4 py-3 text-xs text-zinc-500">
           {new Date(user.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
         </td>
+        <td className="px-4 py-3 text-xs text-zinc-400">
+          {user.heard_from ? HEARD_FROM_LABELS[user.heard_from] ?? user.heard_from : "—"}
+        </td>
         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center gap-1.5">
             {canChangeRole && (
@@ -169,7 +180,7 @@ function UserRow({
       {/* Expanded row: notes */}
       {isSelected && (
         <tr className="border-b border-white/5 bg-zinc-900/60">
-          <td colSpan={5} className="px-4 py-3">
+          <td colSpan={6} className="px-4 py-3">
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <p className="mb-1.5 text-xs font-medium text-zinc-400">Admin notes</p>
@@ -297,10 +308,10 @@ export function UsersTable({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-2xl border border-white/8">
-        <table className="w-full min-w-[640px] text-left">
+        <table className="w-full min-w-[720px] text-left">
           <thead>
             <tr className="border-b border-white/8 bg-zinc-900/60">
-              {["User", "Role", "Status", "Joined", "Actions"].map((h) => (
+              {["User", "Role", "Status", "Joined", "Heard from", "Actions"].map((h) => (
                 <th key={h} className="px-4 py-2.5 text-xs font-semibold text-zinc-500">
                   {h}
                 </th>
@@ -310,7 +321,7 @@ export function UsersTable({
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-zinc-500">
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-zinc-500">
                   No users match your filters.
                 </td>
               </tr>

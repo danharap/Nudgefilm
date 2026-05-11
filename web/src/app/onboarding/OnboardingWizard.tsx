@@ -55,12 +55,12 @@ export function OnboardingWizard({ displayName }: { displayName: string }) {
   const [referral, setReferral] = useState<string | null>(null);
 
   const finishToProfile = async () => {
-    await completeOnboarding();
+    await completeOnboarding(referral);
     router.push("/profile");
   };
 
   const finishToImport = async () => {
-    await completeOnboarding();
+    await completeOnboarding(referral);
     router.push("/import");
   };
 
