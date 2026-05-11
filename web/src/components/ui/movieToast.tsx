@@ -1,7 +1,7 @@
 "use client";
 
 import { posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import { toast } from "sonner";
 
 export function movieToast(message: string, title: string, posterPath?: string | null) {
@@ -10,7 +10,7 @@ export function movieToast(message: string, title: string, posterPath?: string |
     description: title,
     icon: src ? (
       <span className="relative block h-10 w-7 overflow-hidden rounded-md border border-white/20">
-        <Image src={src} alt="" fill sizes="28px" className="object-cover" />
+        <TmdbImage src={src} alt="" fill sizes="28px" className="object-cover" />
       </span>
     ) : undefined,
   });

@@ -3,11 +3,20 @@
 import { APP_NAME } from "@/config/brand";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import Image from "next/image";
+import type { MotionValue } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 type HeroMovie = {
   id: number;
@@ -45,44 +54,84 @@ type Props = {
   >;
 };
 
-const seedCommunityReviews: Review[] = [
+/** Demo film activity for the landing carousel (illustrative only, not real users). */
+type DemoFriendFilmReview = {
+  id: string;
+  reviewer: string;
+  movieTitle: string;
+  year: string;
+  poster_path: string;
+  rating: number;
+  quote: string;
+  kind: "rated" | "logged";
+};
+
+const demoFriendFilmReviews: DemoFriendFilmReview[] = [
   {
-    id: -101,
-    user_id: "seed-user-1",
-    reviewer_display_name: "Danyeul",
+    id: "d1",
+    reviewer: "Mika",
+    movieTitle: "Past Lives",
+    year: "2023",
+    poster_path: "/k3waqVXSnvCZWfJYNtdamTgTtTA.jpg",
     rating: 5,
-    body: "Finally a movie app that helps me pick in five minutes instead of forty.",
-    created_at: "2026-05-01T20:00:00.000Z",
+    quote: "Quiet and devastating—the kind of film you talk about all week.",
+    kind: "rated",
   },
   {
-    id: -102,
-    user_id: "seed-user-2",
-    reviewer_display_name: "Mika",
-    rating: 4,
-    body: "The shortlist is tight and the friend activity actually makes watchlists useful.",
-    created_at: "2026-04-28T20:00:00.000Z",
-  },
-  {
-    id: -103,
-    user_id: "seed-user-3",
-    reviewer_display_name: "Jules",
+    id: "d2",
+    reviewer: "Jules",
+    movieTitle: "Everything Everywhere All at Once",
+    year: "2022",
+    poster_path: "/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg",
     rating: 5,
-    body: "Mood filters plus runtime is exactly what I wanted for weeknight picks.",
-    created_at: "2026-04-25T20:00:00.000Z",
+    quote: "Chaos in the best way. Already nagging everyone I know to watch.",
+    kind: "rated",
   },
   {
-    id: -104,
-    user_id: "seed-user-4",
-    reviewer_display_name: "Sam",
+    id: "d3",
+    reviewer: "Sam",
+    movieTitle: "The Batman",
+    year: "2022",
+    poster_path: "/74xTEgt7R36Fpooo50r9T25onhq.jpg",
     rating: 4,
-    body: "Clean UI, fast decisions, and no pointless scrolling. Super solid.",
-    created_at: "2026-04-21T20:00:00.000Z",
+    quote: "Heavy noir vibes—perfect for a rainy Friday with friends.",
+    kind: "logged",
+  },
+  {
+    id: "d4",
+    reviewer: "Ravi",
+    movieTitle: "Parasite",
+    year: "2019",
+    poster_path: "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+    rating: 5,
+    quote: "Still thinking about that staircase scene. Five stars, no notes.",
+    kind: "rated",
+  },
+  {
+    id: "d5",
+    reviewer: "Nora",
+    movieTitle: "Dune",
+    year: "2021",
+    poster_path: "/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
+    rating: 4,
+    quote: "Watched it twice this month—audio alone is worth the rental.",
+    kind: "logged",
+  },
+  {
+    id: "d6",
+    reviewer: "Alex",
+    movieTitle: "Spirited Away",
+    year: "2001",
+    poster_path: "/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+    rating: 5,
+    quote: "Introduced it to my roommate—now our whole group is on Ghibli.",
+    kind: "rated",
   },
 ];
 
 const heroHeadlines = [
   "Stop scrolling. Start watching.",
-  "The right movie for tonight.",
+  "See what your friends love.",
   "Tell us the vibe. We do the rest.",
 ];
 
@@ -99,29 +148,433 @@ const item = {
   show: { opacity: 1, y: 0, filter: "blur(0px)" },
 };
 
-function Stars({ rating }: { rating: number }) {
+function Stars({ rating, tone = "indigo" }: { rating: number; tone?: "indigo" | "amber" }) {
+  const active = tone === "amber" ? "text-amber-400" : "text-indigo-500";
   return (
     <span className="flex gap-0.5 text-sm" aria-label={`${rating} out of 5 stars`}>
       {[1, 2, 3, 4, 5].map((s) => (
-        <span key={s} className={s <= rating ? "text-indigo-500" : "text-tertiary"}>★</span>
+        <span key={s} className={s <= rating ? active : "text-tertiary"}>★</span>
       ))}
     </span>
   );
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+function formatReviewDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Shown when there are fewer community submissions—real rows are preferred. */
+const seedLandingAppReviews: Review[] = [
+  {
+    id: -201,
+    user_id: "seed-app-1",
+    reviewer_display_name: "Danyeul",
+    rating: 5,
+    body: "Finally a movie app that helps me pick in five minutes instead of forty.",
+    created_at: "2026-05-01T20:00:00.000Z",
+  },
+  {
+    id: -202,
+    user_id: "seed-app-2",
+    reviewer_display_name: "Mika",
+    rating: 4,
+    body: "The shortlist is tight and the friend activity actually makes watchlists useful.",
+    created_at: "2026-04-28T20:00:00.000Z",
+  },
+  {
+    id: -203,
+    user_id: "seed-app-3",
+    reviewer_display_name: "Jules",
+    rating: 5,
+    body: "Mood filters plus runtime is exactly what I wanted for weeknight picks.",
+    created_at: "2026-04-25T20:00:00.000Z",
+  },
+  {
+    id: -204,
+    user_id: "seed-app-4",
+    reviewer_display_name: "Sam",
+    rating: 4,
+    body: "Clean UI, fast decisions, and no pointless scrolling. Super solid.",
+    created_at: "2026-04-21T20:00:00.000Z",
+  },
+  {
+    id: -205,
+    user_id: "seed-app-5",
+    reviewer_display_name: "Priya",
+    rating: 5,
+    body: "Love that I can see overlap with friends before I commit to a three-hour epic.",
+    created_at: "2026-04-18T20:00:00.000Z",
+  },
+  {
+    id: -206,
+    user_id: "seed-app-6",
+    reviewer_display_name: "Chris",
+    rating: 5,
+    body: "The diary + recommendations combo finally replaced my messy notes app.",
+    created_at: "2026-04-12T20:00:00.000Z",
+  },
+];
+
+/**
+ * Mirrors Framer's useScroll target offset ["start center","end center"] using native scroll events.
+ * Some Windows browsers report unreliable scroll progress when multiple useScroll targets exist.
+ */
+function useManualSectionScrollProgress(element: HTMLElement | null) {
+  const progress = useMotionValue(0);
+  useLayoutEffect(() => {
+    if (!element) return;
+    const el = element;
+    function tick() {
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const h = Math.max(rect.height, 1);
+      const p = (vh / 2 - rect.top) / h;
+      progress.set(Math.min(1, Math.max(0, p)));
+    }
+    tick();
+    window.addEventListener("scroll", tick, { passive: true });
+    window.addEventListener("resize", tick);
+    return () => {
+      window.removeEventListener("scroll", tick);
+      window.removeEventListener("resize", tick);
+    };
+  }, [element, progress]);
+  return progress;
+}
+
+/** Scroll-scrubbed reveal (avoids whileInView / IntersectionObserver gaps on some Windows browsers). */
+function ProductDemoScrollReveal({
+  progress,
+  reduceMotion,
+  start,
+  end,
+  y: yShift = 12,
+  className,
+  onHoverStart,
+  as = "div",
+  children,
+}: {
+  progress: MotionValue<number>;
+  reduceMotion: boolean;
+  start: number;
+  end: number;
+  y?: number;
+  className?: string;
+  onHoverStart?: () => void;
+  as?: "div" | "article";
+  children: ReactNode;
+}) {
+  const opacity = useTransform(
+    progress,
+    reduceMotion ? [0, 1] : [start, end],
+    reduceMotion ? [1, 1] : [0, 1],
+  );
+  const y = useTransform(
+    progress,
+    reduceMotion ? [0, 1] : [start, end],
+    reduceMotion ? [0, 0] : [yShift, 0],
+  );
+  const MotionTag = as === "article" ? motion.article : motion.div;
+  return (
+    <MotionTag style={{ opacity, y }} className={className} onHoverStart={onHoverStart}>
+      {children}
+    </MotionTag>
+  );
+}
+
+function FriendsFilmDemoCarousel({ reduceMotion }: { reduceMotion: boolean | null }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = demoFriendFilmReviews.length;
+
+  useEffect(() => {
+    if (reduceMotion || paused) return;
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % total);
+    }, 5200);
+    return () => window.clearInterval(id);
+  }, [reduceMotion, paused, total]);
+
+  const safeIdx = reduceMotion ? 0 : idx;
+  const active = demoFriendFilmReviews[safeIdx] ?? demoFriendFilmReviews[0];
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl border border-[var(--surface-border)] bg-[linear-gradient(135deg,rgba(99,102,241,.08),transparent_42%),var(--surface-2)] p-4 shadow-xl shadow-indigo-950/30 sm:p-5"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--surface-border)] pb-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500/85">
+            Friend activity
+          </p>
+          <p className="mt-1 text-xs text-secondary">
+            Example ratings and notes—your circle shows up here too.
+          </p>
+        </div>
+        <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-medium text-zinc-400">
+          Demo preview
+        </span>
+      </div>
+
+      <div
+        className="relative mt-4 min-h-[148px] sm:min-h-[132px]"
+        aria-live="polite"
+        aria-label="Rotating examples of friend film reviews"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={active.id}
+            initial={reduceMotion ? false : { opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, x: -28 }}
+            transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+            className="flex gap-4"
+          >
+            <div className="relative h-[132px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-[var(--surface-border)] bg-black/40 shadow-lg sm:h-[140px] sm:w-[94px]">
+              <TmdbImage
+                src={posterUrl(active.poster_path, "w342") ?? ""}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="94px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-sm font-semibold text-indigo-300">
+                  {active.reviewer.slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-primary">{active.reviewer}</p>
+                  <p className="text-[11px] text-tertiary">
+                    {active.kind === "logged" ? "Logged" : "Rated"}{" "}
+                    <span className="font-medium text-secondary">{active.movieTitle}</span>
+                    <span className="text-tertiary"> ({active.year})</span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Stars rating={active.rating} />
+                <span className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-0.5 text-[10px] text-secondary">
+                  {active.kind === "logged" ? "Diary entry" : "Review"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-secondary">&ldquo;{active.quote}&rdquo;</p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--surface-border)] pt-3">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Example friend reviews">
+          {demoFriendFilmReviews.map((r, i) => (
+            <button
+              key={r.id}
+              type="button"
+              role="tab"
+              aria-selected={safeIdx === i}
+              aria-label={`Example ${i + 1}: ${r.reviewer} on ${r.movieTitle}`}
+              className={`h-2 rounded-full transition-all ${
+                safeIdx === i ? "w-6 bg-indigo-500" : "w-2 bg-[var(--surface-border)] hover:bg-zinc-500/50"
+              }`}
+              onClick={() => setIdx(i)}
+            />
+          ))}
+        </div>
+        <p className="text-[11px] text-tertiary">
+          {reduceMotion ? "Showing first example (reduced motion)" : "Cycles automatically · Hover to pause"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Editorial spotlight carousel for app feedback—single “card” at a time, indigo accents to match the app.
+ */
+function LandingAppReviewsCarousel({
+  items,
+  reduceMotion,
+  feedbackHref,
+  feedbackCta,
+}: {
+  items: Review[];
+  reduceMotion: boolean | null;
+  feedbackHref: string;
+  feedbackCta: string;
+}) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = items.length;
+
+  useEffect(() => {
+    if (reduceMotion || total <= 1 || paused) return;
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % total);
+    }, 6400);
+    return () => window.clearInterval(id);
+  }, [reduceMotion, paused, total]);
+
+  useEffect(() => {
+    setIdx((i) => (total ? Math.min(i, total - 1) : 0));
+  }, [total]);
+
+  if (total === 0) return null;
+
+  const safeIdx = Math.min(idx, total - 1);
+
+  const go = (dir: -1 | 1) => {
+    setIdx((i) => (i + dir + total) % total);
+  };
+
+  return (
+    <div
+      className="relative mt-8"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div
+        className="relative overflow-hidden rounded-[28px] border border-indigo-400/20 bg-[var(--surface-1)] shadow-[0_28px_80px_-24px_rgba(99,102,241,0.2)]"
+        onFocusCapture={() => setPaused(true)}
+        onBlurCapture={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+        }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.55] [background:radial-gradient(ellipse_80%_50%_at_0%_0%,rgba(129,140,248,0.16),transparent_50%),radial-gradient(ellipse_60%_40%_at_100%_100%,rgba(167,139,250,0.09),transparent_45%)]"
+        />
+        <div className="relative px-5 pb-6 pt-8 sm:px-10 sm:pb-8 sm:pt-10">
+          <p
+            aria-hidden
+            className="pointer-events-none absolute left-4 top-2 font-serif text-7xl leading-none text-indigo-400/18 sm:left-8 sm:text-8xl"
+          >
+            &ldquo;
+          </p>
+
+          {/*
+            Grid-stack layout: every review lives in the same grid cell
+            (col-start-1 row-start-1) so the container is always as tall
+            as the tallest review. Only the active item has opacity-1;
+            the rest are invisible but still occupy space, which keeps the
+            card height — and the navigation buttons below — perfectly
+            stable as slides change.
+          */}
+          <div
+            className="relative mx-auto max-w-2xl text-center"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className="grid">
+              {items.map((r, i) => {
+                const isActive = i === safeIdx;
+                return (
+                  <motion.div
+                    key={r.id}
+                    className="col-start-1 row-start-1 px-1"
+                    animate={{ opacity: isActive ? 1 : 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.4, ease: "easeInOut" }}
+                    aria-hidden={!isActive}
+                    style={{ pointerEvents: isActive ? "auto" : "none" }}
+                  >
+                    <Stars rating={r.rating} tone="amber" />
+                    <blockquote className="mt-4 font-serif text-lg leading-relaxed text-primary sm:text-xl">
+                      {r.body}
+                    </blockquote>
+                    <footer className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
+                      <cite className="not-italic font-semibold text-secondary">{r.reviewer_display_name}</cite>
+                      <span className="hidden text-tertiary sm:inline" aria-hidden>
+                        ·
+                      </span>
+                      <span className="text-xs text-tertiary sm:text-sm">{formatReviewDate(r.created_at)}</span>
+                    </footer>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="relative mt-8 flex max-w-md items-center justify-between gap-3 sm:mx-auto sm:mt-10">
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-400/35 bg-[var(--surface-2)] text-lg text-indigo-200 transition hover:border-indigo-300/55 hover:bg-indigo-500/10"
+              aria-label="Previous review"
+            >
+              ‹
+            </button>
+            <div
+              className="flex min-h-[2rem] flex-1 flex-wrap items-center justify-center gap-1.5 px-1 sm:gap-2"
+              role="tablist"
+              aria-label="Reviews"
+            >
+              {items.map((r, i) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={safeIdx === i}
+                  aria-label={`Review ${i + 1} of ${total}: ${r.reviewer_display_name}`}
+                  onClick={() => setIdx(i)}
+                  className={`rounded-full transition-all ${
+                    safeIdx === i
+                      ? "h-2 w-7 bg-indigo-400 shadow-[0_0_12px_-2px_rgba(129,140,248,0.65)] sm:w-8"
+                      : "h-2 w-2 bg-[var(--surface-border)] hover:bg-indigo-400/35"
+                  }`}
+                />
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-indigo-400/35 bg-[var(--surface-2)] text-lg text-indigo-200 transition hover:border-indigo-300/55 hover:bg-indigo-500/10"
+              aria-label="Next review"
+            >
+              ›
+            </button>
+          </div>
+
+          <p className="mt-4 text-center text-[11px] text-tertiary">
+            {reduceMotion
+              ? "Use arrows or dots to browse (reduced motion)"
+              : "Advances on its own · Hover to pause"}
+          </p>
+
+          <div className="mt-6 flex justify-center border-t border-[var(--surface-border)] pt-6">
+            <Link
+              href={feedbackHref}
+              className="rounded-full border border-indigo-400/35 bg-indigo-500/10 px-5 py-2.5 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/20"
+            >
+              {feedbackCta}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
-  const communityReviews = useMemo(() => {
-    const real = reviews.slice(0, 4);
-    if (real.length >= 4) return real;
-    const needed = 4 - real.length;
-    return [...real, ...seedCommunityReviews.slice(0, needed)];
+  const appReviewsForCarousel = useMemo(() => {
+    const real = reviews.filter((r) => (r.body ?? "").trim().length > 0);
+    const byId = new Map<number, Review>();
+    for (const r of real) byId.set(r.id, r);
+    for (const s of seedLandingAppReviews) {
+      if (byId.size >= 10) break;
+      if (!byId.has(s.id)) byId.set(s.id, s);
+    }
+    return Array.from(byId.values()).slice(0, 10);
   }, [reviews]);
+  const [heroLineIdx, setHeroLineIdx] = useState(0);
   const [activeVibe, setActiveVibe] = useState<LandingVibe>("Cozy");
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
@@ -137,6 +590,14 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     }, 9500);
     return () => window.clearInterval(id);
   }, [heroImages.length, reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const id = window.setInterval(() => {
+      setHeroLineIdx((prev) => (prev + 1) % heroHeadlines.length);
+    }, 7200);
+    return () => window.clearInterval(id);
+  }, [reduceMotion]);
 
   const showcased = useMemo(
     () => suggestionsByVibe[activeVibe] ?? [],
@@ -164,10 +625,24 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     target: scrollSectionRef,
     offset: ["start center", "end center"],
   });
+  /** Eases steppy wheel / scrollbar input so demo motion stays fluid (esp. Windows). */
+  const demoScrollProgress = useSpring(scrollYProgress, {
+    stiffness: reduceMotion ? 10_000 : 95,
+    damping: reduceMotion ? 500 : 30,
+    mass: reduceMotion ? 0.05 : 0.38,
+  });
   const reduceMotionBg = reduceMotion;
-  const cardScale = useTransform(scrollYProgress, [0, 1], [0.96, 1.02]);
-  const cardY = useTransform(scrollYProgress, [0, 1], [40, -40]);
-  const cardOpacity = useTransform(scrollYProgress, [0, 1], [0.7, 1]);
+  const cardScale = useTransform(demoScrollProgress, [0, 1], [0.96, 1.02]);
+  const cardY = useTransform(demoScrollProgress, [0, 1], [40, -40]);
+  const cardOpacity = useTransform(demoScrollProgress, [0, 1], [0.7, 1]);
+
+  const [communityScrollRoot, setCommunityScrollRoot] = useState<HTMLElement | null>(null);
+  const communityScrollRaw = useManualSectionScrollProgress(communityScrollRoot);
+  const communityScrollProgress = useSpring(communityScrollRaw, {
+    stiffness: reduceMotion ? 10_000 : 95,
+    damping: reduceMotion ? 500 : 30,
+    mass: reduceMotion ? 0.05 : 0.38,
+  });
 
   return (
     <div className="relative overflow-x-hidden">
@@ -184,8 +659,8 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 exit={{ opacity: 0 }}
                 transition={{ opacity: { duration: 1.45 }, scale: { duration: 9.4, ease: "linear" } }}
               >
-                <Image
-                  src={posterUrl(heroImages[activeHeroIdx].backdrop_path, "original") ?? ""}
+                <TmdbImage
+                  src={posterUrl(heroImages[activeHeroIdx].backdrop_path, "w1280") ?? ""}
                   alt=""
                   fill
                   priority={activeHeroIdx === 0}
@@ -214,21 +689,40 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           <motion.p variants={item} transition={{ duration: 0.55 }} className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-200/90 backdrop-blur-md">
             {APP_NAME}
           </motion.p>
-          <motion.h1 variants={item} transition={{ duration: 0.55 }} className="mt-7 max-w-3xl text-4xl font-bold leading-[1.04] tracking-tight text-white sm:text-6xl lg:text-[4.3rem]">
-            {heroHeadlines[0]}
-          </motion.h1>
+          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-7 min-h-[5.5rem] max-w-3xl sm:min-h-[7.25rem] lg:min-h-[8rem]">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.h1
+                key={reduceMotion ? heroHeadlines[0] : heroHeadlines[heroLineIdx]}
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -12 }}
+                transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-4xl font-bold leading-[1.06] tracking-tight text-white sm:text-6xl lg:text-[4.3rem]"
+              >
+                {reduceMotion ? heroHeadlines[0] : heroHeadlines[heroLineIdx]}
+              </motion.h1>
+            </AnimatePresence>
+          </motion.div>
           <motion.p variants={item} transition={{ duration: 0.55 }} className="mt-5 max-w-xl text-base leading-relaxed text-zinc-200/80 sm:text-lg">
-            Curated films for your exact mood. No algorithmic noise. No endless browsing.
+            Curated picks for your mood—plus your friends&apos; ratings, watchlists, and diary so you
+            can decide together without the endless scroll.
           </motion.p>
           <motion.ul variants={item} transition={{ duration: 0.55 }} className="mt-5 grid max-w-2xl gap-2 text-sm text-zinc-200/80 sm:grid-cols-3">
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Track films and shows you watched</li>
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Save what you want to watch next</li>
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Share with friends and style your profile</li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Find a film fast—filters that match how tonight feels
+            </li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Track watched, watchlist, and quick notes in one place
+            </li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Follow friends and spot what they rated before you choose
+            </li>
           </motion.ul>
-          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <MagneticButton href="/recommend" strong>
               Find a film tonight
             </MagneticButton>
+            <MagneticButton href="/friends">See friend activity</MagneticButton>
             {!user ? <MagneticButton href="/signup">Create free account</MagneticButton> : null}
           </motion.div>
         </motion.div>
@@ -269,11 +763,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-indigo-500/85">
                   Tonight&apos;s setup
                 </p>
-                <motion.div
-                  initial={reduceMotionBg ? false : { opacity: 0, y: 8 }}
-                  whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.35 }}
-                  transition={{ duration: 0.3, delay: 0.02 }}
+                <ProductDemoScrollReveal
+                  progress={demoScrollProgress}
+                  reduceMotion={Boolean(reduceMotionBg)}
+                  start={0.02}
+                  end={0.14}
+                  y={8}
                   className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5"
                 >
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-400/90">
@@ -281,24 +776,27 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     {["Horror", "Late Night", "Intense", "Weird"].map((label, idx) => (
-                      <motion.span
+                      <ProductDemoScrollReveal
                         key={label}
-                        initial={reduceMotionBg ? false : { opacity: 0, y: 6 }}
-                        whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                        viewport={{ once: true, amount: 0.2 }}
-                        transition={{ duration: 0.24, delay: 0.08 + idx * 0.05 }}
-                        className="accent-selected inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]"
+                        progress={demoScrollProgress}
+                        reduceMotion={Boolean(reduceMotionBg)}
+                        start={0.06 + idx * 0.045}
+                        end={0.2 + idx * 0.045}
+                        y={6}
+                        className="inline-flex"
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
-                        {label}
-                      </motion.span>
+                        <span className="accent-selected inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-indigo-400/95" />
+                          {label}
+                        </span>
+                      </ProductDemoScrollReveal>
                     ))}
                   </div>
                   <p className="mt-2 text-[11px] leading-relaxed text-tertiary">
                     Dread-heavy picks with sharp tension, minimal comedy breaks, and a focused
                     late-night tone.
                   </p>
-                </motion.div>
+                </ProductDemoScrollReveal>
 
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                   <div className="rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-2.5">
@@ -376,12 +874,13 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       );
                       const isSelected = selectedDemoMovie?.id === movie.id;
                       return (
-                        <motion.div
+                        <ProductDemoScrollReveal
                           key={`${movie.id}-${i}`}
-                          initial={reduceMotionBg ? false : { opacity: 0, y: 16 }}
-                          whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                          viewport={{ once: true, amount: 0.4 }}
-                          transition={{ duration: 0.38, delay: 0.16 + i * 0.08 }}
+                          progress={demoScrollProgress}
+                          reduceMotion={Boolean(reduceMotionBg)}
+                          start={0.12 + i * 0.065}
+                          end={0.28 + i * 0.065}
+                          y={16}
                           className={`group overflow-hidden rounded-xl border bg-[var(--surface-1)] transition ${
                             isSelected
                               ? "border-indigo-400/65 shadow-[0_0_26px_rgba(99,102,241,0.42)]"
@@ -392,7 +891,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                           <Link href={href} className="block" onFocus={() => setSelectedDemoMovieId(movie.id)}>
                             <div className="relative aspect-[2/3] overflow-hidden">
                               {image ? (
-                                <Image
+                                <TmdbImage
                                   src={image}
                                   alt={movie.title}
                                   fill
@@ -413,7 +912,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                               </div>
                             </div>
                           </Link>
-                        </motion.div>
+                        </ProductDemoScrollReveal>
                       );
                     })}
                     {demoShortlist.length === 0 &&
@@ -427,11 +926,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
-                  <motion.div
-                    initial={reduceMotionBg ? false : { opacity: 0, y: 10 }}
-                    whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.4 }}
-                    transition={{ duration: 0.34, delay: 0.5 }}
+                  <ProductDemoScrollReveal
+                    progress={demoScrollProgress}
+                    reduceMotion={Boolean(reduceMotionBg)}
+                    start={0.36}
+                    end={0.52}
+                    y={10}
                     className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4"
                   >
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -455,7 +955,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                         is highlighted for strongest vibe fit and watch momentum.
                       </li>
                     </ul>
-                  </motion.div>
+                  </ProductDemoScrollReveal>
                   <div className="relative space-y-3">
                     <div className="rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/90 p-3 sm:p-4">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
@@ -483,11 +983,12 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                       </div>
                     </div>
                     {/* Toast preview */}
-                    <motion.div
-                      initial={reduceMotionBg ? false : { opacity: 0, y: 12 }}
-                      whileInView={reduceMotionBg ? undefined : { opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.4 }}
-                      transition={{ duration: 0.45, delay: 0.72 }}
+                    <ProductDemoScrollReveal
+                      progress={demoScrollProgress}
+                      reduceMotion={Boolean(reduceMotionBg)}
+                      start={0.5}
+                      end={0.68}
+                      y={12}
                       className="pointer-events-none relative w-full rounded-2xl border border-indigo-400/35 bg-[var(--surface-1)] px-3 py-2.5 text-left text-[11px] shadow-lg shadow-indigo-950/40"
                     >
                       <div className="flex items-start gap-2">
@@ -503,7 +1004,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                           </p>
                         </div>
                       </div>
-                    </motion.div>
+                    </ProductDemoScrollReveal>
                   </div>
                 </div>
               </div>
@@ -513,7 +1014,7 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
       </section>
 
       {/* Social proof + community — same width + horizontal rhythm as product demo card */}
-      <section className="py-14 sm:py-16">
+      <section ref={setCommunityScrollRoot} className="py-14 sm:py-16">
         <div className="mx-2 max-w-7xl px-4 sm:mx-auto sm:px-5 lg:px-6">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
             <div className="max-w-2xl">
@@ -521,106 +1022,146 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 Community
               </p>
               <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-                See what your friends are watching.
+                Watch together—not alone in the algorithm.
               </h3>
               <p className="mt-2 text-sm text-secondary">
-                Ratings, quick notes, and watchlists in one place.
+                Follow people you trust, skim their ratings and diary, and spot overlaps before you
+                commit to a film.
               </p>
             </div>
-            <Link
-              href={user ? "/feedback" : "/login?redirect=/feedback"}
-              className="rounded-full border border-indigo-400/45 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/30"
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/friends"
+                className="rounded-full border border-indigo-400/45 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/30"
+              >
+                Friends
+              </Link>
+              <Link
+                href={user ? "/feedback" : "/login?redirect=/feedback"}
+                className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-4 py-2 text-sm font-semibold text-primary transition hover:bg-[var(--surface-2)]"
+              >
+                {hasReviewed ? "Edit your review" : "Add a review"}
+              </Link>
+            </div>
+          </div>
+
+          <ProductDemoScrollReveal
+            as="article"
+            progress={communityScrollProgress}
+            reduceMotion={Boolean(reduceMotion)}
+            start={0.02}
+            end={0.18}
+            y={14}
+            className="mb-6"
+          >
+            <FriendsFilmDemoCarousel reduceMotion={reduceMotion} />
+          </ProductDemoScrollReveal>
+
+          <div className="grid gap-3 lg:grid-cols-2">
+            <ProductDemoScrollReveal
+              as="article"
+              progress={communityScrollProgress}
+              reduceMotion={Boolean(reduceMotion)}
+              start={0.22}
+              end={0.42}
+              y={20}
+              className="surface-card rounded-2xl p-4"
             >
-              {hasReviewed ? "Edit your review" : "Add a review"}
-            </Link>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                Friends feed
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-tertiary">
+                New ratings, diary logs, and watchlist adds from people you follow—same ideas as the
+                carousel, in a live stream.
+              </p>
+              <div className="mt-3 space-y-2">
+                {[
+                  "Jules rated The Shining ★★★★☆",
+                  "Mika added Psycho to watchlist",
+                  "Sam reviewed Cure: “cold and precise”",
+                ].map((itemText) => (
+                  <div
+                    key={itemText}
+                    className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-secondary"
+                  >
+                    {itemText}
+                  </div>
+                ))}
+              </div>
+            </ProductDemoScrollReveal>
+
+            <ProductDemoScrollReveal
+              as="article"
+              progress={communityScrollProgress}
+              reduceMotion={Boolean(reduceMotion)}
+              start={0.34}
+              end={0.56}
+              y={20}
+              className="surface-card rounded-2xl p-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                Your profile
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full border border-indigo-500/35 bg-indigo-500/10" />
+                <div>
+                  <p className="text-sm font-semibold text-primary">nudgefilm_user</p>
+                  <p className="text-xs text-tertiary">124 watched · 38 watchlist</p>
+                </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">4.2</p>
+                  <p className="text-[10px] text-tertiary">Avg rating</p>
+                </div>
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">19</p>
+                  <p className="text-[10px] text-tertiary">Reviews</p>
+                </div>
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">7</p>
+                  <p className="text-[10px] text-tertiary">Friends</p>
+                </div>
+              </div>
+            </ProductDemoScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden border-t border-[var(--surface-border)] py-14 sm:py-20">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/35 to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 top-10 h-64 w-64 rounded-full bg-indigo-500/[0.09] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -left-24 bottom-0 h-48 w-48 rounded-full bg-rose-500/[0.06] blur-3xl"
+        />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-5 lg:px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-indigo-400/90">
+              Word on {APP_NAME}
+            </p>
+            <h3 className="mt-3 font-sans text-2xl font-bold tracking-tight text-primary sm:text-3xl">
+              Reviews from people who use it every week
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary sm:text-base">
+              Real notes about the app itself—what clicked, what saved time, and why they stuck around.
+              Mixed with a few stand-ins when we&apos;re still gathering fresh quotes.
+            </p>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {communityReviews.map((r, i) => (
-                <motion.article
-                  key={`${r.id}-${i}`}
-                  initial={reduceMotion ? false : { opacity: 0, y: 18 }}
-                  whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.35 }}
-                  transition={{ duration: 0.35, delay: i * 0.05 }}
-                  className="surface-card-subtle rounded-2xl p-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300">
-                      {r.reviewer_display_name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <p className="text-xs font-medium text-primary">{r.reviewer_display_name}</p>
-                    <p className="text-[11px] text-tertiary">{formatDate(r.created_at)}</p>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Stars rating={r.rating} />
-                    <span className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] text-secondary">
-                      Logged tonight
-                    </span>
-                  </div>
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-tertiary">{r.body}</p>
-                </motion.article>
-              ))}
-            </div>
-
-            <div className="grid gap-3">
-              <motion.article
-                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.35, delay: 0.08 }}
-                className="surface-card rounded-2xl p-4"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
-                  Friends feed
-                </p>
-                <div className="mt-3 space-y-2">
-                  {["Jules rated The Shining ★★★★☆", "Mika added Psycho to watchlist", "Sam reviewed Cure: 'cold and precise'"].map((itemText) => (
-                    <div
-                      key={itemText}
-                      className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-secondary"
-                    >
-                      {itemText}
-                    </div>
-                  ))}
-                </div>
-              </motion.article>
-
-              <motion.article
-                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-                whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.35 }}
-                transition={{ duration: 0.35, delay: 0.12 }}
-                className="surface-card rounded-2xl p-4"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
-                  Your profile
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full border border-indigo-500/35 bg-indigo-500/10" />
-                  <div>
-                    <p className="text-sm font-semibold text-primary">nudgefilm_user</p>
-                    <p className="text-xs text-tertiary">124 watched · 38 watchlist</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">4.2</p>
-                    <p className="text-[10px] text-tertiary">Avg rating</p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">19</p>
-                    <p className="text-[10px] text-tertiary">Reviews</p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">7</p>
-                    <p className="text-[10px] text-tertiary">Friends</p>
-                  </div>
-                </div>
-              </motion.article>
-            </div>
-          </div>
+          <LandingAppReviewsCarousel
+            items={appReviewsForCarousel}
+            reduceMotion={reduceMotion}
+            feedbackHref={user ? "/feedback" : "/login?redirect=/feedback"}
+            feedbackCta={hasReviewed ? "Edit your review" : "Add your review"}
+          />
         </div>
       </section>
 

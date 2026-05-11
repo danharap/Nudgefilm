@@ -34,7 +34,8 @@ async function loadWatched(userId: string): Promise<WatchedRow[]> {
         "id, watched_at, user_rating, notes, custom_poster_url, movies ( id, tmdb_id, title, release_year, poster_path, vote_average, vote_count, parent_show_tmdb_id )",
       )
       .eq("user_id", userId)
-      .order("watched_at", { ascending: false });
+      .order("watched_at", { ascending: false })
+      .limit(500);
 
     if (error) {
       console.error("[watched] supabase error:", error.code, error.message);

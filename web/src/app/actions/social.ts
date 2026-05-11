@@ -3,148 +3,115 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-async function getAuthedUser() {
+const USERNAME_RE = /^[a-z0-9_]{3,24}$/;
+
+export type UpdateProfilePayload = {
+  username?: string;
+  display_name?: string;
+  bio?: string | null;
+  is_public?: boolean;
+  watchlist_public?: boolean;
+  avatar_url?: string | null;
+  banner_url?: string | null;
+  profile_background_url?: string | null;
+};
+
+/** Persist profile fields for the signed-in user (edit profile, avatar/banner uploads). */
+export async function updateProfile(payload: UpdateProfilePayload): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) throw new Error("Sign in to use social features.");
-  return { supabase, user };
-}
+  if (!user) throw new Error("Not signed in");
 
-function revalidateSocialUi() {
-  revalidatePath("/friends");
-  revalidatePath("/", "layout");
-}
+  const { data: current } = await supabase
+    .from("profiles")
+    .select("username")
+    .eq("id", user.id)
+    .maybeSingle();
+  const previousUsername = (current?.username as string | null | undefined)?.trim() ?? null;
 
-// ---------------------------------------------------------------------------
-// Profile editing
-// ---------------------------------------------------------------------------
+  const row: Record<string, unknown> = {};
 
-export async function updateProfile(payload: {
-  username?: string;
-  display_name?: string;
-  bio?: string;
-  avatar_url?: string | null;
-  banner_url?: string | null;
-  profile_background_url?: string | null;
-  is_public?: boolean;
-  watchlist_public?: boolean;
-}) {
-  const { supabase, user } = await getAuthedUser();
+  if (payload.display_name !== undefined) {
+    row.display_name = payload.display_name?.trim() || null;
+  }
+  if (payload.bio !== undefined) {
+    row.bio = payload.bio;
+  }
+  if (payload.is_public !== undefined) row.is_public = payload.is_public;
+  if (payload.watchlist_public !== undefined) row.watchlist_public = payload.watchlist_public;
+  if (payload.avatar_url !== undefined) row.avatar_url = payload.avatar_url;
+  if (payload.banner_url !== undefined) row.banner_url = payload.banner_url;
+  if (payload.profile_background_url !== undefined) {
+    row.profile_background_url = payload.profile_background_url;
+  }
 
-  // Normalise username
-  const clean: typeof payload = { ...payload };
-  if (clean.username !== undefined) {
-    clean.username = clean.username.trim().toLowerCase() || undefined;
-    if (clean.username && !/^[a-z0-9_]{3,24}$/.test(clean.username)) {
+  if (payload.username !== undefined) {
+    const normalized = payload.username.trim().toLowerCase();
+    if (!USERNAME_RE.test(normalized)) {
       throw new Error(
-        "Username must be 3–24 characters: lowercase letters, numbers, underscores only.",
+        "Username must be 3–24 characters: lowercase letters, numbers, or underscores only.",
       );
     }
-  }
-  if (clean.display_name !== undefined) {
-    clean.display_name = clean.display_name.trim() || undefined;
-  }
-  if (clean.bio !== undefined) {
-    clean.bio = clean.bio.trim();
-    if (clean.bio.length > 160) throw new Error("Bio must be 160 characters or fewer.");
+    const { data: taken } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", normalized)
+      .neq("id", user.id)
+      .maybeSingle();
+    if (taken) throw new Error("That username is already taken.");
+    row.username = normalized;
   }
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({ ...clean, updated_at: new Date().toISOString() })
-    .eq("id", user.id);
+  if (Object.keys(row).length === 0) return;
 
-  if (error) {
-    if (error.code === "23505") throw new Error("That username is already taken.");
-    console.error("[social] updateProfile error:", error.code, error.message);
-    throw new Error("Failed to save profile.");
-  }
+  const { error } = await supabase.from("profiles").update(row).eq("id", user.id);
+  if (error) throw new Error(error.message);
+
   revalidatePath("/profile");
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+
+  const newUsername =
+    typeof row.username === "string"
+      ? row.username
+      : previousUsername ?? undefined;
+  if (previousUsername && row.username !== undefined && previousUsername !== row.username) {
+    revalidatePath(`/user/${previousUsername}`);
+  }
+  if (newUsername) {
+    revalidatePath(`/user/${newUsername}`);
+  }
 }
 
-/** Invalidate public username route after banner/backdrop/logo changes */
-export async function revalidateUsernameProfile(username: string) {
-  const u = username.trim().toLowerCase();
-  if (!u || !/^[a-z0-9_]{3,24}$/.test(u)) return;
+/** Invalidate cached public profile page after banner/avatar/etc. changes. */
+export async function revalidateUsernameProfile(username: string): Promise<void> {
+  const u = username.trim();
+  if (!u) return;
   revalidatePath(`/user/${u}`);
 }
 
-// ---------------------------------------------------------------------------
-// Friend requests
-// ---------------------------------------------------------------------------
-
-export async function sendFriendRequest(addresseeId: string) {
-  const { supabase, user } = await getAuthedUser();
-  if (addresseeId === user.id) throw new Error("You can't add yourself.");
-
-  const { error } = await supabase.from("friendships").insert({
-    requester_id: user.id,
-    addressee_id: addresseeId,
-    status: "pending",
-  });
-
-  if (error) {
-    if (error.code === "23505") throw new Error("Friend request already sent.");
-    console.error("[social] sendFriendRequest:", error.code, error.message);
-    throw new Error("Could not send friend request.");
-  }
-  revalidateSocialUi();
-}
-
-export async function acceptFriendRequest(requesterId: string) {
-  const { supabase, user } = await getAuthedUser();
+/** Call when the user opens the social inbox; new follows after this moment surface on the badge. */
+export async function markSocialInboxRead(): Promise<{ ok: boolean }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false };
 
   const { error } = await supabase
-    .from("friendships")
-    .update({ status: "accepted" })
-    .eq("requester_id", requesterId)
-    .eq("addressee_id", user.id)
-    .eq("status", "pending");
+    .from("profiles")
+    .update({ social_inbox_last_read_at: new Date().toISOString() })
+    .eq("id", user.id);
 
   if (error) {
-    console.error("[social] acceptFriendRequest:", error.code, error.message);
-    throw new Error("Could not accept request.");
+    console.error("[social] markSocialInboxRead:", error.message);
+    return { ok: false };
   }
-  revalidateSocialUi();
-}
 
-export async function declineFriendRequest(requesterId: string) {
-  const { supabase, user } = await getAuthedUser();
-
-  await supabase
-    .from("friendships")
-    .delete()
-    .eq("requester_id", requesterId)
-    .eq("addressee_id", user.id);
-
-  revalidateSocialUi();
-}
-
-export async function removeFriend(friendId: string) {
-  const { supabase, user } = await getAuthedUser();
-
-  await supabase
-    .from("friendships")
-    .delete()
-    .or(
-      `and(requester_id.eq.${user.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${user.id})`,
-    );
-
-  revalidateSocialUi();
-}
-
-export async function cancelFriendRequest(addresseeId: string) {
-  const { supabase, user } = await getAuthedUser();
-
-  await supabase
-    .from("friendships")
-    .delete()
-    .eq("requester_id", user.id)
-    .eq("addressee_id", addresseeId);
-
-  revalidateSocialUi();
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------

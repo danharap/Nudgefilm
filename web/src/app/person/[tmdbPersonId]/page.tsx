@@ -1,7 +1,7 @@
 import { getPersonCombinedCredits, getPersonDetails, type PersonCredit } from "@/lib/tmdb/client";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -113,7 +113,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
       <section className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
           <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-zinc-900">
-            {profile ? <Image src={profile} alt={person.name} fill className="object-cover" sizes="280px" /> : null}
+            {profile ? <TmdbImage src={profile} alt={person.name} fill className="object-cover" sizes="280px" /> : null}
           </div>
           <div className="mt-3 space-y-1 text-sm text-zinc-300">
             <p className="text-xs uppercase tracking-wide text-zinc-500">{person.known_for_department || "Film"}</p>
@@ -137,7 +137,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
                 return (
                   <Link key={`known-${credit.media_type}-${credit.id}-${title}`} href={mediaHref(credit)} className="group rounded-xl border border-white/10 bg-black/20 p-2">
                     <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-900">
-                      {poster ? <Image src={poster} alt={title} fill className="object-cover transition group-hover:scale-[1.03]" sizes="200px" /> : null}
+                      {poster ? <TmdbImage src={poster} alt={title} fill className="object-cover transition group-hover:scale-[1.03]" sizes="200px" /> : null}
                     </div>
                     <p className="mt-2 line-clamp-2 text-xs text-zinc-200">{title}</p>
                   </Link>
@@ -187,7 +187,7 @@ export default async function PersonPage({ params, searchParams }: Props) {
               return (
                 <Link key={`${credit.media_type}-${credit.id}-${title}-${i}`} href={mediaHref(credit)} className="group rounded-xl border border-white/10 bg-black/20 p-2">
                   <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-900">
-                    {poster ? <Image src={poster} alt={title} fill className="object-cover transition group-hover:scale-[1.03]" sizes="220px" /> : null}
+                    {poster ? <TmdbImage src={poster} alt={title} fill className="object-cover transition group-hover:scale-[1.03]" sizes="220px" /> : null}
                   </div>
                   <p className="mt-2 line-clamp-2 text-xs font-medium text-zinc-200">{title}</p>
                   <p className="text-[11px] text-zinc-500">{releaseLabel(credit)} · ★ {credit.vote_average?.toFixed(1) ?? "—"}</p>

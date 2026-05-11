@@ -284,7 +284,7 @@ export function FilmsSection({
                           fill
                           className="object-cover transition duration-300 group-hover:scale-[1.04]"
                           sizes="(max-width:640px) 25vw, (max-width:1024px) 16vw, 12vw"
-                          unoptimized={poster.startsWith("http") && !poster.includes("image.tmdb.org")}
+                          unoptimized
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center p-1">

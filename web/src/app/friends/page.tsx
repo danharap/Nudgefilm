@@ -1,11 +1,11 @@
+import { MarkSocialInboxSeen } from "./MarkSocialInboxSeen";
 import { UserSearch } from "./UserSearch";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
-import { markNotificationsSeen } from "@/app/actions/social";
 import { getFollowers, getFollowing, getSocialActivity } from "@/features/users/service";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -24,8 +24,20 @@ export default async function FriendsPage({
 
   if (!user) redirect("/login?redirect=/friends");
 
-  // Stamp seen timestamp so the notification badge clears on next render
-  await markNotificationsSeen();
+  const { data: inboxProfile } = await supabase
+    .from("profiles")
+    .select("social_inbox_last_read_at")
+    .eq("id", user.id)
+    .maybeSingle();
+  const inboxLastRead = (inboxProfile?.social_inbox_last_read_at as string | null | undefined) ?? null;
+  let unreadFollowsQuery = supabase
+    .from("follows")
+    .select("follower_id", { count: "exact", head: true })
+    .eq("following_id", user.id);
+  if (inboxLastRead) {
+    unreadFollowsQuery = unreadFollowsQuery.gt("created_at", inboxLastRead);
+  }
+  const { count: unreadFollowCount } = await unreadFollowsQuery;
 
   const [following, followers, activity] = await Promise.all([
     getFollowing(user.id),
@@ -36,6 +48,7 @@ export default async function FriendsPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+      <MarkSocialInboxSeen />
       <header className="mb-8 space-y-1">
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-500/75">
           Social
@@ -47,7 +60,7 @@ export default async function FriendsPage({
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-primary">Notifications</h2>
           <span className="rounded-full bg-indigo-400/20 px-2 py-0.5 text-xs text-indigo-500">
-            {followers.length}
+            {unreadFollowCount ?? 0}
           </span>
         </div>
         {followers.length === 0 ? (
@@ -140,7 +153,7 @@ export default async function FriendsPage({
                     className="group relative block aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)]"
                   >
                     {poster ? (
-                      <Image
+                      <TmdbImage
                         src={poster}
                         alt={item.movie.title}
                         fill

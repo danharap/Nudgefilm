@@ -3,7 +3,7 @@
 import { updateProfile } from "@/app/actions/social";
 import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Cropper from "react-easy-crop";
 import type { Area } from "react-easy-crop";
 import { ZoomIn, ZoomOut, Check, X, Loader2 } from "lucide-react";
@@ -79,6 +79,15 @@ export function AvatarUpload({
     setCroppedAreaPixels(pixels);
   }, []);
 
+  useEffect(() => {
+    if (!cropSrc) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [cropSrc]);
+
   function handleFileSelect(file: File) {
     const maxMb = 10;
     if (file.size > maxMb * 1024 * 1024) {
@@ -123,13 +132,14 @@ export function AvatarUpload({
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        // Bust CDN cache with timestamp so Next.js Image picks up the new file
-        const url = `${data.publicUrl}?t=${Date.now()}`;
-
-        await updateProfile({ avatar_url: url });
+        const cleanUrl = data.publicUrl;
+        // Store the clean URL in the DB so CDN caching is effective across all
+        // page views. Use a cache-busted URL only for the local preview so the
+        // component shows the freshly uploaded image without a page reload.
+        await updateProfile({ avatar_url: cleanUrl });
 
         // Update local preview to the real CDN URL (not the blob)
-        setLiveUrl(url);
+        setLiveUrl(`${cleanUrl}?t=${Date.now()}`);
         setStatus("Avatar saved.");
       } catch (e) {
         setStatus(e instanceof Error ? e.message : "Upload failed.");
@@ -194,28 +204,45 @@ export function AvatarUpload({
 
       {/* Crop modal */}
       {cropSrc && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/95">
+        <div
+          className="fixed inset-0 z-50 flex max-h-dvh flex-col overflow-hidden overscroll-none bg-black/95"
+          style={{
+            height: "100dvh",
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 px-3 py-2 sm:px-4 sm:py-3">
             <button
+              type="button"
               onClick={cancelCrop}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-zinc-400 hover:text-white transition"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-full text-sm text-zinc-400 hover:bg-white/10 hover:text-white sm:px-3"
+              aria-label="Cancel crop"
             >
-              <X className="h-4 w-4" />
-              Cancel
+              <X className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Cancel</span>
             </button>
-            <h2 className="text-sm font-semibold text-white">Crop photo</h2>
+            <h2 className="min-w-0 flex-1 truncate text-center text-xs font-semibold text-white sm:text-sm">
+              Crop photo
+            </h2>
             <button
+              type="button"
               onClick={confirmCrop}
-              className="flex items-center gap-1.5 rounded-full bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-300 transition"
+              disabled={isPending || !croppedAreaPixels}
+              className="flex min-h-[44px] shrink-0 items-center justify-center gap-1 rounded-full bg-indigo-500 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-400 disabled:opacity-40 sm:gap-1.5 sm:px-4"
             >
-              <Check className="h-4 w-4" />
-              Save
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : (
+                <Check className="h-4 w-4 shrink-0 sm:hidden" aria-hidden />
+              )}
+              <span>{isPending ? "…" : "Save"}</span>
             </button>
           </div>
 
-          {/* Cropper canvas */}
-          <div className="relative flex-1">
+          {/* Cropper canvas — min-h-0 so flex child cannot overflow the viewport */}
+          <div className="relative min-h-0 flex-1">
             <Cropper
               image={cropSrc}
               crop={crop}
@@ -232,30 +259,63 @@ export function AvatarUpload({
             />
           </div>
 
-          {/* Zoom controls */}
-          <div className="flex items-center justify-center gap-4 border-t border-white/10 px-6 py-4">
-            <button
-              onClick={() => setZoom((z) => Math.max(1, z - 0.1))}
-              className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white transition"
-            >
-              <ZoomOut className="h-5 w-5" />
-            </button>
-            <input
-              type="range"
-              min={1}
-              max={3}
-              step={0.05}
-              value={zoom}
-              onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-48 accent-indigo-400"
-              aria-label="Zoom"
-            />
-            <button
-              onClick={() => setZoom((z) => Math.min(3, z + 0.1))}
-              className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white transition"
-            >
-              <ZoomIn className="h-5 w-5" />
-            </button>
+          {/* Zoom + primary actions (footer always visible on small screens) */}
+          <div className="shrink-0 space-y-3 border-t border-white/10 bg-zinc-950 px-4 py-3">
+            <div className="flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.max(1, z - 0.1))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+                aria-label="Zoom out"
+              >
+                <ZoomOut className="h-5 w-5" />
+              </button>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="h-11 min-w-0 flex-1 max-w-xs accent-indigo-400"
+                aria-label="Zoom"
+              />
+              <button
+                type="button"
+                onClick={() => setZoom((z) => Math.min(3, z + 0.1))}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-white/10 hover:text-white"
+                aria-label="Zoom in"
+              >
+                <ZoomIn className="h-5 w-5" />
+              </button>
+            </div>
+
+            {!croppedAreaPixels ? (
+              <p className="text-center text-[11px] text-zinc-500">Preparing crop…</p>
+            ) : null}
+
+            <div className="flex gap-2 sm:hidden">
+              <button
+                type="button"
+                onClick={cancelCrop}
+                className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border border-white/15 text-sm font-medium text-zinc-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmCrop}
+                disabled={isPending || !croppedAreaPixels}
+                className="flex min-h-[48px] flex-[1.15] items-center justify-center gap-2 rounded-xl bg-indigo-500 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                {isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                Save
+              </button>
+            </div>
           </div>
         </div>
       )}

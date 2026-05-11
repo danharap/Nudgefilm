@@ -8,7 +8,7 @@ import {
   updateProfileList,
 } from "@/app/actions/lists";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 
@@ -71,7 +71,7 @@ function AlbumCover({ movies, name }: { movies: ListMovie[]; name: string }) {
     return (
       <div className="relative h-full w-full">
         {posters[0] ? (
-          <Image src={posters[0]} alt={name} fill className="object-cover" sizes="200px" />
+          <TmdbImage src={posters[0]} alt={name} fill className="object-cover" sizes="200px" />
         ) : (
           <div className="h-full w-full bg-zinc-800" />
         )}
@@ -88,7 +88,7 @@ function AlbumCover({ movies, name }: { movies: ListMovie[]; name: string }) {
         return (
           <div key={i} className="relative overflow-hidden bg-zinc-800">
             {src ? (
-              <Image src={src} alt="" fill className="object-cover" sizes="100px" />
+              <TmdbImage src={src} alt="" fill className="object-cover" sizes="100px" />
             ) : null}
           </div>
         );
@@ -159,7 +159,7 @@ function MoviePicker({
                 >
                   <div className="relative h-full w-full bg-zinc-800">
                     {poster ? (
-                      <Image
+                      <TmdbImage
                         src={poster}
                         alt={movie.title}
                         fill
@@ -378,7 +378,7 @@ function ListDetail({
                     className="relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
                   >
                     {poster ? (
-                      <Image
+                      <TmdbImage
                         src={poster}
                         alt={movie.title}
                         fill

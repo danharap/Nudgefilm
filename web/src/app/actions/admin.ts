@@ -236,7 +236,7 @@ export async function getRecentSignups(limit = 8) {
   const supabase = await readerClient();
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name, username, email, role, status, created_at, avatar_url")
+    .select("id, display_name, username, email, role, status, created_at, avatar_url, heard_from")
     .order("created_at", { ascending: false })
     .limit(limit);
   return data ?? [];
@@ -316,6 +316,33 @@ export async function getEventChart(days = 14) {
   return { daily, topEvents };
 }
 
+export async function getHeardFromBreakdown() {
+  await requireAdmin();
+  const supabase = await readerClient();
+
+  const { data, error } = await supabase.from("profiles").select("heard_from");
+  if (error) throw new Error(error.message);
+
+  const counts = {
+    friend: 0,
+    social: 0,
+    search: 0,
+    other: 0,
+    unset: 0,
+  };
+
+  for (const row of data ?? []) {
+    const h = row.heard_from as string | null;
+    if (h === "friend" || h === "social" || h === "search" || h === "other") {
+      counts[h]++;
+    } else {
+      counts.unset++;
+    }
+  }
+
+  return counts;
+}
+
 // ---------------------------------------------------------------------------
 // Full user list (admin)
 // ---------------------------------------------------------------------------
@@ -333,7 +360,7 @@ export async function getAllUsers(opts?: {
   let q = supabase
     .from("profiles")
     .select(
-      "id, display_name, username, email, role, status, admin_notes, created_at, last_active_at, avatar_url",
+      "id, display_name, username, email, role, status, admin_notes, created_at, last_active_at, avatar_url, heard_from",
     )
     .order("created_at", { ascending: false });
 
@@ -363,7 +390,9 @@ export async function getUserDetail(userId: string) {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, display_name, username, email, role, status, admin_notes, created_at, last_active_at, avatar_url")
+      .select(
+        "id, display_name, username, email, role, status, admin_notes, created_at, last_active_at, avatar_url, heard_from",
+      )
       .eq("id", userId)
       .maybeSingle(),
     supabase.from("watched_movies").select("*", { count: "exact", head: true }).eq("user_id", userId),

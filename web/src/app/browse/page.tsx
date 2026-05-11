@@ -13,7 +13,7 @@ import {
 import { browseMediaPath } from "@/lib/media-slug";
 import { browseCanonicalTmdbId, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -128,8 +128,8 @@ async function loadUserLibrary() {
     if (!user) return { watchedIds: new Set<number>(), watchlistIds: new Set<number>(), isLoggedIn: false };
 
     const [{ data: watched }, { data: watchlist }] = await Promise.all([
-      supabase.from("watched_movies").select("movies ( tmdb_id )").eq("user_id", user.id),
-      supabase.from("watchlist").select("movies ( tmdb_id )").eq("user_id", user.id),
+      supabase.from("watched_movies").select("movies ( tmdb_id )").eq("user_id", user.id).limit(2000),
+      supabase.from("watchlist").select("movies ( tmdb_id )").eq("user_id", user.id).limit(2000),
     ]);
 
     const watchedIds = new Set<number>(
@@ -271,7 +271,7 @@ export default async function BrowsePage({ searchParams }: PageProps) {
                 <Link key={`${item.mediaType}-${item.id}`} href={href} className="group relative w-32 shrink-0 sm:w-36">
                   <div className="premium-card relative aspect-[2/3] overflow-hidden rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition duration-300 group-hover:border-indigo-400/35">
                     {poster ? (
-                      <Image
+                      <TmdbImage
                         src={poster}
                         alt={item.title}
                         fill

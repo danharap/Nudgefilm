@@ -11,7 +11,7 @@ import {
 import { movieToast } from "@/components/ui/movieToast";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -68,7 +68,7 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
         className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800"
       >
         {poster ? (
-          <Image
+          <TmdbImage
             src={poster}
             alt={movie.title}
             fill

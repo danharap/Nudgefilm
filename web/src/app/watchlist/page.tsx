@@ -1,7 +1,7 @@
 import { WatchlistRemoveButton } from "./WatchlistRemoveButton";
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +31,7 @@ export default async function WatchlistPage() {
         )
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
+        .limit(500)
     : { data: null };
 
   const items =
@@ -98,7 +99,7 @@ export default async function WatchlistPage() {
                   className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-800"
                 >
                   {p ? (
-                    <Image
+                    <TmdbImage
                       src={p}
                       alt={movie.title}
                       fill

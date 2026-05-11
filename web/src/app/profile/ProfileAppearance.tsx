@@ -195,19 +195,23 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-        const url = `${data.publicUrl}?t=${Date.now()}`;
+        const cleanUrl = data.publicUrl;
+        // Store the clean URL in the DB for effective CDN caching across all page
+        // views. Use a cache-busted URL for the local preview so the UI refreshes
+        // immediately after upload without requiring a page reload.
+        const previewUrl = `${cleanUrl}?t=${Date.now()}`;
 
         await updateProfile(
           kind === "banner"
-            ? { banner_url: url }
-            : { profile_background_url: url },
+            ? { banner_url: cleanUrl }
+            : { profile_background_url: cleanUrl },
         );
 
         if (kind === "banner") {
-          setBannerUrl(url);
+          setBannerUrl(previewUrl);
           setPendingBannerRemoval(false);
         } else {
-          setBgUrl(url);
+          setBgUrl(previewUrl);
           setPendingBackdropRemoval(false);
         }
 
@@ -306,8 +310,9 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
   const cropModal =
     cropSrc && cropKind && mounted ? (
       <div
-        className="fixed inset-0 z-[9999] flex flex-col bg-[#09090b]"
+        className="fixed inset-0 z-[9999] flex max-h-dvh flex-col overflow-hidden overscroll-none bg-[#09090b]"
         style={{
+          height: "100dvh",
           paddingTop: "env(safe-area-inset-top)",
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
@@ -322,7 +327,7 @@ export const ProfileAppearance = forwardRef<ProfileAppearanceHandle, Props>(
             <X className="h-5 w-5 shrink-0 sm:h-4 sm:w-4" />
             <span className="hidden text-sm sm:inline">Cancel</span>
           </button>
-          <h2 className="min-w-0 truncate text-center text-xs font-semibold text-white sm:text-sm">
+          <h2 className="min-w-0 flex-1 truncate text-center text-xs font-semibold text-white sm:text-sm">
             {cropKind === "banner" ? "Crop banner (21∶9)" : "Crop backdrop (16∶9)"}
           </h2>
           <button

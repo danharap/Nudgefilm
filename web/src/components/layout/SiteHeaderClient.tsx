@@ -2,6 +2,7 @@
 
 import { signOut } from "@/app/actions/auth";
 import { APP_NAME } from "@/config/brand";
+import { createClient } from "@/lib/supabase/client";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,12 +23,42 @@ type Props = {
 };
 
 export function SiteHeaderClient(props: Props) {
-  const { user, avatarUrl, displayName, isAdmin, publicLinks, authedLinks, pendingRequestCount } = props;
+  const { user, isAdmin, publicLinks, authedLinks, pendingRequestCount } = props;
   const pathname = usePathname();
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+
+  // Server-rendered props are used as the initial value so the header appears
+  // immediately without a flicker. A client-side fetch then patches in the live
+  // profile data, ensuring the header is always up-to-date even when the root
+  // layout segment is served from Next.js's client-side router cache.
+  const [displayName, setDisplayName] = useState<string | null>(props.displayName);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(props.avatarUrl);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const name = (data.display_name as string | null)?.trim() || null;
+        const avatar = (data.avatar_url as string | null)?.trim() || null;
+        if (name) setDisplayName(name);
+        // Only override avatar if the profile has one; otherwise keep the
+        // server-computed fallback (OAuth picture / Google avatar).
+        if (avatar) setAvatarUrl(avatar);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+
   useMotionValueEvent(scrollY, "change", (v) => setElevated(v > 8));
   useEffect(() => setProfileMenuOpen(false), [pathname]);
   useEffect(() => {
@@ -40,8 +71,6 @@ export function SiteHeaderClient(props: Props) {
     if (profileMenuOpen) document.addEventListener("mousedown", onPointerDown);
     return () => document.removeEventListener("mousedown", onPointerDown);
   }, [profileMenuOpen]);
-  const effectiveNotificationCount = pendingRequestCount;
-
   return (
     <motion.header
       className="glass-nav sticky top-0 z-30"
@@ -76,15 +105,15 @@ export function SiteHeaderClient(props: Props) {
               <Link
                 href="/friends"
                 className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary transition hover:text-primary"
-                aria-label={`Notifications${effectiveNotificationCount > 0 ? ` (${effectiveNotificationCount})` : ""}`}
+                aria-label={`Notifications${pendingRequestCount > 0 ? ` (${pendingRequestCount})` : ""}`}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                   <path d="M12 3a7 7 0 0 1 7 7v3.7l1.2 2.3c.3.7-.2 1.5-1 1.5H4.8c-.8 0-1.3-.8-1-1.5L5 13.7V10a7 7 0 0 1 7-7z" stroke="currentColor" strokeWidth="1.6" />
                   <path d="M9.5 19a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
-                {effectiveNotificationCount > 0 ? (
+                {pendingRequestCount > 0 ? (
                   <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-indigo-500 px-1 text-center text-[10px] font-semibold text-white">
-                    {effectiveNotificationCount > 9 ? "9+" : effectiveNotificationCount}
+                    {pendingRequestCount > 9 ? "9+" : pendingRequestCount}
                   </span>
                 ) : null}
               </Link>
@@ -153,7 +182,7 @@ export function SiteHeaderClient(props: Props) {
             </>
           )}
         </div>
-        <MobileMenu {...props} />
+        <MobileMenu {...props} displayName={displayName} avatarUrl={avatarUrl} />
       </div>
     </motion.header>
   );

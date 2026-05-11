@@ -14,6 +14,7 @@ import {
 import { detailHrefFromStoredMovie, posterUrl } from "@/lib/tmdb/constants";
 import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
@@ -345,11 +346,7 @@ export default async function PublicProfilePage({
                           fill
                           className="object-cover transition group-hover:scale-[1.03]"
                           sizes="(max-width:640px) 25vw, 120px"
-                          unoptimized={
-                            typeof poster === "string" &&
-                            poster.startsWith("http") &&
-                            !poster.includes("image.tmdb.org")
-                          }
+                          unoptimized
                         />
                       ) : null}
                     </Link>
@@ -398,7 +395,7 @@ export default async function PublicProfilePage({
                             className="group relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
                           >
                             {poster ? (
-                              <Image
+                              <TmdbImage
                                 src={poster}
                                 alt={movie.title}
                                 fill
@@ -449,7 +446,7 @@ export default async function PublicProfilePage({
                   className="group relative block aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800"
                 >
                   {poster ? (
-                    <Image
+                    <TmdbImage
                       src={poster}
                       alt={movie.title}
                       fill

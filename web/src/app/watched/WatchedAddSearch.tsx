@@ -2,7 +2,7 @@
 
 import { markWatched } from "@/app/actions/library";
 import { posterUrl } from "@/lib/tmdb/constants";
-import Image from "next/image";
+import TmdbImage from "@/components/ui/TmdbImage";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -128,7 +128,7 @@ export function WatchedAddSearch({ alreadyWatchedTmdbIds }: Props) {
               >
                 <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800">
                   {poster ? (
-                    <Image
+                    <TmdbImage
                       src={poster}
                       alt=""
                       fill
