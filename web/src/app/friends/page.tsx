@@ -1,4 +1,5 @@
 import { MarkSocialInboxSeen } from "./MarkSocialInboxSeen";
+import { BlendSection } from "./BlendSection";
 import { UserSearch } from "./UserSearch";
 import { FollowButton } from "@/components/social/FollowButton";
 import { Avatar } from "@/components/ui/Avatar";
@@ -108,6 +109,9 @@ export default async function FriendsPage({
         </h2>
         <UserSearch />
       </section>
+
+      {/* Blend */}
+      <BlendSection following={following} />
 
       {/* Following recent activity */}
       <section id="activity" className="mb-10 scroll-mt-24">

@@ -358,3 +358,7 @@ export async function getPersonDetails(personId: number) {
 export async function getPersonCombinedCredits(personId: number) {
   return tmdbFetch<PersonCreditsResponse>(`/person/${personId}/combined_credits`);
 }
+
+export async function getSimilarMovies(tmdbId: number, page = "1") {
+  return tmdbFetch<DiscoverResponse>(`/movie/${tmdbId}/similar`, { page });
+}

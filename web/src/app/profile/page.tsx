@@ -3,6 +3,10 @@ import { EditProfileForm } from "./EditProfileForm";
 import { FavouritesPicker } from "./FavouritesPicker";
 import { FilmsSection } from "./FilmsSection";
 import { ProfileListsSection } from "./ProfileListsSection";
+import {
+  PersonalizedRecommendations,
+  PersonalizedRecommendationsSkeleton,
+} from "./PersonalizedRecommendations";
 import { FeedbackForm } from "@/app/feedback/FeedbackForm";
 import { getOwnFeedback } from "@/features/feedback/service";
 import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
@@ -15,6 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import Image from "next/image";
 import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -414,6 +419,11 @@ export default async function ProfilePage({
           </div>
         </section>
       ) : null}
+
+      {/* ── Recommended for you ── */}
+      <Suspense fallback={<PersonalizedRecommendationsSkeleton />}>
+        <PersonalizedRecommendations userId={user.id} />
+      </Suspense>
 
       {/* ── Films (sortable + genre-filterable grid) ── */}
       <FilmsSection films={watched} diaryOwnerUserId={user.id} />

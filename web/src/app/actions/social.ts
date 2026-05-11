@@ -3,6 +3,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+async function getAuthedUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Sign in required.");
+  return { supabase, user };
+}
+
 const USERNAME_RE = /^[a-z0-9_]{3,24}$/;
 
 export type UpdateProfilePayload = {
