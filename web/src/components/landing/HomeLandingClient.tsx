@@ -130,8 +130,9 @@ function useManualSectionScrollProgress(element: HTMLElement | null) {
   const progress = useMotionValue(0);
   useLayoutEffect(() => {
     if (!element) return;
+    const el = element;
     function tick() {
-      const rect = element.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
       const vh = window.innerHeight;
       const h = Math.max(rect.height, 1);
       const p = (vh / 2 - rect.top) / h;
