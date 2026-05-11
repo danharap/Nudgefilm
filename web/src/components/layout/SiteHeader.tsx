@@ -30,9 +30,25 @@ export async function SiteHeader() {
       .select("display_name, avatar_url, role, social_inbox_last_read_at")
       .eq("id", user.id)
       .maybeSingle();
-    avatarUrl = (profile?.avatar_url as string | null) ?? null;
+    const metaAvatar =
+      (typeof user.user_metadata?.avatar_url === "string" &&
+        user.user_metadata.avatar_url) ||
+      (typeof user.user_metadata?.picture === "string" &&
+        user.user_metadata.picture) ||
+      null;
+    avatarUrl = (profile?.avatar_url as string | null) || metaAvatar;
+    // Fall back chain: profiles.display_name → OAuth full_name/name metadata →
+    // email prefix. This prevents the header from showing a raw email prefix
+    // on first login before syncProfileFromAuthUser has had a chance to write.
+    const metaName =
+      (typeof user.user_metadata?.full_name === "string" &&
+        user.user_metadata.full_name.trim()) ||
+      (typeof user.user_metadata?.name === "string" &&
+        user.user_metadata.name.trim()) ||
+      null;
     displayName =
       (profile?.display_name as string | null)?.trim() ||
+      metaName ||
       user.email?.split("@")[0] ||
       "Account";
     const role = (profile?.role as string | null) ?? "user";

@@ -429,7 +429,6 @@ function LandingAppReviewsCarousel({
   if (total === 0) return null;
 
   const safeIdx = Math.min(idx, total - 1);
-  const active = items[safeIdx] ?? items[0];
 
   const go = (dir: -1 | 1) => {
     setIdx((i) => (i + dir + total) % total);
@@ -460,29 +459,46 @@ function LandingAppReviewsCarousel({
             &ldquo;
           </p>
 
-          <div className="relative mx-auto max-w-2xl text-center" aria-live="polite">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={active.id}
-                initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -12 }}
-                transition={{ duration: reduceMotion ? 0 : 0.38, ease: [0.22, 1, 0.36, 1] }}
-                className="px-1"
-              >
-                <Stars rating={active.rating} tone="amber" />
-                <blockquote className="mt-4 font-serif text-lg leading-relaxed text-primary sm:text-xl">
-                  {active.body}
-                </blockquote>
-                <footer className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
-                  <cite className="not-italic font-semibold text-secondary">{active.reviewer_display_name}</cite>
-                  <span className="hidden text-tertiary sm:inline" aria-hidden>
-                    ·
-                  </span>
-                  <span className="text-xs text-tertiary sm:text-sm">{formatReviewDate(active.created_at)}</span>
-                </footer>
-              </motion.div>
-            </AnimatePresence>
+          {/*
+            Grid-stack layout: every review lives in the same grid cell
+            (col-start-1 row-start-1) so the container is always as tall
+            as the tallest review. Only the active item has opacity-1;
+            the rest are invisible but still occupy space, which keeps the
+            card height — and the navigation buttons below — perfectly
+            stable as slides change.
+          */}
+          <div
+            className="relative mx-auto max-w-2xl text-center"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <div className="grid">
+              {items.map((r, i) => {
+                const isActive = i === safeIdx;
+                return (
+                  <motion.div
+                    key={r.id}
+                    className="col-start-1 row-start-1 px-1"
+                    animate={{ opacity: isActive ? 1 : 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.4, ease: "easeInOut" }}
+                    aria-hidden={!isActive}
+                    style={{ pointerEvents: isActive ? "auto" : "none" }}
+                  >
+                    <Stars rating={r.rating} tone="amber" />
+                    <blockquote className="mt-4 font-serif text-lg leading-relaxed text-primary sm:text-xl">
+                      {r.body}
+                    </blockquote>
+                    <footer className="mt-5 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
+                      <cite className="not-italic font-semibold text-secondary">{r.reviewer_display_name}</cite>
+                      <span className="hidden text-tertiary sm:inline" aria-hidden>
+                        ·
+                      </span>
+                      <span className="text-xs text-tertiary sm:text-sm">{formatReviewDate(r.created_at)}</span>
+                    </footer>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
 
           <div className="relative mt-8 flex max-w-md items-center justify-between gap-3 sm:mx-auto sm:mt-10">
