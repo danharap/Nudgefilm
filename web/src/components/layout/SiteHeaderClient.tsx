@@ -2,6 +2,7 @@
 
 import { signOut } from "@/app/actions/auth";
 import { APP_NAME } from "@/config/brand";
+import { createClient } from "@/lib/supabase/client";
 import { motion, useMotionValueEvent, useScroll } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,12 +23,40 @@ type Props = {
 };
 
 export function SiteHeaderClient(props: Props) {
-  const { user, avatarUrl, displayName, isAdmin, publicLinks, authedLinks, pendingRequestCount } = props;
+  const { user, isAdmin, publicLinks, authedLinks, pendingRequestCount } = props;
   const pathname = usePathname();
   const { scrollY } = useScroll();
   const [elevated, setElevated] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // Server-rendered props are used as the initial value so the header appears
+  // immediately without a flicker. A client-side fetch then patches in the live
+  // profile data, ensuring the header is always up-to-date even when the root
+  // layout segment is served from Next.js's client-side router cache.
+  const [displayName, setDisplayName] = useState<string | null>(props.displayName);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(props.avatarUrl);
+
+  useEffect(() => {
+    if (!user) return;
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("display_name, avatar_url")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const name = (data.display_name as string | null)?.trim() || null;
+        const avatar = (data.avatar_url as string | null)?.trim() || null;
+        if (name) setDisplayName(name);
+        // Only override avatar if the profile has one; otherwise keep the
+        // server-computed fallback (OAuth picture / Google avatar).
+        if (avatar) setAvatarUrl(avatar);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   useMotionValueEvent(scrollY, "change", (v) => setElevated(v > 8));
   useEffect(() => setProfileMenuOpen(false), [pathname]);
   useEffect(() => {
@@ -151,7 +180,7 @@ export function SiteHeaderClient(props: Props) {
             </>
           )}
         </div>
-        <MobileMenu {...props} />
+        <MobileMenu {...props} displayName={displayName} avatarUrl={avatarUrl} />
       </div>
     </motion.header>
   );
