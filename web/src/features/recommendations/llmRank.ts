@@ -53,7 +53,6 @@ RULES:
 User preferences:
 - Vibes: ${vibesStr}
 - Genres selected: ${genreStr}
-- Hidden gems only: ${input.hiddenGem ? "yes" : "no"}
 - Min vote average: ${input.minVoteAverage}
 
 Candidate movies:
