@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Users, Sparkles, Copy, ChevronRight } from "lucide-react";
 import { createBlendParty } from "@/app/blend/actions";
-import { getConfiguredOrigin } from "@/lib/site-url";
 
 export function BlendPartySection() {
   const router = useRouter();
@@ -14,7 +13,7 @@ export function BlendPartySection() {
   const [partyToken, setPartyToken] = useState<string | null>(null);
 
   const inviteUrl = partyToken
-    ? `${getConfiguredOrigin()}/blend/${partyToken}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/blend/${partyToken}`
     : null;
 
   function handleCreate() {

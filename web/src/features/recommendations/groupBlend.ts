@@ -325,7 +325,7 @@ export async function getBlendPartyRecommendations(
   // Fetch profile display names + content prefs in parallel
   const { data: profileRows } = await supabase
     .from("profiles")
-    .select("id, display_name, username, allow_adult_content")
+    .select("id, display_name, username, show_mature_content")
     .in("id", userIds);
 
   const displayNames = new Map<string, string>();
@@ -337,8 +337,8 @@ export async function getBlendPartyRecommendations(
       (p.username as string | null) ||
       "Someone";
     displayNames.set(p.id as string, name);
-    // If any participant has adult content disabled, respect that for everyone
-    if (!p.allow_adult_content) excludeAdult = true;
+    // If any participant has mature content disabled, exclude it for the whole group
+    if (!p.show_mature_content) excludeAdult = true;
   }
 
   // Build the group taste profile
