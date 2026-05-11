@@ -1,18 +1,22 @@
 import { syncProfileFromAuthUser } from "@/features/profile/syncProfileFromAuthUser";
-import { resolveAppOriginFromHeaders } from "@/lib/site-url";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-function loginWithMessage(origin: string, message: string) {
+/**
+ * OAuth return URL must use the same origin the browser used for /auth/callback
+ * (see Supabase Next.js guide). Prefer request.url over proxy headers to avoid mismatches.
+ */
+function loginWithMessage(appOrigin: string, message: string) {
   return NextResponse.redirect(
-    `${origin}/login?error=${encodeURIComponent(message)}`,
+    `${appOrigin}/login?error=${encodeURIComponent(message)}`,
   );
 }
 
 export async function GET(request: Request) {
-  const origin = resolveAppOriginFromHeaders(request.headers);
-  const { searchParams } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const appOrigin = requestUrl.origin;
+  const { searchParams } = requestUrl;
   const code = searchParams.get("code");
   const postVerifyLogin = searchParams.get("post_verify") === "login";
   const rawNext = searchParams.get("next") ?? "/";
@@ -25,10 +29,10 @@ export async function GET(request: Request) {
 
   if (!code) {
     if (oauthMessage) {
-      return loginWithMessage(origin, oauthMessage);
+      return loginWithMessage(appOrigin, oauthMessage);
     }
     return loginWithMessage(
-      origin,
+      appOrigin,
       "We couldn’t finish signing you in from that link (no confirmation code). Open the email link on the same device and browser where you signed up, or request a new confirmation email from the sign-up page.",
     );
   }
@@ -36,8 +40,8 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   /** After signup email confirm we verify the token then sign out so the user logs in deliberately. */
   const redirectUrl = postVerifyLogin
-    ? `${origin}/login?message=email_verified`
-    : `${origin}${next}`;
+    ? `${appOrigin}/login?message=email_verified`
+    : `${appOrigin}${next}`;
   const response = NextResponse.redirect(redirectUrl);
 
   const supabase = createServerClient(
@@ -74,7 +78,7 @@ export async function GET(request: Request) {
       msg.includes("bad_oauth_state")
         ? " Try opening the confirmation link in the same browser where you created your account."
         : "";
-    return loginWithMessage(origin, `${error.message}${verifierHint}`);
+    return loginWithMessage(appOrigin, `${error.message}${verifierHint}`);
   }
 
   if (postVerifyLogin) {

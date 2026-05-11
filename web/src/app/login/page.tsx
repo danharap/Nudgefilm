@@ -1,4 +1,5 @@
-import { signInWithEmail, signInWithGoogle } from "@/app/actions/auth";
+import { signInWithEmail } from "@/app/actions/auth";
+import { GoogleOAuthSection } from "@/components/auth/GoogleOAuthSection";
 import Link from "next/link";
 
 type Props = {
@@ -34,42 +35,12 @@ export default async function LoginPage({ searchParams }: Props) {
           {err}
         </p>
       ) : null}
-      <form action={signInWithGoogle} className="mt-8">
-        <input type="hidden" name="redirect" value={redirect} />
-        <button
-          type="submit"
-          className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-semibold text-white transition hover:border-white/25 hover:bg-white/10"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            className="h-5 w-5"
-            aria-hidden
-          >
-            <path
-              fill="#EA4335"
-              d="M12 10.2v3.9h5.5c-.2 1.2-.9 2.2-1.9 2.9l3 2.4c1.7-1.6 2.7-4 2.7-6.9 0-.7-.1-1.3-.2-1.9H12z"
-            />
-            <path
-              fill="#34A853"
-              d="M12 22c2.4 0 4.5-.8 6-2.2l-3-2.4c-.8.6-1.8.9-3 .9-2.3 0-4.2-1.5-4.9-3.6l-3.1 2.4C5.4 20 8.5 22 12 22z"
-            />
-            <path
-              fill="#4A90E2"
-              d="M7.1 14.7c-.2-.6-.3-1.2-.3-1.9s.1-1.3.3-1.9l-3.1-2.4C3.4 9.8 3 11.1 3 12.8s.4 3 1 4.3l3.1-2.4z"
-            />
-            <path
-              fill="#FBBC05"
-              d="M12 7.3c1.3 0 2.4.4 3.3 1.3l2.5-2.5C16.5 4.8 14.4 4 12 4 8.5 4 5.4 6 4 9l3.1 2.4c.7-2.1 2.6-3.6 4.9-3.6z"
-            />
-          </svg>
-          Continue with Google
-        </button>
-      </form>
-      <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-        Using Google? You won&apos;t get a confirmation email from us — sign-in completes after you
-        approve Google. That works with any email on your Google account (Gmail, iCloud, etc.).
-      </p>
+      <GoogleOAuthSection redirect={redirect} authErrorPath="/login">
+        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+          Using Google? You won&apos;t get a confirmation email from us — sign-in completes after you
+          approve Google. That works with any email on your Google account (Gmail, iCloud, etc.).
+        </p>
+      </GoogleOAuthSection>
       <div className="mt-5 flex items-center gap-3">
         <div className="h-px flex-1 bg-white/10" />
         <span className="text-xs uppercase tracking-[0.2em] text-zinc-500">or</span>
