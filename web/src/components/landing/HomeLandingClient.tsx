@@ -54,44 +54,84 @@ type Props = {
   >;
 };
 
-const seedCommunityReviews: Review[] = [
+/** Demo film activity for the landing carousel (illustrative only, not real users). */
+type DemoFriendFilmReview = {
+  id: string;
+  reviewer: string;
+  movieTitle: string;
+  year: string;
+  poster_path: string;
+  rating: number;
+  quote: string;
+  kind: "rated" | "logged";
+};
+
+const demoFriendFilmReviews: DemoFriendFilmReview[] = [
   {
-    id: -101,
-    user_id: "seed-user-1",
-    reviewer_display_name: "Danyeul",
+    id: "d1",
+    reviewer: "Mika",
+    movieTitle: "Past Lives",
+    year: "2023",
+    poster_path: "/wg7cvJFAb01swykUMDbxWBErcWA.jpg",
     rating: 5,
-    body: "Finally a movie app that helps me pick in five minutes instead of forty.",
-    created_at: "2026-05-01T20:00:00.000Z",
+    quote: "Quiet and devastating—the kind of film you talk about all week.",
+    kind: "rated",
   },
   {
-    id: -102,
-    user_id: "seed-user-2",
-    reviewer_display_name: "Mika",
-    rating: 4,
-    body: "The shortlist is tight and the friend activity actually makes watchlists useful.",
-    created_at: "2026-04-28T20:00:00.000Z",
-  },
-  {
-    id: -103,
-    user_id: "seed-user-3",
-    reviewer_display_name: "Jules",
+    id: "d2",
+    reviewer: "Jules",
+    movieTitle: "Everything Everywhere All at Once",
+    year: "2022",
+    poster_path: "/w3LxiVYdWWRvEVdn5RYq6jIqkb1.jpg",
     rating: 5,
-    body: "Mood filters plus runtime is exactly what I wanted for weeknight picks.",
-    created_at: "2026-04-25T20:00:00.000Z",
+    quote: "Chaos in the best way. Already nagging everyone I know to watch.",
+    kind: "rated",
   },
   {
-    id: -104,
-    user_id: "seed-user-4",
-    reviewer_display_name: "Sam",
+    id: "d3",
+    reviewer: "Sam",
+    movieTitle: "The Batman",
+    year: "2022",
+    poster_path: "/74xTEgt7RSkpYKrJbSFMgmNiU9f.jpg",
     rating: 4,
-    body: "Clean UI, fast decisions, and no pointless scrolling. Super solid.",
-    created_at: "2026-04-21T20:00:00.000Z",
+    quote: "Heavy noir vibes—perfect for a rainy Friday with friends.",
+    kind: "logged",
+  },
+  {
+    id: "d4",
+    reviewer: "Ravi",
+    movieTitle: "Parasite",
+    year: "2019",
+    poster_path: "/7IiTTgIACXtC6PYF45IMmpCQBGq.jpg",
+    rating: 5,
+    quote: "Still thinking about that staircase scene. Five stars, no notes.",
+    kind: "rated",
+  },
+  {
+    id: "d5",
+    reviewer: "Nora",
+    movieTitle: "Dune",
+    year: "2021",
+    poster_path: "/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",
+    rating: 4,
+    quote: "Watched it twice this month—audio alone is worth the rental.",
+    kind: "logged",
+  },
+  {
+    id: "d6",
+    reviewer: "Alex",
+    movieTitle: "Spirited Away",
+    year: "2001",
+    poster_path: "/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg",
+    rating: 5,
+    quote: "Introduced it to my roommate—now our whole group is on Ghibli.",
+    kind: "rated",
   },
 ];
 
 const heroHeadlines = [
   "Stop scrolling. Start watching.",
-  "The right movie for tonight.",
+  "See what your friends love.",
   "Tell us the vibe. We do the rest.",
 ];
 
@@ -116,10 +156,6 @@ function Stars({ rating }: { rating: number }) {
       ))}
     </span>
   );
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
 /**
@@ -189,15 +225,124 @@ function ProductDemoScrollReveal({
   );
 }
 
+function FriendsFilmDemoCarousel({ reduceMotion }: { reduceMotion: boolean | null }) {
+  const [idx, setIdx] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const total = demoFriendFilmReviews.length;
+
+  useEffect(() => {
+    if (reduceMotion || paused) return;
+    const id = window.setInterval(() => {
+      setIdx((i) => (i + 1) % total);
+    }, 5200);
+    return () => window.clearInterval(id);
+  }, [reduceMotion, paused, total]);
+
+  const safeIdx = reduceMotion ? 0 : idx;
+  const active = demoFriendFilmReviews[safeIdx] ?? demoFriendFilmReviews[0];
+
+  return (
+    <div
+      className="relative overflow-hidden rounded-3xl border border-[var(--surface-border)] bg-[linear-gradient(135deg,rgba(99,102,241,.08),transparent_42%),var(--surface-2)] p-4 shadow-xl shadow-indigo-950/30 sm:p-5"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false);
+      }}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--surface-border)] pb-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-indigo-500/85">
+            Friend activity
+          </p>
+          <p className="mt-1 text-xs text-secondary">
+            Example ratings and notes—your circle shows up here too.
+          </p>
+        </div>
+        <span className="rounded-full border border-white/10 bg-black/25 px-2.5 py-1 text-[10px] font-medium text-zinc-400">
+          Demo preview
+        </span>
+      </div>
+
+      <div
+        className="relative mt-4 min-h-[148px] sm:min-h-[132px]"
+        aria-live="polite"
+        aria-label="Rotating examples of friend film reviews"
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={active.id}
+            initial={reduceMotion ? false : { opacity: 0, x: 28 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, x: -28 }}
+            transition={{ duration: reduceMotion ? 0 : 0.42, ease: [0.22, 1, 0.36, 1] }}
+            className="flex gap-4"
+          >
+            <div className="relative h-[132px] w-[88px] shrink-0 overflow-hidden rounded-xl border border-[var(--surface-border)] bg-black/40 shadow-lg sm:h-[140px] sm:w-[94px]">
+              <Image
+                src={posterUrl(active.poster_path, "w342") ?? ""}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="94px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+            </div>
+            <div className="min-w-0 flex-1 pt-0.5">
+              <div className="flex flex-wrap items-center gap-2 gap-y-1">
+                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-sm font-semibold text-indigo-300">
+                  {active.reviewer.slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-primary">{active.reviewer}</p>
+                  <p className="text-[11px] text-tertiary">
+                    {active.kind === "logged" ? "Logged" : "Rated"}{" "}
+                    <span className="font-medium text-secondary">{active.movieTitle}</span>
+                    <span className="text-tertiary"> ({active.year})</span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Stars rating={active.rating} />
+                <span className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-2 py-0.5 text-[10px] text-secondary">
+                  {active.kind === "logged" ? "Diary entry" : "Review"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-secondary">&ldquo;{active.quote}&rdquo;</p>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--surface-border)] pt-3">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Example friend reviews">
+          {demoFriendFilmReviews.map((r, i) => (
+            <button
+              key={r.id}
+              type="button"
+              role="tab"
+              aria-selected={safeIdx === i}
+              aria-label={`Example ${i + 1}: ${r.reviewer} on ${r.movieTitle}`}
+              className={`h-2 rounded-full transition-all ${
+                safeIdx === i ? "w-6 bg-indigo-500" : "w-2 bg-[var(--surface-border)] hover:bg-zinc-500/50"
+              }`}
+              onClick={() => setIdx(i)}
+            />
+          ))}
+        </div>
+        <p className="text-[11px] text-tertiary">
+          {reduceMotion ? "Showing first example (reduced motion)" : "Cycles automatically · Hover to pause"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe }: Props) {
   const reduceMotion = useReducedMotion();
   const hasReviewed = user ? reviews.some((r) => r.user_id === user.id) : false;
-  const communityReviews = useMemo(() => {
-    const real = reviews.slice(0, 4);
-    if (real.length >= 4) return real;
-    const needed = 4 - real.length;
-    return [...real, ...seedCommunityReviews.slice(0, needed)];
-  }, [reviews]);
+  const [heroLineIdx, setHeroLineIdx] = useState(0);
   const [activeVibe, setActiveVibe] = useState<LandingVibe>("Cozy");
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
 
@@ -213,6 +358,14 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
     }, 9500);
     return () => window.clearInterval(id);
   }, [heroImages.length, reduceMotion]);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const id = window.setInterval(() => {
+      setHeroLineIdx((prev) => (prev + 1) % heroHeadlines.length);
+    }, 7200);
+    return () => window.clearInterval(id);
+  }, [reduceMotion]);
 
   const showcased = useMemo(
     () => suggestionsByVibe[activeVibe] ?? [],
@@ -304,21 +457,40 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
           <motion.p variants={item} transition={{ duration: 0.55 }} className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-black/35 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-indigo-200/90 backdrop-blur-md">
             {APP_NAME}
           </motion.p>
-          <motion.h1 variants={item} transition={{ duration: 0.55 }} className="mt-7 max-w-3xl text-4xl font-bold leading-[1.04] tracking-tight text-white sm:text-6xl lg:text-[4.3rem]">
-            {heroHeadlines[0]}
-          </motion.h1>
+          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-7 min-h-[5.5rem] max-w-3xl sm:min-h-[7.25rem] lg:min-h-[8rem]">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.h1
+                key={reduceMotion ? heroHeadlines[0] : heroHeadlines[heroLineIdx]}
+                initial={reduceMotion ? false : { opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -12 }}
+                transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="text-4xl font-bold leading-[1.06] tracking-tight text-white sm:text-6xl lg:text-[4.3rem]"
+              >
+                {reduceMotion ? heroHeadlines[0] : heroHeadlines[heroLineIdx]}
+              </motion.h1>
+            </AnimatePresence>
+          </motion.div>
           <motion.p variants={item} transition={{ duration: 0.55 }} className="mt-5 max-w-xl text-base leading-relaxed text-zinc-200/80 sm:text-lg">
-            Curated films for your exact mood. No algorithmic noise. No endless browsing.
+            Curated picks for your mood—plus your friends&apos; ratings, watchlists, and diary so you
+            can decide together without the endless scroll.
           </motion.p>
           <motion.ul variants={item} transition={{ duration: 0.55 }} className="mt-5 grid max-w-2xl gap-2 text-sm text-zinc-200/80 sm:grid-cols-3">
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Track films and shows you watched</li>
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Save what you want to watch next</li>
-            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">Share with friends and style your profile</li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Find a film fast—filters that match how tonight feels
+            </li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Track watched, watchlist, and quick notes in one place
+            </li>
+            <li className="rounded-xl border border-white/10 bg-black/30 px-3 py-2 backdrop-blur-sm">
+              Follow friends and spot what they rated before you choose
+            </li>
           </motion.ul>
-          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <motion.div variants={item} transition={{ duration: 0.55 }} className="mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <MagneticButton href="/recommend" strong>
               Find a film tonight
             </MagneticButton>
+            <MagneticButton href="/friends">See friend activity</MagneticButton>
             {!user ? <MagneticButton href="/signup">Create free account</MagneticButton> : null}
           </motion.div>
         </motion.div>
@@ -618,111 +790,108 @@ export function HomeLandingClient({ user, reviews, heroMovies, suggestionsByVibe
                 Community
               </p>
               <h3 className="mt-3 text-2xl font-bold text-primary sm:text-3xl">
-                See what your friends are watching.
+                Watch together—not alone in the algorithm.
               </h3>
               <p className="mt-2 text-sm text-secondary">
-                Ratings, quick notes, and watchlists in one place.
+                Follow people you trust, skim their ratings and diary, and spot overlaps before you
+                commit to a film.
               </p>
             </div>
-            <Link
-              href={user ? "/feedback" : "/login?redirect=/feedback"}
-              className="rounded-full border border-indigo-400/45 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/30"
-            >
-              {hasReviewed ? "Edit your review" : "Add a review"}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/friends"
+                className="rounded-full border border-indigo-400/45 bg-indigo-500/20 px-4 py-2 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-500/30"
+              >
+                Friends
+              </Link>
+              <Link
+                href={user ? "/feedback" : "/login?redirect=/feedback"}
+                className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-1)] px-4 py-2 text-sm font-semibold text-primary transition hover:bg-[var(--surface-2)]"
+              >
+                {hasReviewed ? "Edit your review" : "Add a review"}
+              </Link>
+            </div>
           </div>
 
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.95fr)]">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {communityReviews.map((r, i) => (
-                <ProductDemoScrollReveal
-                  key={`${r.id}-${i}`}
-                  as="article"
-                  progress={communityScrollProgress}
-                  reduceMotion={Boolean(reduceMotion)}
-                  start={0.06 + i * 0.07}
-                  end={0.22 + i * 0.07}
-                  y={18}
-                  className="surface-card-subtle rounded-2xl p-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-500/15 text-xs font-semibold text-indigo-300">
-                      {r.reviewer_display_name.slice(0, 1).toUpperCase()}
-                    </div>
-                    <p className="text-xs font-medium text-primary">{r.reviewer_display_name}</p>
-                    <p className="text-[11px] text-tertiary">{formatDate(r.created_at)}</p>
-                  </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Stars rating={r.rating} />
-                    <span className="rounded-full border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-0.5 text-[10px] text-secondary">
-                      Logged tonight
-                    </span>
-                  </div>
-                  <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-tertiary">{r.body}</p>
-                </ProductDemoScrollReveal>
-              ))}
-            </div>
+          <ProductDemoScrollReveal
+            as="article"
+            progress={communityScrollProgress}
+            reduceMotion={Boolean(reduceMotion)}
+            start={0.02}
+            end={0.18}
+            y={14}
+            className="mb-6"
+          >
+            <FriendsFilmDemoCarousel reduceMotion={reduceMotion} />
+          </ProductDemoScrollReveal>
 
-            <div className="grid gap-3">
-              <ProductDemoScrollReveal
-                as="article"
-                progress={communityScrollProgress}
-                reduceMotion={Boolean(reduceMotion)}
-                start={0.32}
-                end={0.5}
-                y={20}
-                className="surface-card rounded-2xl p-4"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
-                  Friends feed
-                </p>
-                <div className="mt-3 space-y-2">
-                  {["Jules rated The Shining ★★★★☆", "Mika added Psycho to watchlist", "Sam reviewed Cure: 'cold and precise'"].map((itemText) => (
-                    <div
-                      key={itemText}
-                      className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-secondary"
-                    >
-                      {itemText}
-                    </div>
-                  ))}
-                </div>
-              </ProductDemoScrollReveal>
+          <div className="grid gap-3 lg:grid-cols-2">
+            <ProductDemoScrollReveal
+              as="article"
+              progress={communityScrollProgress}
+              reduceMotion={Boolean(reduceMotion)}
+              start={0.22}
+              end={0.42}
+              y={20}
+              className="surface-card rounded-2xl p-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                Friends feed
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-tertiary">
+                New ratings, diary logs, and watchlist adds from people you follow—same ideas as the
+                carousel, in a live stream.
+              </p>
+              <div className="mt-3 space-y-2">
+                {[
+                  "Jules rated The Shining ★★★★☆",
+                  "Mika added Psycho to watchlist",
+                  "Sam reviewed Cure: “cold and precise”",
+                ].map((itemText) => (
+                  <div
+                    key={itemText}
+                    className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2.5 py-2 text-xs text-secondary"
+                  >
+                    {itemText}
+                  </div>
+                ))}
+              </div>
+            </ProductDemoScrollReveal>
 
-              <ProductDemoScrollReveal
-                as="article"
-                progress={communityScrollProgress}
-                reduceMotion={Boolean(reduceMotion)}
-                start={0.42}
-                end={0.62}
-                y={20}
-                className="surface-card rounded-2xl p-4"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
-                  Your profile
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full border border-indigo-500/35 bg-indigo-500/10" />
-                  <div>
-                    <p className="text-sm font-semibold text-primary">nudgefilm_user</p>
-                    <p className="text-xs text-tertiary">124 watched · 38 watchlist</p>
-                  </div>
+            <ProductDemoScrollReveal
+              as="article"
+              progress={communityScrollProgress}
+              reduceMotion={Boolean(reduceMotion)}
+              start={0.34}
+              end={0.56}
+              y={20}
+              className="surface-card rounded-2xl p-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-500/75">
+                Your profile
+              </p>
+              <div className="mt-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full border border-indigo-500/35 bg-indigo-500/10" />
+                <div>
+                  <p className="text-sm font-semibold text-primary">nudgefilm_user</p>
+                  <p className="text-xs text-tertiary">124 watched · 38 watchlist</p>
                 </div>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">4.2</p>
-                    <p className="text-[10px] text-tertiary">Avg rating</p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">19</p>
-                    <p className="text-[10px] text-tertiary">Reviews</p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
-                    <p className="text-sm font-semibold text-primary">7</p>
-                    <p className="text-[10px] text-tertiary">Friends</p>
-                  </div>
+              </div>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">4.2</p>
+                  <p className="text-[10px] text-tertiary">Avg rating</p>
                 </div>
-              </ProductDemoScrollReveal>
-            </div>
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">19</p>
+                  <p className="text-[10px] text-tertiary">Reviews</p>
+                </div>
+                <div className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-2 py-2 text-center">
+                  <p className="text-sm font-semibold text-primary">7</p>
+                  <p className="text-[10px] text-tertiary">Friends</p>
+                </div>
+              </div>
+            </ProductDemoScrollReveal>
           </div>
         </div>
       </section>
