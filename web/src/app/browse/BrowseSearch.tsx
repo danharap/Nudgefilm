@@ -10,18 +10,55 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
 
-type Hit = {
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type MovieHit = {
   id: number;
   title: string;
   release_date: string;
   poster_path: string | null;
   vote_average: number;
-  mediaType?: "movie" | "tv";
+  mediaType: "movie" | "tv";
 };
 
-type SearchType = "movies" | "tv" | "all";
+type PersonHit = {
+  id: number;
+  name: string;
+  known_for_department: string | null;
+  profile_path: string | null;
+  known_for_titles: string[];
+  mediaType: "person";
+};
 
-function hitToBrowseMovie(m: Hit): BrowseMovie {
+type SearchHit = MovieHit | PersonHit;
+
+type SearchCategory = "all" | "movies" | "tv" | "people";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const CATEGORY_OPTIONS: { value: SearchCategory; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "movies", label: "Movies" },
+  { value: "tv", label: "TV Shows" },
+  { value: "people", label: "People" },
+];
+
+function categoryPlaceholder(cat: SearchCategory): string {
+  if (cat === "people") return "Search actors, directors, writers…";
+  if (cat === "movies") return "Search any film by title…";
+  if (cat === "tv") return "Search any TV show by title…";
+  return "Search films and TV shows…";
+}
+
+function isPersonHit(hit: SearchHit): hit is PersonHit {
+  return hit.mediaType === "person";
+}
+
+function movieHitToBrowseMovie(m: MovieHit): BrowseMovie {
   return {
     id: m.id,
     title: m.title,
@@ -31,87 +68,188 @@ function hitToBrowseMovie(m: Hit): BrowseMovie {
     vote_count: 0,
     overview: "",
     genre_ids: [],
-    mediaType: m.mediaType,
+    mediaType: m.mediaType as "movie" | "tv",
   };
 }
 
-async function fetchSearchHits(q: string, type: SearchType): Promise<Hit[]> {
-  const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${type}`;
-  const res = await fetch(url, { credentials: "same-origin" });
-  const data = (await res.json()) as { results?: Hit[]; error?: string };
+async function fetchHits(q: string, category: SearchCategory, signal: AbortSignal): Promise<SearchHit[]> {
+  const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${category}`;
+  const res = await fetch(url, { credentials: "same-origin", signal });
+  const data = (await res.json()) as { results?: SearchHit[]; error?: string };
   if (!res.ok) throw new Error(data.error ?? "Search failed");
   return data.results ?? [];
 }
+
+// ---------------------------------------------------------------------------
+// Person cards
+// ---------------------------------------------------------------------------
+
+function PersonQuickRow({ person }: { person: PersonHit }) {
+  const profileSrc = posterUrl(person.profile_path, "w92");
+  return (
+    <Link
+      href={`/person/${person.id}`}
+      className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
+    >
+      {/* Round headshot */}
+      <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-zinc-800 ring-1 ring-[var(--surface-border)]">
+        {profileSrc ? (
+          <TmdbImage src={profileSrc} alt="" fill className="object-cover" sizes="44px" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-600 text-lg">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="size-5">
+              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z" />
+            </svg>
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-primary">{person.name}</p>
+        <p className="text-xs text-tertiary">
+          {person.known_for_department ?? "Film"}
+          {person.known_for_titles.length > 0 && (
+            <> · <span className="text-zinc-500">{person.known_for_titles.slice(0, 2).join(", ")}</span></>
+          )}
+        </p>
+      </div>
+      <span className="shrink-0 text-xs text-zinc-600">→</span>
+    </Link>
+  );
+}
+
+function PersonGridCard({ person }: { person: PersonHit }) {
+  const profileSrc = posterUrl(person.profile_path, "w342");
+  return (
+    <Link
+      href={`/person/${person.id}`}
+      className="premium-card group flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300/40"
+    >
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
+        {profileSrc ? (
+          <TmdbImage
+            src={profileSrc}
+            alt={person.name}
+            fill
+            className="object-cover transition duration-500 group-hover:scale-[1.06]"
+            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, 20vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-zinc-600">
+            <svg viewBox="0 0 24 24" fill="currentColor" className="size-12 opacity-40">
+              <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z" />
+            </svg>
+          </div>
+        )}
+        {/* Department badge */}
+        {person.known_for_department && (
+          <div className="absolute left-2 bottom-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-200 backdrop-blur-sm ring-1 ring-white/10">
+            {person.known_for_department}
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <p className="line-clamp-2 text-sm font-semibold text-primary group-hover:text-indigo-400 transition">
+          {person.name}
+        </p>
+        {person.known_for_titles.length > 0 && (
+          <p className="line-clamp-2 text-[11px] leading-relaxed text-tertiary">
+            {person.known_for_titles.join(" · ")}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
+// ---------------------------------------------------------------------------
 
 export function BrowseSearch({
   type = "all",
   toolbarStart,
 }: {
-  type?: SearchType;
-  /** e.g. All / Movies / TV filter — kept in the same row as the search bar */
+  type?: "all" | "movies" | "tv";
   toolbarStart?: ReactNode;
 }) {
   const { isLoggedIn } = useBrowseLibrary();
+
+  // Search category tabs — independent of the grid content type filter
+  const [searchCategory, setSearchCategory] = useState<SearchCategory>(type);
+
+  // Sync category when the parent's grid type changes (e.g. user clicks Movies grid filter)
+  // but only if they haven't already selected "people"
+  useEffect(() => {
+    setSearchCategory((prev) => (prev === "people" ? "people" : type));
+  }, [type]);
+
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [quickResults, setQuickResults] = useState<Hit[]>([]);
+  const [quickResults, setQuickResults] = useState<SearchHit[]>([]);
   const [quickLoading, setQuickLoading] = useState(false);
   const [quickError, setQuickError] = useState<string | null>(null);
 
   const [committedQuery, setCommittedQuery] = useState<string | null>(null);
-  const [gridResults, setGridResults] = useState<BrowseMovie[]>([]);
+  const [committedCategory, setCommittedCategory] = useState<SearchCategory>("all");
+  const [gridResults, setGridResults] = useState<SearchHit[]>([]);
   const [gridLoading, setGridLoading] = useState(false);
 
   const [isPending, startTransition] = useTransition();
   const gridAnchorRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const placeholder =
-    type === "tv"
-      ? "Search any TV show by title…"
-      : type === "movies"
-        ? "Search any film by title…"
-        : "Search films and TV shows…";
-
+  // Debounce
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(t);
   }, [query]);
 
+  // Clear results when category changes
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (debounced.length < 2) {
-        setQuickResults([]);
-        setQuickError(null);
-        setQuickLoading(false);
-        return;
-      }
-      if (committedQuery !== null && debounced === committedQuery) {
-        setQuickResults([]);
-        setQuickError(null);
-        setQuickLoading(false);
-        return;
-      }
-      setQuickLoading(true);
+    setQuickResults([]);
+    setQuickError(null);
+    setCommittedQuery(null);
+    setGridResults([]);
+  }, [searchCategory]);
+
+  // Quick-pick fetch with abort
+  useEffect(() => {
+    if (debounced.length < 2) {
+      setQuickResults([]);
       setQuickError(null);
-      try {
-        const hits = await fetchSearchHits(debounced, type);
-        if (!cancelled) {
-          setQuickResults(hits);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setQuickError(e instanceof Error ? e.message : "Search failed");
-          setQuickResults([]);
-        }
-      } finally {
-        if (!cancelled) setQuickLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced, committedQuery, type]);
+      setQuickLoading(false);
+      return;
+    }
+    if (committedQuery !== null && debounced === committedQuery) {
+      setQuickResults([]);
+      setQuickError(null);
+      setQuickLoading(false);
+      return;
+    }
+
+    // Abort previous in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setQuickLoading(true);
+    setQuickError(null);
+
+    fetchHits(debounced, searchCategory, controller.signal)
+      .then((hits) => {
+        if (!controller.signal.aborted) setQuickResults(hits);
+      })
+      .catch((e: unknown) => {
+        if (controller.signal.aborted) return;
+        setQuickError(e instanceof Error ? e.message : "Search failed");
+        setQuickResults([]);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setQuickLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [debounced, committedQuery, searchCategory]);
 
   const showQuickPanel =
     debounced.length >= 2 &&
@@ -126,16 +264,18 @@ export function BrowseSearch({
     }
     if (debounced === q && quickResults.length > 0 && !quickLoading) {
       setCommittedQuery(q);
-      setGridResults(quickResults.map(hitToBrowseMovie));
+      setCommittedCategory(searchCategory);
+      setGridResults(quickResults);
       gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
     setGridLoading(true);
     setQuickError(null);
     setCommittedQuery(q);
+    setCommittedCategory(searchCategory);
     try {
-      const hits = await fetchSearchHits(q, type);
-      setGridResults(hits.map(hitToBrowseMovie));
+      const hits = await fetchHits(q, searchCategory, new AbortController().signal);
+      setGridResults(hits);
       gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Search failed");
@@ -144,7 +284,7 @@ export function BrowseSearch({
     } finally {
       setGridLoading(false);
     }
-  }, [query, type, debounced, quickResults, quickLoading]);
+  }, [query, searchCategory, debounced, quickResults, quickLoading]);
 
   function act(id: number, action: () => Promise<void>, msg: string) {
     if (!isLoggedIn) {
@@ -170,13 +310,23 @@ export function BrowseSearch({
     setQuickError(null);
   }
 
+  function handleCategoryChange(cat: SearchCategory) {
+    setSearchCategory(cat);
+    setQuery("");
+    setDebounced("");
+  }
+
+  const isPeople = searchCategory === "people";
+
   return (
-    <div className="w-full space-y-6">
-      {/* One compact row on desktop so the type filter doesn’t center against the full results block */}
+    <div className="w-full space-y-5">
+      {/* Toolbar row: grid type filter + 18+ toggle */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-x-4">
         {toolbarStart ? (
           <div className="flex shrink-0 justify-start sm:self-center">{toolbarStart}</div>
         ) : null}
+
+        {/* Search input + button */}
         <div className={`relative z-20 min-w-0 ${toolbarStart ? "" : "sm:col-span-full"}`}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
             <input
@@ -189,10 +339,10 @@ export function BrowseSearch({
                   void runCommittedSearch();
                 }
               }}
-              placeholder={placeholder}
+              placeholder={categoryPlaceholder(searchCategory)}
               autoComplete="off"
               className="input-premium min-h-[48px] flex-1 rounded-2xl px-5 py-3.5 text-sm"
-              aria-label="Search titles"
+              aria-label={`Search ${searchCategory}`}
               aria-expanded={showQuickPanel}
               aria-controls="browse-search-suggestions"
             />
@@ -206,118 +356,176 @@ export function BrowseSearch({
             </button>
           </div>
 
-        {/* Quick picks — solid background so posters behind don’t bleed through */}
-        {showQuickPanel ? (
-          <div
-            id="browse-search-suggestions"
-            className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-[var(--surface-border)] shadow-2xl ring-1 ring-black/10"
-            style={{
-              backgroundColor: "var(--search-popover-bg)",
-              boxShadow: "var(--shadow-lift)",
-            }}
-          >
-            {quickLoading ? (
-              <p className="px-4 py-3 text-xs text-tertiary">Searching…</p>
-            ) : quickError ? (
-              <p className="px-4 py-3 text-xs text-red-400">{quickError}</p>
-            ) : (
-              <ul className="divide-y divide-[var(--surface-border)]">
-                {quickResults.map((m) => {
-                  const year = m.release_date?.slice(0, 4) ?? "—";
-                  const poster = posterUrl(m.poster_path, "w92");
-                  const isTV = m.mediaType === "tv";
-                  const href = browseMediaPath(m.title, m.id, m.mediaType);
-                  return (
-                    <li
-                      key={`${m.mediaType ?? "movie"}-${m.id}`}
-                      className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
-                    >
-                      <Link
-                        href={href}
-                        className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
+          {/* Quick-pick dropdown */}
+          {showQuickPanel ? (
+            <div
+              id="browse-search-suggestions"
+              role="listbox"
+              aria-label="Search suggestions"
+              className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[28rem] overflow-y-auto rounded-2xl border border-[var(--surface-border)] shadow-2xl ring-1 ring-black/10"
+              style={{
+                backgroundColor: "var(--search-popover-bg)",
+                boxShadow: "var(--shadow-lift)",
+              }}
+            >
+              {quickLoading ? (
+                <p className="px-4 py-3 text-xs text-tertiary">Searching…</p>
+              ) : quickError ? (
+                <p className="px-4 py-3 text-xs text-red-400">{quickError}</p>
+              ) : (
+                <ul className="divide-y divide-[var(--surface-border)]">
+                  {quickResults.map((hit) => {
+                    if (isPersonHit(hit)) {
+                      return (
+                        <li key={`person-${hit.id}`}>
+                          <PersonQuickRow person={hit} />
+                        </li>
+                      );
+                    }
+                    const year = hit.release_date?.slice(0, 4) ?? "—";
+                    const poster = posterUrl(hit.poster_path, "w92");
+                    const isTV = hit.mediaType === "tv";
+                    const href = browseMediaPath(hit.title, hit.id, hit.mediaType);
+                    return (
+                      <li
+                        key={`${hit.mediaType}-${hit.id}`}
+                        className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
                       >
-                        {poster ? (
-                          <TmdbImage src={poster} alt="" fill className="object-cover" sizes="40px" />
-                        ) : null}
-                      </Link>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={href}
-                            className="block truncate text-sm font-medium text-primary hover:text-indigo-400"
-                          >
-                            {m.title}
-                          </Link>
-                          {isTV && (
-                            <span className="shrink-0 rounded bg-violet-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                              TV
-                            </span>
-                          )}
+                        <Link
+                          href={href}
+                          className="relative h-14 w-10 shrink-0 overflow-hidden rounded bg-zinc-800 ring-1 ring-[var(--surface-border)]"
+                        >
+                          {poster ? (
+                            <TmdbImage src={poster} alt="" fill className="object-cover" sizes="40px" />
+                          ) : null}
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={href}
+                              className="block truncate text-sm font-medium text-primary hover:text-indigo-400"
+                            >
+                              {hit.title}
+                            </Link>
+                            {isTV && (
+                              <span className="shrink-0 rounded bg-violet-600/90 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                                TV
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-tertiary">
+                            {year} · ★ {hit.vote_average?.toFixed(1) ?? "—"}
+                          </p>
                         </div>
-                        <p className="text-xs text-tertiary">
-                          {year} · ★ {m.vote_average?.toFixed(1) ?? "—"}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 gap-1.5">
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() =>
-                            act(
-                              m.id,
-                              () => (isTV ? markTVWatched(m.id) : markWatched(m.id)),
-                              "Added to diary.",
-                            )
-                          }
-                          className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
-                        >
-                          Watched
-                        </button>
-                        <button
-                          type="button"
-                          disabled={isPending}
-                          onClick={() =>
-                            act(
-                              m.id,
-                              () =>
-                                isTV ? addTVToWatchlist(m.id) : addToWatchlist(m.id),
-                              "Added to watchlist.",
-                            )
-                          }
-                          className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
-                        >
-                          + List
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        ) : null}
+                        <div className="flex shrink-0 gap-1.5">
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() =>
+                              act(
+                                hit.id,
+                                () => (isTV ? markTVWatched(hit.id) : markWatched(hit.id)),
+                                "Added to diary.",
+                              )
+                            }
+                            className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
+                          >
+                            Watched
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() =>
+                              act(
+                                hit.id,
+                                () => (isTV ? addTVToWatchlist(hit.id) : addToWatchlist(hit.id)),
+                                "Added to watchlist.",
+                              )
+                            }
+                            className="rounded-lg border border-[var(--surface-border)] bg-[var(--surface-2)] px-3 py-1.5 text-xs text-secondary hover:text-primary disabled:opacity-50"
+                          >
+                            + List
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
 
+      {/* Search category tabs */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div
+          role="group"
+          aria-label="Search category"
+          className="inline-flex rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] p-1"
+        >
+          {CATEGORY_OPTIONS.map((opt) => {
+            const active = opt.value === searchCategory;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => handleCategoryChange(opt.value)}
+                aria-pressed={active}
+                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
+                  active
+                    ? opt.value === "people"
+                      ? "bg-violet-500 text-white shadow-sm"
+                      : "bg-indigo-500 text-white shadow-sm"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Contextual helper */}
+        <p className="text-xs text-tertiary">
+          {isPeople ? (
+            <>Browse <span className="text-secondary">filmography</span> on a person&apos;s page</>
+          ) : (
+            <>Looking for an actor or director?{" "}
+              <button
+                type="button"
+                onClick={() => handleCategoryChange("people")}
+                className="text-indigo-400 underline-offset-2 hover:underline"
+              >
+                Try People
+              </button>
+            </>
+          )}
+        </p>
+      </div>
+
+      {/* Tip line */}
       <p className="text-xs text-tertiary">
         <span className="text-secondary">Tip:</span> suggestions appear as you type; press{" "}
         <kbd className="rounded border border-[var(--surface-border)] bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[10px] text-secondary">
           Enter
         </kbd>{" "}
-        or <span className="text-secondary">Search</span> for full results in the grid below.
+        or <span className="text-secondary">Search</span> for full results below.
       </p>
 
-      {/* Full results — same cards as Trending / Popular */}
+      {/* Full results grid */}
       <div ref={gridAnchorRef}>
         {committedQuery ? (
           <section className="space-y-4 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-2)]/40 p-4 sm:p-5">
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold text-primary">Results</h2>
+                <h2 className="text-base font-semibold text-primary">
+                  {committedCategory === "people" ? "People" : "Results"}
+                </h2>
                 <p className="text-sm text-tertiary">
                   For &ldquo;{committedQuery}&rdquo;
                   {gridResults.length > 0 ? (
-                    <span className="text-tertiary"> · {gridResults.length} titles</span>
+                    <span className="text-tertiary"> · {gridResults.length} {committedCategory === "people" ? "people" : "titles"}</span>
                   ) : null}
                 </p>
               </div>
@@ -329,18 +537,33 @@ export function BrowseSearch({
                 Clear search
               </button>
             </div>
+
             {gridLoading ? (
               <p className="py-12 text-center text-sm text-tertiary">Loading results…</p>
             ) : gridResults.length === 0 ? (
-              <p className="py-12 text-center text-sm text-tertiary">No matches. Try another title.</p>
+              <p className="py-12 text-center text-sm text-tertiary">
+                {committedCategory === "people"
+                  ? "No people found. Try a different name."
+                  : "No matches. Try another title."}
+              </p>
+            ) : committedCategory === "people" ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {gridResults.map((hit) =>
+                  isPersonHit(hit) ? (
+                    <PersonGridCard key={`person-${hit.id}`} person={hit} />
+                  ) : null,
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {gridResults.map((m) => (
-                  <BrowseMovieCard
-                    key={`${m.mediaType ?? "movie"}-${m.id}`}
-                    movie={m}
-                  />
-                ))}
+                {gridResults.map((hit) =>
+                  !isPersonHit(hit) ? (
+                    <BrowseMovieCard
+                      key={`${hit.mediaType}-${hit.id}`}
+                      movie={movieHitToBrowseMovie(hit)}
+                    />
+                  ) : null,
+                )}
               </div>
             )}
           </section>

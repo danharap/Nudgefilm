@@ -374,3 +374,37 @@ export async function getPersonCombinedCredits(personId: number) {
 export async function getSimilarMovies(tmdbId: number, page = "1") {
   return tmdbFetch<DiscoverResponse>(`/movie/${tmdbId}/similar`, { page });
 }
+
+// ---------------------------------------------------------------------------
+// People / Person search
+// ---------------------------------------------------------------------------
+
+export type PersonSearchResult = {
+  id: number;
+  name: string;
+  known_for_department: string | null;
+  profile_path: string | null;
+  popularity: number;
+  known_for: Array<{
+    id: number;
+    title?: string;
+    name?: string;
+    media_type?: string;
+  }>;
+};
+
+export type PersonSearchResponse = {
+  page: number;
+  results: PersonSearchResult[];
+  total_results: number;
+};
+
+export async function searchPerson(query: string, page = "1") {
+  const q = query.trim();
+  if (!q) return { page: 1, results: [] as PersonSearchResult[], total_results: 0 };
+  return tmdbFetch<PersonSearchResponse>(
+    "/search/person",
+    { query: q, page },
+    600,
+  );
+}

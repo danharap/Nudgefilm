@@ -14,6 +14,24 @@ import { useSearchParams } from "next/navigation";
 
 type ContentType = "all" | "movies" | "tv";
 
+// Genre IDs considered mature/18+ for client-side filtering.
+// TMDB's `adult` flag only covers explicit content; R-rated films like Horror
+// are never flagged, so we filter by genre as a reliable proxy.
+const MATURE_GENRE_IDS = new Set([27]); // 27 = Horror
+
+function filterForMaturePreference(
+  movies: BrowseMovie[],
+  showMatureContent: boolean,
+  loaded: boolean,
+): BrowseMovie[] {
+  if (!loaded || showMatureContent) return movies;
+  return movies.filter(
+    (m) =>
+      !m.adult &&
+      !(m.genre_ids ?? []).some((id) => MATURE_GENRE_IDS.has(id)),
+  );
+}
+
 export type AllBrowseData = {
   moviesPopular: BrowseMovie[];
   moviesTrending: BrowseMovie[];
@@ -44,6 +62,15 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
 
   const { isLoggedIn, is18Plus, showMatureContent, loaded, toggleMatureContent } = useBrowseLibrary();
 
+  const filteredData: AllBrowseData = {
+    moviesPopular: filterForMaturePreference(data.moviesPopular, showMatureContent, loaded),
+    moviesTrending: filterForMaturePreference(data.moviesTrending, showMatureContent, loaded),
+    moviesSpotlight: filterForMaturePreference(data.moviesSpotlight, showMatureContent, loaded),
+    tvPopular: filterForMaturePreference(data.tvPopular, showMatureContent, loaded),
+    tvTrending: filterForMaturePreference(data.tvTrending, showMatureContent, loaded),
+    tvSpotlight: filterForMaturePreference(data.tvSpotlight, showMatureContent, loaded),
+  };
+
   const spotlightColors = {
     red: { dot: "bg-red-500", ping: "bg-red-400", badge: "bg-red-500/15 text-red-400" },
     violet: { dot: "bg-violet-500", ping: "bg-violet-400", badge: "bg-violet-500/15 text-violet-400" },
@@ -61,9 +88,9 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
   let searchType: "all" | "movies" | "tv";
 
   if (contentType === "movies") {
-    spotlight = data.moviesSpotlight;
-    trending = data.moviesTrending;
-    popular = data.moviesPopular;
+    spotlight = filteredData.moviesSpotlight;
+    trending = filteredData.moviesTrending;
+    popular = filteredData.moviesPopular;
     spotlightLabel = "Now in Theaters";
     spotlightBadge = "In cinemas";
     spotlightColor = "red";
@@ -71,9 +98,9 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
     popularLabel = "Popular Films";
     searchType = "movies";
   } else if (contentType === "tv") {
-    spotlight = data.tvSpotlight;
-    trending = data.tvTrending;
-    popular = data.tvPopular;
+    spotlight = filteredData.tvSpotlight;
+    trending = filteredData.tvTrending;
+    popular = filteredData.tvPopular;
     spotlightLabel = "Now Airing";
     spotlightBadge = "On TV";
     spotlightColor = "violet";
@@ -83,18 +110,18 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
   } else {
     // "all" — interleaved movies + tv
     const mergedPopular: BrowseMovie[] = [];
-    const len = Math.max(data.moviesPopular.length, data.tvPopular.length);
+    const len = Math.max(filteredData.moviesPopular.length, filteredData.tvPopular.length);
     for (let i = 0; i < len; i++) {
-      if (data.moviesPopular[i]) mergedPopular.push(data.moviesPopular[i]);
-      if (data.tvPopular[i]) mergedPopular.push(data.tvPopular[i]);
+      if (filteredData.moviesPopular[i]) mergedPopular.push(filteredData.moviesPopular[i]);
+      if (filteredData.tvPopular[i]) mergedPopular.push(filteredData.tvPopular[i]);
     }
 
     const trendingMixed: BrowseMovie[] = [
-      ...data.moviesTrending.slice(0, 5),
-      ...data.tvTrending.slice(0, 5),
+      ...filteredData.moviesTrending.slice(0, 5),
+      ...filteredData.tvTrending.slice(0, 5),
     ].sort((a, b) => (b.vote_average ?? 0) - (a.vote_average ?? 0));
 
-    spotlight = [...data.moviesSpotlight.slice(0, 10), ...data.tvSpotlight.slice(0, 10)];
+    spotlight = [...filteredData.moviesSpotlight.slice(0, 10), ...filteredData.tvSpotlight.slice(0, 10)];
     trending = trendingMixed;
     popular = mergedPopular.slice(0, 20);
     spotlightLabel = "New This Week";
