@@ -4,7 +4,7 @@ import { BrowseMovieCard, type BrowseMovie } from "./BrowseMovieCard";
 import { useBrowseLibrary } from "./BrowseLibraryContext";
 import { BrowseSearch } from "./BrowseSearch";
 import { BrowseDiscoveryHero } from "./BrowseDiscoveryHero";
-import { BrowseTypeFilter } from "./BrowseTypeFilter";
+import { BrowseTypeFilter, type ContentType } from "./BrowseTypeFilter";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import TmdbImage from "@/components/ui/TmdbImage";
@@ -12,7 +12,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-type ContentType = "all" | "movies" | "tv";
 
 // Genre IDs considered mature/18+ for client-side filtering.
 // TMDB's `adult` flag only covers explicit content; R-rated films like Horror
@@ -58,7 +57,13 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
   const searchParams = useSearchParams();
   const rawType = searchParams.get("type");
   const contentType: ContentType =
-    rawType === "movies" ? "movies" : rawType === "tv" ? "tv" : "all";
+    rawType === "movies"
+      ? "movies"
+      : rawType === "tv"
+        ? "tv"
+        : rawType === "people"
+          ? "people"
+          : "all";
 
   const { isLoggedIn, is18Plus, showMatureContent, loaded, toggleMatureContent } = useBrowseLibrary();
 
@@ -77,15 +82,14 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
     indigo: { dot: "bg-indigo-500", ping: "bg-indigo-400", badge: "bg-indigo-500/15 text-indigo-400" },
   };
 
-  let spotlight: BrowseMovie[];
-  let trending: BrowseMovie[];
-  let popular: BrowseMovie[];
-  let spotlightLabel: string;
-  let spotlightBadge: string;
-  let spotlightColor: keyof typeof spotlightColors;
-  let trendingLabel: string;
-  let popularLabel: string;
-  let searchType: "all" | "movies" | "tv";
+  let spotlight: BrowseMovie[] = [];
+  let trending: BrowseMovie[] = [];
+  let popular: BrowseMovie[] = [];
+  let spotlightLabel = "";
+  let spotlightBadge = "";
+  let spotlightColor: keyof typeof spotlightColors = "indigo";
+  let trendingLabel = "";
+  let popularLabel = "";
 
   if (contentType === "movies") {
     spotlight = filteredData.moviesSpotlight;
@@ -96,7 +100,6 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
     spotlightColor = "red";
     trendingLabel = "Trending Films This Week";
     popularLabel = "Popular Films";
-    searchType = "movies";
   } else if (contentType === "tv") {
     spotlight = filteredData.tvSpotlight;
     trending = filteredData.tvTrending;
@@ -106,8 +109,7 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
     spotlightColor = "violet";
     trendingLabel = "Trending TV This Week";
     popularLabel = "Popular TV Shows";
-    searchType = "tv";
-  } else {
+  } else if (contentType !== "people") {
     // "all" — interleaved movies + tv
     const mergedPopular: BrowseMovie[] = [];
     const len = Math.max(filteredData.moviesPopular.length, filteredData.tvPopular.length);
@@ -129,7 +131,6 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
     spotlightColor = "indigo";
     trendingLabel = "Trending This Week";
     popularLabel = "Popular Right Now";
-    searchType = "all";
   }
 
   const colors = spotlightColors[spotlightColor];
@@ -153,26 +154,34 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
       </button>
     ) : null;
 
+  const toolbar = (
+    <div className="flex shrink-0 items-center gap-2">
+      <Suspense fallback={<div className="h-10 w-[340px] max-w-full animate-pulse rounded-xl bg-[var(--surface-2)]" />}>
+        <BrowseTypeFilter current={contentType} />
+      </Suspense>
+      {matureToggle}
+    </div>
+  );
+
   return (
     <>
       <BrowseDiscoveryHero />
 
       <div className="mb-10">
-        <BrowseSearch
-          toolbarStart={
-            <div className="flex shrink-0 items-center gap-2">
-              <Suspense fallback={<div className="h-10 w-[280px] max-w-full animate-pulse rounded-xl bg-[var(--surface-2)]" />}>
-                <BrowseTypeFilter current={contentType} />
-              </Suspense>
-              {matureToggle}
-            </div>
-          }
-          type={searchType}
-        />
+        <BrowseSearch toolbarStart={toolbar} type={contentType} />
       </div>
 
+      {/* People mode: search-only, no grid content */}
+      {contentType === "people" && (
+        <div className="py-8 text-center">
+          <p className="text-sm text-tertiary">
+            Search for an actor, director, or writer above to explore their filmography.
+          </p>
+        </div>
+      )}
+
       {/* Spotlight rail */}
-      {spotlight.length > 0 && (
+      {contentType !== "people" && spotlight.length > 0 && (
         <section className="mb-14">
           <div className="mb-4 flex items-center gap-3">
             <span className="flex items-center gap-1.5">
@@ -229,15 +238,19 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
         </section>
       )}
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-lg font-semibold text-primary">{trendingLabel}</h2>
-        <MovieGrid movies={trending.slice(0, 10)} />
-      </section>
+      {contentType !== "people" && (
+        <section className="mb-12">
+          <h2 className="mb-4 text-lg font-semibold text-primary">{trendingLabel}</h2>
+          <MovieGrid movies={trending.slice(0, 10)} />
+        </section>
+      )}
 
-      <section>
-        <h2 className="mb-4 text-lg font-semibold text-primary">{popularLabel}</h2>
-        <MovieGrid movies={popular.slice(0, 20)} />
-      </section>
+      {contentType !== "people" && (
+        <section>
+          <h2 className="mb-4 text-lg font-semibold text-primary">{popularLabel}</h2>
+          <MovieGrid movies={popular.slice(0, 20)} />
+        </section>
+      )}
     </>
   );
 }

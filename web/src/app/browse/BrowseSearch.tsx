@@ -9,6 +9,7 @@ import TmdbImage from "@/components/ui/TmdbImage";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { toast } from "sonner";
+import type { ContentType } from "./BrowseTypeFilter";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,28 +35,19 @@ type PersonHit = {
 
 type SearchHit = MovieHit | PersonHit;
 
-type SearchCategory = "all" | "movies" | "tv" | "people";
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-const CATEGORY_OPTIONS: { value: SearchCategory; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "movies", label: "Movies" },
-  { value: "tv", label: "TV Shows" },
-  { value: "people", label: "People" },
-];
-
-function categoryPlaceholder(cat: SearchCategory): string {
-  if (cat === "people") return "Search actors, directors, writers…";
-  if (cat === "movies") return "Search any film by title…";
-  if (cat === "tv") return "Search any TV show by title…";
-  return "Search films and TV shows…";
-}
-
 function isPersonHit(hit: SearchHit): hit is PersonHit {
   return hit.mediaType === "person";
+}
+
+function searchPlaceholder(type: ContentType): string {
+  if (type === "people") return "Search actors, directors, writers…";
+  if (type === "movies") return "Search any film by title…";
+  if (type === "tv") return "Search any TV show by title…";
+  return "Search films and TV shows…";
 }
 
 function movieHitToBrowseMovie(m: MovieHit): BrowseMovie {
@@ -68,12 +60,16 @@ function movieHitToBrowseMovie(m: MovieHit): BrowseMovie {
     vote_count: 0,
     overview: "",
     genre_ids: [],
-    mediaType: m.mediaType as "movie" | "tv",
+    mediaType: m.mediaType,
   };
 }
 
-async function fetchHits(q: string, category: SearchCategory, signal: AbortSignal): Promise<SearchHit[]> {
-  const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${category}`;
+async function fetchHits(
+  q: string,
+  type: ContentType,
+  signal: AbortSignal,
+): Promise<SearchHit[]> {
+  const url = `/api/movies/search?q=${encodeURIComponent(q)}&type=${type}`;
   const res = await fetch(url, { credentials: "same-origin", signal });
   const data = (await res.json()) as { results?: SearchHit[]; error?: string };
   if (!res.ok) throw new Error(data.error ?? "Search failed");
@@ -81,7 +77,7 @@ async function fetchHits(q: string, category: SearchCategory, signal: AbortSigna
 }
 
 // ---------------------------------------------------------------------------
-// Person cards
+// Person result cards
 // ---------------------------------------------------------------------------
 
 function PersonQuickRow({ person }: { person: PersonHit }) {
@@ -91,12 +87,11 @@ function PersonQuickRow({ person }: { person: PersonHit }) {
       href={`/person/${person.id}`}
       className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[var(--surface-3)]"
     >
-      {/* Round headshot */}
       <div className="relative size-11 shrink-0 overflow-hidden rounded-full bg-zinc-800 ring-1 ring-[var(--surface-border)]">
         {profileSrc ? (
           <TmdbImage src={profileSrc} alt="" fill className="object-cover" sizes="44px" />
         ) : (
-          <div className="flex h-full items-center justify-center text-zinc-600 text-lg">
+          <div className="flex h-full items-center justify-center text-zinc-600">
             <svg viewBox="0 0 24 24" fill="currentColor" className="size-5">
               <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-5.33 0-8 2.67-8 4v1h16v-1c0-1.33-2.67-4-8-4z" />
             </svg>
@@ -108,7 +103,10 @@ function PersonQuickRow({ person }: { person: PersonHit }) {
         <p className="text-xs text-tertiary">
           {person.known_for_department ?? "Film"}
           {person.known_for_titles.length > 0 && (
-            <> · <span className="text-zinc-500">{person.known_for_titles.slice(0, 2).join(", ")}</span></>
+            <>
+              {" · "}
+              <span className="text-zinc-500">{person.known_for_titles.slice(0, 2).join(", ")}</span>
+            </>
           )}
         </p>
       </div>
@@ -122,7 +120,7 @@ function PersonGridCard({ person }: { person: PersonHit }) {
   return (
     <Link
       href={`/person/${person.id}`}
-      className="premium-card group flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300/40"
+      className="premium-card group flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition-all duration-300 hover:-translate-y-1 hover:border-violet-300/40"
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
         {profileSrc ? (
@@ -140,15 +138,14 @@ function PersonGridCard({ person }: { person: PersonHit }) {
             </svg>
           </div>
         )}
-        {/* Department badge */}
         {person.known_for_department && (
-          <div className="absolute left-2 bottom-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-200 backdrop-blur-sm ring-1 ring-white/10">
+          <div className="absolute bottom-2 left-2 rounded-md bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-violet-200 backdrop-blur-sm ring-1 ring-white/10">
             {person.known_for_department}
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
-        <p className="line-clamp-2 text-sm font-semibold text-primary group-hover:text-indigo-400 transition">
+        <p className="line-clamp-2 text-sm font-semibold text-primary transition group-hover:text-violet-400">
           {person.name}
         </p>
         {person.known_for_titles.length > 0 && (
@@ -169,19 +166,10 @@ export function BrowseSearch({
   type = "all",
   toolbarStart,
 }: {
-  type?: "all" | "movies" | "tv";
+  type?: ContentType;
   toolbarStart?: ReactNode;
 }) {
   const { isLoggedIn } = useBrowseLibrary();
-
-  // Search category tabs — independent of the grid content type filter
-  const [searchCategory, setSearchCategory] = useState<SearchCategory>(type);
-
-  // Sync category when the parent's grid type changes (e.g. user clicks Movies grid filter)
-  // but only if they haven't already selected "people"
-  useEffect(() => {
-    setSearchCategory((prev) => (prev === "people" ? "people" : type));
-  }, [type]);
 
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -190,7 +178,7 @@ export function BrowseSearch({
   const [quickError, setQuickError] = useState<string | null>(null);
 
   const [committedQuery, setCommittedQuery] = useState<string | null>(null);
-  const [committedCategory, setCommittedCategory] = useState<SearchCategory>("all");
+  const [committedType, setCommittedType] = useState<ContentType>("all");
   const [gridResults, setGridResults] = useState<SearchHit[]>([]);
   const [gridLoading, setGridLoading] = useState(false);
 
@@ -198,21 +186,23 @@ export function BrowseSearch({
   const gridAnchorRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Clear results when the filter tab changes
+  useEffect(() => {
+    setQuery("");
+    setDebounced("");
+    setQuickResults([]);
+    setQuickError(null);
+    setCommittedQuery(null);
+    setGridResults([]);
+  }, [type]);
+
   // Debounce
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(t);
   }, [query]);
 
-  // Clear results when category changes
-  useEffect(() => {
-    setQuickResults([]);
-    setQuickError(null);
-    setCommittedQuery(null);
-    setGridResults([]);
-  }, [searchCategory]);
-
-  // Quick-pick fetch with abort
+  // Quick-pick fetch with abort on stale requests
   useEffect(() => {
     if (debounced.length < 2) {
       setQuickResults([]);
@@ -227,7 +217,6 @@ export function BrowseSearch({
       return;
     }
 
-    // Abort previous in-flight request
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -235,7 +224,7 @@ export function BrowseSearch({
     setQuickLoading(true);
     setQuickError(null);
 
-    fetchHits(debounced, searchCategory, controller.signal)
+    fetchHits(debounced, type, controller.signal)
       .then((hits) => {
         if (!controller.signal.aborted) setQuickResults(hits);
       })
@@ -249,7 +238,7 @@ export function BrowseSearch({
       });
 
     return () => controller.abort();
-  }, [debounced, committedQuery, searchCategory]);
+  }, [debounced, committedQuery, type]);
 
   const showQuickPanel =
     debounced.length >= 2 &&
@@ -264,7 +253,7 @@ export function BrowseSearch({
     }
     if (debounced === q && quickResults.length > 0 && !quickLoading) {
       setCommittedQuery(q);
-      setCommittedCategory(searchCategory);
+      setCommittedType(type);
       setGridResults(quickResults);
       gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -272,9 +261,9 @@ export function BrowseSearch({
     setGridLoading(true);
     setQuickError(null);
     setCommittedQuery(q);
-    setCommittedCategory(searchCategory);
+    setCommittedType(type);
     try {
-      const hits = await fetchHits(q, searchCategory, new AbortController().signal);
+      const hits = await fetchHits(q, type, new AbortController().signal);
       setGridResults(hits);
       gridAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (e) {
@@ -284,7 +273,7 @@ export function BrowseSearch({
     } finally {
       setGridLoading(false);
     }
-  }, [query, searchCategory, debounced, quickResults, quickLoading]);
+  }, [query, type, debounced, quickResults, quickLoading]);
 
   function act(id: number, action: () => Promise<void>, msg: string) {
     if (!isLoggedIn) {
@@ -310,23 +299,14 @@ export function BrowseSearch({
     setQuickError(null);
   }
 
-  function handleCategoryChange(cat: SearchCategory) {
-    setSearchCategory(cat);
-    setQuery("");
-    setDebounced("");
-  }
-
-  const isPeople = searchCategory === "people";
-
   return (
-    <div className="w-full space-y-5">
-      {/* Toolbar row: grid type filter + 18+ toggle */}
+    <div className="w-full space-y-4">
+      {/* Single toolbar row: type filter + 18+ toggle + search input */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-x-4">
         {toolbarStart ? (
           <div className="flex shrink-0 justify-start sm:self-center">{toolbarStart}</div>
         ) : null}
 
-        {/* Search input + button */}
         <div className={`relative z-20 min-w-0 ${toolbarStart ? "" : "sm:col-span-full"}`}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
             <input
@@ -339,10 +319,10 @@ export function BrowseSearch({
                   void runCommittedSearch();
                 }
               }}
-              placeholder={categoryPlaceholder(searchCategory)}
+              placeholder={searchPlaceholder(type)}
               autoComplete="off"
               className="input-premium min-h-[48px] flex-1 rounded-2xl px-5 py-3.5 text-sm"
-              aria-label={`Search ${searchCategory}`}
+              aria-label={`Search ${type}`}
               aria-expanded={showQuickPanel}
               aria-controls="browse-search-suggestions"
             />
@@ -457,54 +437,7 @@ export function BrowseSearch({
         </div>
       </div>
 
-      {/* Search category tabs */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div
-          role="group"
-          aria-label="Search category"
-          className="inline-flex rounded-xl border border-[var(--surface-border)] bg-[var(--surface-1)] p-1"
-        >
-          {CATEGORY_OPTIONS.map((opt) => {
-            const active = opt.value === searchCategory;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => handleCategoryChange(opt.value)}
-                aria-pressed={active}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-all ${
-                  active
-                    ? opt.value === "people"
-                      ? "bg-violet-500 text-white shadow-sm"
-                      : "bg-indigo-500 text-white shadow-sm"
-                    : "text-secondary hover:text-primary"
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Contextual helper */}
-        <p className="text-xs text-tertiary">
-          {isPeople ? (
-            <>Browse <span className="text-secondary">filmography</span> on a person&apos;s page</>
-          ) : (
-            <>Looking for an actor or director?{" "}
-              <button
-                type="button"
-                onClick={() => handleCategoryChange("people")}
-                className="text-indigo-400 underline-offset-2 hover:underline"
-              >
-                Try People
-              </button>
-            </>
-          )}
-        </p>
-      </div>
-
-      {/* Tip line */}
+      {/* Tip */}
       <p className="text-xs text-tertiary">
         <span className="text-secondary">Tip:</span> suggestions appear as you type; press{" "}
         <kbd className="rounded border border-[var(--surface-border)] bg-[var(--surface-2)] px-1.5 py-0.5 font-mono text-[10px] text-secondary">
@@ -520,13 +453,17 @@ export function BrowseSearch({
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <h2 className="text-base font-semibold text-primary">
-                  {committedCategory === "people" ? "People" : "Results"}
+                  {committedType === "people" ? "People" : "Results"}
                 </h2>
                 <p className="text-sm text-tertiary">
                   For &ldquo;{committedQuery}&rdquo;
-                  {gridResults.length > 0 ? (
-                    <span className="text-tertiary"> · {gridResults.length} {committedCategory === "people" ? "people" : "titles"}</span>
-                  ) : null}
+                  {gridResults.length > 0 && (
+                    <span>
+                      {" · "}
+                      {gridResults.length}{" "}
+                      {committedType === "people" ? "people" : "titles"}
+                    </span>
+                  )}
                 </p>
               </div>
               <button
@@ -542,11 +479,11 @@ export function BrowseSearch({
               <p className="py-12 text-center text-sm text-tertiary">Loading results…</p>
             ) : gridResults.length === 0 ? (
               <p className="py-12 text-center text-sm text-tertiary">
-                {committedCategory === "people"
+                {committedType === "people"
                   ? "No people found. Try a different name."
                   : "No matches. Try another title."}
               </p>
-            ) : committedCategory === "people" ? (
+            ) : committedType === "people" ? (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                 {gridResults.map((hit) =>
                   isPersonHit(hit) ? (
