@@ -4,8 +4,13 @@ import type { NextConfig } from "next";
 const withPWA = withPWAInit({
   dest: "public",
   cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
+  // Disabled: aggressiveFrontEndNavCaching caused the service worker to
+  // proactively fetch every linked page on load, generating millions of
+  // Vercel Observability events per day across all users.
+  aggressiveFrontEndNavCaching: false,
+  // Disabled: reloadOnOnline triggered a full-page reload + re-fetch cascade
+  // every time a user came back online, each hit counting as an event.
+  reloadOnOnline: false,
   disable: process.env.NODE_ENV === "development",
   workboxOptions: {
     disableDevLogs: true,

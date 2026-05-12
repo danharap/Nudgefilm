@@ -40,7 +40,7 @@ export async function GET(request: Request) {
   const q = raw.trim();
   const type = searchParams.get("type") ?? "all"; // "movies" | "tv" | "all" | "people"
 
-  if (q.length < 2) return NextResponse.json({ results: [], total_results: 0 });
+  if (q.length < 3) return NextResponse.json({ results: [], total_results: 0 });
   if (q.length > 120) return NextResponse.json({ error: "Query too long" }, { status: 400 });
 
   // Only allow adult results when the user has explicitly opted in and is 18+ verified

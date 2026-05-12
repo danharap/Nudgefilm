@@ -220,6 +220,7 @@ export default async function PersonPage({ params }: Props) {
                       <Link
                         key={`known-${credit.media_type}-${credit.id}`}
                         href={mediaHref(credit)}
+                        prefetch={false}
                         className="group"
                       >
                         <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-white/10 bg-zinc-900 transition duration-300 group-hover:border-indigo-400/40 group-hover:shadow-lg group-hover:shadow-indigo-900/20">

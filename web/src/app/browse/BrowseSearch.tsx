@@ -198,13 +198,13 @@ export function BrowseSearch({
 
   // Debounce
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim()), 300);
+    const t = setTimeout(() => setDebounced(query.trim()), 500);
     return () => clearTimeout(t);
   }, [query]);
 
   // Quick-pick fetch with abort on stale requests
   useEffect(() => {
-    if (debounced.length < 2) {
+    if (debounced.length < 3) {
       setQuickResults([]);
       setQuickError(null);
       setQuickLoading(false);
@@ -247,8 +247,8 @@ export function BrowseSearch({
 
   const runCommittedSearch = useCallback(async () => {
     const q = query.trim();
-    if (q.length < 2) {
-      toast.error("Type at least 2 characters to search.");
+    if (q.length < 3) {
+      toast.error("Type at least 3 characters to search.");
       return;
     }
     if (debounced === q && quickResults.length > 0 && !quickLoading) {

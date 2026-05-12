@@ -122,6 +122,7 @@ export function PersonFilmographyClient({
               <Link
                 key={`${credit.media_type}-${credit.id}-${title}-${i}`}
                 href={mediaHref(credit)}
+                prefetch={false}
                 className="group rounded-xl border border-white/10 bg-black/20 p-2"
               >
                 <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-900">
