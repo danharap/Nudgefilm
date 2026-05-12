@@ -8,6 +8,7 @@ import {
   removeFromWatchlist,
   removeTVFromWatchlist,
 } from "@/app/actions/library";
+import { useBrowseLibrary } from "@/app/browse/BrowseLibraryContext";
 import { movieToast } from "@/components/ui/movieToast";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
@@ -30,14 +31,14 @@ export type BrowseMovie = {
 
 type Props = {
   movie: BrowseMovie;
-  isWatched?: boolean;
-  isWatchlisted?: boolean;
-  isLoggedIn: boolean;
 };
 
-export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }: Props) {
-  const [watched, setWatched] = useState(isWatched ?? false);
-  const [watchlisted, setWatchlisted] = useState(isWatchlisted ?? false);
+export function BrowseMovieCard({ movie }: Props) {
+  const { isLoggedIn, watchedIds, watchlistIds } = useBrowseLibrary();
+  const [watched, setWatched] = useState<boolean | null>(null);
+  const [watchlisted, setWatchlisted] = useState<boolean | null>(null);
+  const isWatched = watched ?? watchedIds.has(movie.id);
+  const isWatchlisted = watchlisted ?? watchlistIds.has(movie.id);
   const [isPending, startTransition] = useTransition();
 
   const year = movie.release_date?.slice(0, 4) ?? "—";
@@ -65,6 +66,7 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
     <article className="premium-card group flex flex-col overflow-hidden rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-1)] transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300/40">
       <Link
         href={href}
+        prefetch={false}
         className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800"
       >
         {poster ? (
@@ -86,6 +88,12 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
             ★ {movie.vote_average.toFixed(1)}
           </div>
         )}
+        {/* Watched overlay */}
+        {isWatched && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+            <span className="rounded-full bg-indigo-500/90 px-2.5 py-1 text-[11px] font-semibold text-white">✓ Watched</span>
+          </div>
+        )}
         {/* TV badge */}
         {isTV && (
           <div className="absolute right-2 top-2 rounded-md bg-violet-600/80 px-1.5 py-0.5 text-[10px] font-semibold text-white backdrop-blur-sm">
@@ -98,6 +106,7 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
         <div>
           <Link
             href={href}
+            prefetch={false}
             className="line-clamp-2 text-sm font-medium text-primary transition hover:text-indigo-500"
           >
             {movie.title}
@@ -118,12 +127,12 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
               )
             }
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition disabled:opacity-50 ${
-              watched
+              isWatched
                 ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-500"
                 : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
             }`}
           >
-            {watched ? "✓ Watched" : "Watched"}
+            {isWatched ? "✓ Watched" : "Watched"}
           </button>
           <button
             type="button"
@@ -131,24 +140,24 @@ export function BrowseMovieCard({ movie, isWatched, isWatchlisted, isLoggedIn }:
             onClick={() =>
               run(
                 () =>
-                  watchlisted
+                  isWatchlisted
                     ? isTV
                       ? removeTVFromWatchlist(movie.id)
                       : removeFromWatchlist(movie.id)
                     : isTV
                       ? addTVToWatchlist(movie.id)
                       : addToWatchlist(movie.id),
-                () => setWatchlisted((p) => !p),
-                watchlisted ? "Removed from watchlist." : "Added to watchlist.",
+                () => setWatchlisted((p) => !(p ?? watchlistIds.has(movie.id))),
+                isWatchlisted ? "Removed from watchlist." : "Added to watchlist.",
               )
             }
             className={`flex-1 rounded-lg py-1.5 text-xs font-medium transition disabled:opacity-50 ${
-              watchlisted
+              isWatchlisted
                 ? "border border-indigo-400/30 bg-indigo-400/10 text-indigo-500 hover:bg-indigo-400/20"
                 : "border border-[var(--surface-border)] bg-[var(--surface-2)] text-secondary hover:text-primary"
             }`}
           >
-            {watchlisted ? "✓ Queued — Remove" : "Watchlist"}
+            {isWatchlisted ? "✓ Queued — Remove" : "Watchlist"}
           </button>
         </div>
       </div>

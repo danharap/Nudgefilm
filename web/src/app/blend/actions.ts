@@ -267,7 +267,7 @@ export async function getPartyByToken(token: string): Promise<PartyResult> {
 
     const memberIds = (memberRows ?? []).map((m) => m.user_id as string);
 
-    let profileMap = new Map<string, { display_name: string | null; username: string | null; avatar_url: string | null }>();
+    const profileMap = new Map<string, { display_name: string | null; username: string | null; avatar_url: string | null }>();
     if (memberIds.length > 0) {
       const { data: profiles } = await supabase
         .from("profiles")

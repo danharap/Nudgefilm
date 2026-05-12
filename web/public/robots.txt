@@ -1,0 +1,19 @@
+User-agent: *
+# Prevent crawlers from hammering auth and API endpoints
+Disallow: /api/
+Disallow: /auth/
+Disallow: /admin/
+Disallow: /import/
+Disallow: /onboarding/
+# Ask crawlers to be polite — reduces bot-driven function invocations
+Crawl-delay: 5
+
+# Allow all content pages for SEO
+Allow: /movie/
+Allow: /show/
+Allow: /person/
+Allow: /browse
+Allow: /recommend
+Allow: /
+
+Sitemap: https://nudgefilm.com/sitemap.xml

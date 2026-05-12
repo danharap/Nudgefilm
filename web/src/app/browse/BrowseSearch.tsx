@@ -2,6 +2,7 @@
 
 import { addTVToWatchlist, addToWatchlist, markTVWatched, markWatched } from "@/app/actions/library";
 import { BrowseMovieCard, type BrowseMovie } from "@/app/browse/BrowseMovieCard";
+import { useBrowseLibrary } from "@/app/browse/BrowseLibraryContext";
 import { browseMediaPath } from "@/lib/media-slug";
 import { posterUrl } from "@/lib/tmdb/constants";
 import TmdbImage from "@/components/ui/TmdbImage";
@@ -43,19 +44,14 @@ async function fetchSearchHits(q: string, type: SearchType): Promise<Hit[]> {
 }
 
 export function BrowseSearch({
-  isLoggedIn,
   type = "all",
-  watchedIds,
-  watchlistIds,
   toolbarStart,
 }: {
-  isLoggedIn: boolean;
   type?: SearchType;
-  watchedIds: Set<number>;
-  watchlistIds: Set<number>;
   /** e.g. All / Movies / TV filter — kept in the same row as the search bar */
   toolbarStart?: ReactNode;
 }) {
+  const { isLoggedIn } = useBrowseLibrary();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [quickResults, setQuickResults] = useState<Hit[]>([]);
@@ -343,9 +339,6 @@ export function BrowseSearch({
                   <BrowseMovieCard
                     key={`${m.mediaType ?? "movie"}-${m.id}`}
                     movie={m}
-                    isWatched={watchedIds.has(m.id)}
-                    isWatchlisted={watchlistIds.has(m.id)}
-                    isLoggedIn={isLoggedIn}
                   />
                 ))}
               </div>

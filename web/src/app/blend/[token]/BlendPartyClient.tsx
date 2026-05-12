@@ -77,13 +77,7 @@ function MemberList({
 
 // ─── Movie result card ────────────────────────────────────────────────────────
 
-function PartyMovieCard({
-  movie,
-  memberCount,
-}: {
-  movie: RecommendedMovie;
-  memberCount: number;
-}) {
+function PartyMovieCard({ movie }: { movie: RecommendedMovie }) {
   const [isPending, startTransition] = useTransition();
   const [queued, setQueued] = useState(false);
   const [logged, setLogged] = useState(false);
@@ -206,14 +200,12 @@ function PartyMovieCard({
 
 function ResultsPanel({
   result,
-  memberCount,
   sharedGenreNames,
   inviteUrl,
   onRegenerate,
   isRegenerating,
 }: {
   result: { movies: RecommendedMovie[] };
-  memberCount: number;
   sharedGenreNames: string[];
   inviteUrl: string;
   onRegenerate: () => void;
@@ -252,7 +244,7 @@ function ResultsPanel({
       {/* Movie list */}
       <div className="space-y-3">
         {result.movies.map((movie) => (
-          <PartyMovieCard key={movie.id} movie={movie} memberCount={memberCount} />
+          <PartyMovieCard key={movie.id} movie={movie} />
         ))}
       </div>
 
@@ -322,7 +314,7 @@ export function BlendPartyClient({
   inviteUrl,
 }: Props) {
   const router = useRouter();
-  const [party, setParty] = useState(initialParty);
+  const party = initialParty;
   const [isMember, setIsMember] = useState(initialIsMember);
   const [isPending, startTransition] = useTransition();
   const [genResult, setGenResult] = useState<GenerateResult | null>(null);
@@ -338,7 +330,6 @@ export function BlendPartyClient({
     })();
 
   const spotsLeft = party.max_participants - party.members.length;
-  const canGenerate = party.members.length >= 2 && party.status === "active";
 
   // ── Copy invite link ──────────────────────────────────────────────────────
 
@@ -562,7 +553,6 @@ export function BlendPartyClient({
           {genResult?.ok && !isGenerating && (
             <ResultsPanel
               result={genResult}
-              memberCount={party.members.length}
               sharedGenreNames={genResult.groupProfile?.sharedGenreNames ?? []}
               inviteUrl={inviteUrl}
               onRegenerate={handleGenerate}

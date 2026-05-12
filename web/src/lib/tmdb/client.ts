@@ -13,7 +13,18 @@ function getTmdbAuth():
   );
 }
 
-export async function tmdbFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
+/**
+ * @param revalidate  Seconds to keep the response in Next.js Data Cache.
+ *   - 300  (5 min)  — browse lists, search, discover, trending (change frequently)
+ *   - 3600 (1 hr)   — movie/TV detail pages (rarely change)
+ *   - 21600 (6 hr)  — credits, videos, external IDs, watch providers
+ *   - 86400 (24 hr) — person bio + filmography (very stable)
+ */
+export async function tmdbFetch<T>(
+  path: string,
+  params?: Record<string, string>,
+  revalidate = 300,
+): Promise<T> {
   const url = new URL(`${TMDB_API_BASE}${path}`);
   url.searchParams.set("language", "en-US");
   if (params) {
@@ -28,7 +39,7 @@ export async function tmdbFetch<T>(path: string, params?: Record<string, string>
   } else {
     url.searchParams.set("api_key", auth.apiKey);
   }
-  const res = await fetch(url.toString(), { headers, next: { revalidate: 300 } });
+  const res = await fetch(url.toString(), { headers, next: { revalidate } });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`TMDb ${res.status}: ${text.slice(0, 200)}`);
@@ -80,7 +91,7 @@ export type MovieDetailsResponse = {
 };
 
 export async function getMovieDetails(tmdbId: number) {
-  return tmdbFetch<MovieDetailsResponse>(`/movie/${tmdbId}`);
+  return tmdbFetch<MovieDetailsResponse>(`/movie/${tmdbId}`, undefined, 3600);
 }
 
 export type MovieSearchResult = {
@@ -211,7 +222,7 @@ export async function discoverTV(searchParams: URLSearchParams) {
 }
 
 export async function getTVDetails(tmdbId: number) {
-  return tmdbFetch<TVDetailsResponse>(`/tv/${tmdbId}`);
+  return tmdbFetch<TVDetailsResponse>(`/tv/${tmdbId}`, undefined, 3600);
 }
 
 export type TVSearchResult = {
@@ -289,35 +300,35 @@ export type WatchProvidersResponse = {
 };
 
 export async function getMovieCredits(tmdbId: number) {
-  return tmdbFetch<CreditsResponse>(`/movie/${tmdbId}/credits`);
+  return tmdbFetch<CreditsResponse>(`/movie/${tmdbId}/credits`, undefined, 21600);
 }
 
 export async function getMovieVideos(tmdbId: number) {
-  return tmdbFetch<VideosResponse>(`/movie/${tmdbId}/videos`);
+  return tmdbFetch<VideosResponse>(`/movie/${tmdbId}/videos`, undefined, 21600);
 }
 
 export async function getMovieExternalIds(tmdbId: number) {
-  return tmdbFetch<ExternalIdsResponse>(`/movie/${tmdbId}/external_ids`);
+  return tmdbFetch<ExternalIdsResponse>(`/movie/${tmdbId}/external_ids`, undefined, 21600);
 }
 
 export async function getMovieWatchProviders(tmdbId: number) {
-  return tmdbFetch<WatchProvidersResponse>(`/movie/${tmdbId}/watch/providers`);
+  return tmdbFetch<WatchProvidersResponse>(`/movie/${tmdbId}/watch/providers`, undefined, 21600);
 }
 
 export async function getTVCredits(tmdbId: number) {
-  return tmdbFetch<CreditsResponse>(`/tv/${tmdbId}/credits`);
+  return tmdbFetch<CreditsResponse>(`/tv/${tmdbId}/credits`, undefined, 21600);
 }
 
 export async function getTVVideos(tmdbId: number) {
-  return tmdbFetch<VideosResponse>(`/tv/${tmdbId}/videos`);
+  return tmdbFetch<VideosResponse>(`/tv/${tmdbId}/videos`, undefined, 21600);
 }
 
 export async function getTVExternalIds(tmdbId: number) {
-  return tmdbFetch<ExternalIdsResponse>(`/tv/${tmdbId}/external_ids`);
+  return tmdbFetch<ExternalIdsResponse>(`/tv/${tmdbId}/external_ids`, undefined, 21600);
 }
 
 export async function getTVWatchProviders(tmdbId: number) {
-  return tmdbFetch<WatchProvidersResponse>(`/tv/${tmdbId}/watch/providers`);
+  return tmdbFetch<WatchProvidersResponse>(`/tv/${tmdbId}/watch/providers`, undefined, 21600);
 }
 
 export type PersonDetailsResponse = {
@@ -352,11 +363,11 @@ export type PersonCreditsResponse = {
 };
 
 export async function getPersonDetails(personId: number) {
-  return tmdbFetch<PersonDetailsResponse>(`/person/${personId}`);
+  return tmdbFetch<PersonDetailsResponse>(`/person/${personId}`, undefined, 86400);
 }
 
 export async function getPersonCombinedCredits(personId: number) {
-  return tmdbFetch<PersonCreditsResponse>(`/person/${personId}/combined_credits`);
+  return tmdbFetch<PersonCreditsResponse>(`/person/${personId}/combined_credits`, undefined, 86400);
 }
 
 export async function getSimilarMovies(tmdbId: number, page = "1") {
