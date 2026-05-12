@@ -108,7 +108,7 @@ export type MovieSearchResponse = {
   total_results: number;
 };
 
-export async function searchMovies(query: string, page = "1") {
+export async function searchMovies(query: string, page = "1", includeAdult = false) {
   const q = query.trim();
   if (!q) {
     return { page: 1, results: [] as MovieSearchResult[], total_results: 0 };
@@ -116,8 +116,8 @@ export async function searchMovies(query: string, page = "1") {
   return tmdbFetch<MovieSearchResponse>("/search/movie", {
     query: q,
     page,
-    include_adult: "false",
-  });
+    include_adult: includeAdult ? "true" : "false",
+  }, 600);
 }
 
 export async function getPopularMovies(page = "1") {
@@ -233,12 +233,13 @@ export type TVSearchResult = {
   vote_average: number;
 };
 
-export async function searchTV(query: string, page = "1") {
+export async function searchTV(query: string, page = "1", includeAdult = false) {
   const q = query.trim();
   if (!q) return { page: 1, results: [] as TVSearchResult[], total_results: 0 };
   return tmdbFetch<{ page: number; results: TVSearchResult[]; total_results: number }>(
     "/search/tv",
-    { query: q, page, include_adult: "false" },
+    { query: q, page, include_adult: includeAdult ? "true" : "false" },
+    600,
   );
 }
 

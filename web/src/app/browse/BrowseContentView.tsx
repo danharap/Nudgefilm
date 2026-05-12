@@ -1,6 +1,7 @@
 "use client";
 
 import { BrowseMovieCard, type BrowseMovie } from "./BrowseMovieCard";
+import { useBrowseLibrary } from "./BrowseLibraryContext";
 import { BrowseSearch } from "./BrowseSearch";
 import { BrowseDiscoveryHero } from "./BrowseDiscoveryHero";
 import { BrowseTypeFilter } from "./BrowseTypeFilter";
@@ -40,6 +41,8 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
   const rawType = searchParams.get("type");
   const contentType: ContentType =
     rawType === "movies" ? "movies" : rawType === "tv" ? "tv" : "all";
+
+  const { isLoggedIn, is18Plus, showMatureContent, loaded, toggleMatureContent } = useBrowseLibrary();
 
   const spotlightColors = {
     red: { dot: "bg-red-500", ping: "bg-red-400", badge: "bg-red-500/15 text-red-400" },
@@ -104,6 +107,25 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
 
   const colors = spotlightColors[spotlightColor];
 
+  // 18+ toggle pill — only shown when user is logged in and 18+ verified
+  const matureToggle =
+    loaded && isLoggedIn && is18Plus ? (
+      <button
+        type="button"
+        onClick={() => toggleMatureContent(!showMatureContent)}
+        aria-pressed={showMatureContent}
+        title={showMatureContent ? "Showing 18+ content — click to restrict" : "18+ content hidden — click to show"}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+          showMatureContent
+            ? "border-rose-400/40 bg-rose-500/15 text-rose-300 hover:bg-rose-500/25"
+            : "border-white/10 bg-white/5 text-zinc-500 hover:text-zinc-300"
+        }`}
+      >
+        <span className={`inline-block size-1.5 rounded-full ${showMatureContent ? "bg-rose-400" : "bg-zinc-600"}`} />
+        18+
+      </button>
+    ) : null;
+
   return (
     <>
       <BrowseDiscoveryHero />
@@ -111,9 +133,12 @@ export function BrowseContentView({ data }: { data: AllBrowseData }) {
       <div className="mb-10">
         <BrowseSearch
           toolbarStart={
-            <Suspense fallback={<div className="h-10 w-[280px] max-w-full animate-pulse rounded-xl bg-[var(--surface-2)]" />}>
-              <BrowseTypeFilter current={contentType} />
-            </Suspense>
+            <div className="flex shrink-0 items-center gap-2">
+              <Suspense fallback={<div className="h-10 w-[280px] max-w-full animate-pulse rounded-xl bg-[var(--surface-2)]" />}>
+                <BrowseTypeFilter current={contentType} />
+              </Suspense>
+              {matureToggle}
+            </div>
           }
           type={searchType}
         />

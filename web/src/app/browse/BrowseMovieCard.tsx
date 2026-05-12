@@ -27,6 +27,7 @@ export type BrowseMovie = {
   overview: string;
   genre_ids: number[];
   mediaType?: "movie" | "tv";
+  adult?: boolean;
 };
 
 type Props = {
@@ -34,11 +35,14 @@ type Props = {
 };
 
 export function BrowseMovieCard({ movie }: Props) {
-  const { isLoggedIn, watchedIds, watchlistIds } = useBrowseLibrary();
+  const { isLoggedIn, watchedIds, watchlistIds, showMatureContent, loaded } = useBrowseLibrary();
   const [watched, setWatched] = useState<boolean | null>(null);
   const [watchlisted, setWatchlisted] = useState<boolean | null>(null);
   const isWatched = watched ?? watchedIds.has(movie.id);
   const isWatchlisted = watchlisted ?? watchlistIds.has(movie.id);
+  // Blur adult content when user preference is loaded and mature content is off
+  const isAdult = !!movie.adult;
+  const shouldBlur = loaded && isAdult && !showMatureContent;
   const [isPending, startTransition] = useTransition();
 
   const year = movie.release_date?.slice(0, 4) ?? "—";
@@ -88,8 +92,15 @@ export function BrowseMovieCard({ movie }: Props) {
             ★ {movie.vote_average.toFixed(1)}
           </div>
         )}
+        {/* Mature content blur */}
+        {shouldBlur && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-black/70 backdrop-blur-md">
+            <span className="rounded-full bg-zinc-800/80 px-2.5 py-1 text-[11px] font-semibold text-zinc-300 ring-1 ring-white/10">18+</span>
+            <span className="text-[10px] text-zinc-500">Restricted</span>
+          </div>
+        )}
         {/* Watched overlay */}
-        {isWatched && (
+        {isWatched && !shouldBlur && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
             <span className="rounded-full bg-indigo-500/90 px-2.5 py-1 text-[11px] font-semibold text-white">✓ Watched</span>
           </div>

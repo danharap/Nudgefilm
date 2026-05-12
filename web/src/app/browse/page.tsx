@@ -41,10 +41,18 @@ async function loadAllBrowseData(): Promise<AllBrowseData> {
         getNowAiringTV("1"),
       ]);
 
+    const toMovie = (m: { id: number; title: string; release_date?: string; poster_path: string | null; vote_average: number; vote_count: number; overview: string; genre_ids?: number[]; adult?: boolean }) => ({
+      ...m,
+      mediaType: "movie" as const,
+      release_date: m.release_date ?? "",
+      genre_ids: m.genre_ids ?? [],
+      adult: m.adult ?? false,
+    });
+
     return {
-      moviesPopular: (popularMovies.results ?? []).map((m) => ({ ...m, mediaType: "movie" as const })),
-      moviesTrending: (trendingMovies.results ?? []).map((m) => ({ ...m, mediaType: "movie" as const })),
-      moviesSpotlight: (nowPlaying.results ?? []).map((m) => ({ ...m, mediaType: "movie" as const })),
+      moviesPopular: (popularMovies.results ?? []).map(toMovie),
+      moviesTrending: (trendingMovies.results ?? []).map(toMovie),
+      moviesSpotlight: (nowPlaying.results ?? []).map(toMovie),
       tvPopular: (popularTV.results ?? []).map(normalizeTV),
       tvTrending: (trendingTV.results ?? []).map(normalizeTV),
       tvSpotlight: (nowAiring.results ?? []).map(normalizeTV),

@@ -32,11 +32,19 @@ export async function GET(request: Request) {
   if (q.length < 2) return NextResponse.json({ results: [], total_results: 0 });
   if (q.length > 120) return NextResponse.json({ error: "Query too long" }, { status: 400 });
 
+  // Only allow adult results when the user has explicitly opted in and is 18+ verified
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("show_mature_content, is_18_plus")
+    .eq("id", user.id)
+    .maybeSingle();
+  const includeAdult = !!(profile?.is_18_plus && profile?.show_mature_content);
+
   try {
     let results: Hit[] = [];
 
     if (type === "movies") {
-      const data = await searchMovies(q, "1");
+      const data = await searchMovies(q, "1", includeAdult);
       results = (data.results ?? []).slice(0, MAX_RESULTS).map((m) => ({
         id: m.id,
         title: m.title,
@@ -46,7 +54,7 @@ export async function GET(request: Request) {
         mediaType: "movie",
       }));
     } else if (type === "tv") {
-      const data = await searchTV(q, "1");
+      const data = await searchTV(q, "1", includeAdult);
       results = (data.results ?? []).slice(0, MAX_RESULTS).map((m) => ({
         id: m.id,
         title: m.name,
@@ -58,8 +66,8 @@ export async function GET(request: Request) {
     } else {
       // "all" — run both in parallel, interleave results
       const [movies, shows] = await Promise.all([
-        searchMovies(q, "1"),
-        searchTV(q, "1"),
+        searchMovies(q, "1", includeAdult),
+        searchTV(q, "1", includeAdult),
       ]);
       const movieHits: Hit[] = (movies.results ?? []).slice(0, 8).map((m) => ({
         id: m.id,
